@@ -1,0 +1,230 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+
+export interface Team {
+  id: string;
+  name: string;
+  teamNumber: number;
+  description?: string;
+  roles: string[];
+  visibility: 'public' | 'private';
+  memberCount?: number;
+  pendingCount?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TeamMember {
+  userId: string;
+  teamId: string;
+  roles: string[];
+  status: 'pending' | 'active' | 'disabled';
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
+    primaryEmail?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateTeamRequest {
+  name: string;
+  teamNumber: number;
+  description?: string;
+  visibility?: 'public' | 'private';
+  roles?: string[];
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TeamsService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = '/api/teams';
+
+  private readonly userTeamsSignal = signal<Team[]>([]);
+  private readonly publicTeamsSignal = signal<Team[]>([]);
+  private readonly pendingTeamsSignal = signal<Team[]>([]);
+
+  public readonly userTeams = this.userTeamsSignal.asReadonly();
+  public readonly publicTeams = this.publicTeamsSignal.asReadonly();
+  public readonly pendingTeams = this.pendingTeamsSignal.asReadonly();
+
+  async loadUserTeams(userId: string): Promise<void> {
+    try {
+      const allTeams = await firstValueFrom(
+        this.http.get<Team[]>(this.apiUrl)
+      );
+      
+      // Get user's active team memberships
+      const userTeamIds = new Set<string>();
+      for (const team of allTeams) {
+        const members = await this.getTeamMembers(team.id);
+        const userMember = members.find(m => m.userId === userId);
+        // Only include active memberships
+        if (userMember && userMember.status === 'active') {
+          userTeamIds.add(team.id);
+        }
+      }
+      
+      const userTeamsList = allTeams.filter(t => userTeamIds.has(t.id));
+      this.userTeamsSignal.set(userTeamsList);
+    } catch (error) {
+      console.error('Error loading user teams:', error);
+      throw error;
+    }
+  }
+
+  async loadPublicTeams(userId: string): Promise<void> {
+    try {
+      // Use the new endpoint that filters out disabled teams
+      const publicTeamsList = await firstValueFrom(
+        this.http.get<Team[]>(`${this.apiUrl}/public/available`)
+      );
+      
+      // Get user's team memberships to filter out teams user is already in or has pending requests
+      const userTeamIds = new Set<string>();
+      const pendingTeamIds = new Set<string>();
+      
+      for (const team of publicTeamsList) {
+        const members = await this.getTeamMembers(team.id);
+        const userMember = members.find(m => m.userId === userId);
+        if (userMember) {
+          if (userMember.status === 'active') {
+            userTeamIds.add(team.id);
+          } else if (userMember.status === 'pending') {
+            pendingTeamIds.add(team.id);
+          }
+        }
+      }
+      
+      // Filter out teams where user is an active member or has pending request
+      const availableTeams = publicTeamsList.filter(
+        t => !userTeamIds.has(t.id) && !pendingTeamIds.has(t.id)
+      );
+      this.publicTeamsSignal.set(availableTeams);
+    } catch (error) {
+      console.error('Error loading public teams:', error);
+      throw error;
+    }
+  }
+
+  async loadPendingTeams(userId: string): Promise<void> {
+    try {
+      const allTeams = await firstValueFrom(
+        this.http.get<Team[]>(this.apiUrl)
+      );
+      
+      // Get teams where user has pending membership
+      const pendingTeamsList: Team[] = [];
+      for (const team of allTeams) {
+        const members = await this.getTeamMembers(team.id);
+        const userMember = members.find(m => m.userId === userId);
+        if (userMember && userMember.status === 'pending') {
+          pendingTeamsList.push(team);
+        }
+      }
+      
+      this.pendingTeamsSignal.set(pendingTeamsList);
+    } catch (error) {
+      console.error('Error loading pending teams:', error);
+      throw error;
+    }
+  }
+
+  async createTeam(teamData: CreateTeamRequest, userId: string): Promise<Team> {
+    try {
+      // Create the team
+      const team = await firstValueFrom(
+        this.http.post<Team>(this.apiUrl, teamData)
+      );
+
+      // Add creator as admin member with active status
+      await firstValueFrom(
+        this.http.post(`${this.apiUrl}/${team.id}/members`, {
+          userId: userId,
+          roles: ['admin'],
+          status: 'active'
+        })
+      );
+
+      return team;
+    } catch (error: any) {
+      console.error('Error creating team:', error);
+      throw new Error(error.error?.message || 'Failed to create team');
+    }
+  }
+
+  async getTeamMembers(teamId: string): Promise<TeamMember[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<TeamMember[]>(`${this.apiUrl}/${teamId}/members`)
+      );
+    } catch (error) {
+      console.error('Error getting team members:', error);
+      return [];
+    }
+  }
+
+  async joinTeam(teamId: string, userId: string, roles: string[] = ['Student']): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.apiUrl}/${teamId}/members`, {
+          userId: userId,
+          roles: roles
+        })
+      );
+    } catch (error: any) {
+      console.error('Error joining team:', error);
+      throw new Error(error.error?.message || 'Failed to join team');
+    }
+  }
+
+  async requestToJoinTeam(teamId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post<TeamMember>(`${this.apiUrl}/${teamId}/request-join`, {})
+      );
+    } catch (error: any) {
+      console.error('Error requesting to join team:', error);
+      throw new Error(error.error?.message || 'Failed to request to join team');
+    }
+  }
+
+  async updateMemberStatus(teamId: string, userId: string, status: 'pending' | 'active' | 'disabled'): Promise<TeamMember> {
+    try {
+      return await firstValueFrom(
+        this.http.patch<TeamMember>(`${this.apiUrl}/${teamId}/members/${userId}/status`, { status })
+      );
+    } catch (error: any) {
+      console.error('Error updating member status:', error);
+      throw new Error(error.error?.message || 'Failed to update member status');
+    }
+  }
+
+  async getTeam(teamId: string): Promise<Team> {
+    try {
+      return await firstValueFrom(
+        this.http.get<Team>(`${this.apiUrl}/${teamId}`)
+      );
+    } catch (error: any) {
+      console.error('Error getting team:', error);
+      throw new Error(error.error?.message || 'Failed to get team');
+    }
+  }
+
+  async removeMember(teamId: string, userId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/${teamId}/members/${userId}`)
+      );
+    } catch (error: any) {
+      console.error('Error removing member:', error);
+      throw new Error(error.error?.message || 'Failed to remove member');
+    }
+  }
+}

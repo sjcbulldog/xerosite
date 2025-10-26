@@ -1,0 +1,133 @@
+<div class="team-detail-container">
+  <header class="team-detail-header">
+    <button (click)="goBack()" class="back-button">← Back to Dashboard</button>
+  </header>
+
+  @if (team()) {
+    <main class="team-detail-content">
+      <div class="team-info-card">
+        <div class="team-info-header">
+          <div>
+            <h1>{{ team()?.name }}</h1>
+            <p class="team-number">Team #{{ team()?.teamNumber }}</p>
+          </div>
+          <span class="visibility-badge {{ team()?.visibility }}">
+            {{ team()?.visibility | titlecase }}
+          </span>
+        </div>
+        
+        @if (team()?.description) {
+          <p class="team-description">{{ team()?.description }}</p>
+        }
+
+        <div class="team-stats">
+          <div class="stat">
+            <span class="stat-label">Active Members</span>
+            <span class="stat-value">{{ activeMembers().length }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Pending Requests</span>
+            <span class="stat-value pending">{{ pendingMembers().length }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="members-card">
+        <button 
+          class="collapsible-header" 
+          (click)="togglePendingMembers()"
+          [class.active]="showPendingMembers()">
+          <span class="chevron">{{ showPendingMembers() ? '▼' : '▶' }}</span>
+          <h2>Pending Membership Requests ({{ pendingMembers().length }})</h2>
+        </button>
+
+        @if (showPendingMembers()) {
+          <div class="collapsible-content">
+            @if (isLoadingMembers()) {
+              <p class="loading-message">Loading members...</p>
+            } @else if (pendingMembers().length === 0) {
+              <p class="empty-message">No pending membership requests.</p>
+            } @else {
+              <div class="members-list">
+                @for (member of pendingMembers(); track member.userId) {
+                  <div class="member-item pending">
+                    <div class="member-info">
+                      <div class="member-name">
+                        {{ member.user?.fullName || 'Unknown User' }}
+                      </div>
+                      @if (member.user?.primaryEmail) {
+                        <div class="member-email">{{ member.user?.primaryEmail }}</div>
+                      }
+                      <div class="member-roles">
+                        <span class="role-tag">{{ member.roles.join(', ') }}</span>
+                      </div>
+                    </div>
+                    <div class="member-actions">
+                      <button 
+                        class="approve-button"
+                        (click)="approveMember(member.userId)">
+                        Approve
+                      </button>
+                      <button 
+                        class="reject-button"
+                        (click)="rejectMember(member.userId)">
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="members-card">
+        <button 
+          class="collapsible-header" 
+          (click)="toggleActiveMembers()"
+          [class.active]="showActiveMembers()">
+          <span class="chevron">{{ showActiveMembers() ? '▼' : '▶' }}</span>
+          <h2>Team Members ({{ activeMembers().length }})</h2>
+        </button>
+
+        @if (showActiveMembers()) {
+          <div class="collapsible-content">
+            @if (isLoadingMembers()) {
+              <p class="loading-message">Loading members...</p>
+            } @else if (activeMembers().length === 0) {
+              <p class="empty-message">No active members.</p>
+            } @else {
+              <div class="members-list">
+                @for (member of activeMembers(); track member.userId) {
+                  <div class="member-item active">
+                    <div class="member-info">
+                      <div class="member-name">
+                        {{ member.user?.fullName || 'Unknown User' }}
+                      </div>
+                      @if (member.user?.primaryEmail) {
+                        <div class="member-email">{{ member.user?.primaryEmail }}</div>
+                      }
+                      <div class="member-roles">
+                        @for (role of member.roles; track role) {
+                          <span class="role-tag">{{ role }}</span>
+                        }
+                      </div>
+                    </div>
+                    <div class="member-status">
+                      <span class="status-badge active">Active</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </main>
+  } @else {
+    <div class="loading-container">
+      <p class="loading-message">Loading team details...</p>
+    </div>
+  }
+</div>

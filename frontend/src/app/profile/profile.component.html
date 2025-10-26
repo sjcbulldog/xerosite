@@ -1,0 +1,339 @@
+<div class="profile-container">
+  <header class="profile-header">
+    <h1>Edit Profile</h1>
+    <button (click)="cancel()" class="back-button">← Back to Dashboard</button>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading profile...</p>
+    </div>
+  } @else {
+    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="profile-form">
+      <div class="form-section">
+        <h2>Personal Information</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name *</label>
+            <input 
+              id="firstName"
+              type="text" 
+              formControlName="firstName"
+              [class.error]="getFieldError('firstName')"
+              placeholder="Enter your first name"
+            />
+            @if (getFieldError('firstName')) {
+              <span class="error-message">{{ getFieldError('firstName') }}</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="middleName">Middle Name</label>
+            <input 
+              id="middleName"
+              type="text" 
+              formControlName="middleName"
+              placeholder="Enter your middle name"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Last Name *</label>
+            <input 
+              id="lastName"
+              type="text" 
+              formControlName="lastName"
+              [class.error]="getFieldError('lastName')"
+              placeholder="Enter your last name"
+            />
+            @if (getFieldError('lastName')) {
+              <span class="error-message">{{ getFieldError('lastName') }}</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <h2>Email Addresses</h2>
+          @if (emails.length < 3) {
+            <button type="button" (click)="addEmail()" class="add-button">+ Add Email</button>
+          }
+        </div>
+
+        @for (emailGroup of emails.controls; track $index) {
+          <div class="item-card" [formGroup]="emailGroup">
+            <div class="item-header">
+              <h3>Email {{ $index + 1 }}</h3>
+              @if (emails.length > 1) {
+                <button type="button" (click)="removeEmail($index)" class="remove-button">Remove</button>
+              }
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label [for]="'email-' + $index">Email Address *</label>
+                <input 
+                  [id]="'email-' + $index"
+                  type="email" 
+                  formControlName="email"
+                  [class.error]="getEmailError($index, 'email')"
+                  placeholder="Enter email address"
+                />
+                @if (getEmailError($index, 'email')) {
+                  <span class="error-message">{{ getEmailError($index, 'email') }}</span>
+                }
+              </div>
+
+              <div class="form-group">
+                <label [for]="'emailType-' + $index">Type</label>
+                <select [id]="'emailType-' + $index" formControlName="emailType">
+                  <option value="personal">Personal</option>
+                  <option value="work">Work</option>
+                  <option value="school">School</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group-checkbox">
+                <label>
+                  <input 
+                    type="radio" 
+                    [name]="'primaryEmail'"
+                    [checked]="emailGroup.controls.isPrimary.value"
+                    (change)="setPrimaryEmail($index)"
+                  />
+                  Primary
+                </label>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <h2>Phone Numbers</h2>
+          @if (phones.length < 5) {
+            <button type="button" (click)="addPhone()" class="add-button">+ Add Phone</button>
+          }
+        </div>
+
+        @if (phones.length === 0) {
+          <p class="empty-message">No phone numbers added. Click "Add Phone" to add one.</p>
+        } @else {
+          @for (phoneGroup of phones.controls; track $index) {
+            <div class="item-card" [formGroup]="phoneGroup">
+              <div class="item-header">
+                <h3>Phone {{ $index + 1 }}</h3>
+                <button type="button" (click)="removePhone($index)" class="remove-button">Remove</button>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-2">
+                  <label [for]="'phone-' + $index">Phone Number *</label>
+                  <input 
+                    [id]="'phone-' + $index"
+                    type="tel" 
+                    formControlName="phoneNumber"
+                    [class.error]="getPhoneError($index, 'phoneNumber')"
+                    placeholder="Enter phone number"
+                  />
+                  @if (getPhoneError($index, 'phoneNumber')) {
+                    <span class="error-message">{{ getPhoneError($index, 'phoneNumber') }}</span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label [for]="'phoneType-' + $index">Type</label>
+                  <select [id]="'phoneType-' + $index" formControlName="phoneType">
+                    <option value="mobile">Mobile</option>
+                    <option value="home">Home</option>
+                    <option value="work">Work</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div class="form-group-checkbox">
+                  <label>
+                    <input 
+                      type="radio" 
+                      [name]="'primaryPhone'"
+                      [checked]="phoneGroup.controls.isPrimary.value"
+                      (change)="setPrimaryPhone($index)"
+                    />
+                    Primary
+                  </label>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <h2>Addresses</h2>
+          @if (addresses.length < 5) {
+            <button type="button" (click)="addAddress()" class="add-button">+ Add Address</button>
+          }
+        </div>
+
+        @if (addresses.length === 0) {
+          <p class="empty-message">No addresses added. Click "Add Address" to add one.</p>
+        } @else {
+          @for (addressGroup of addresses.controls; track $index) {
+            <div class="item-card" [formGroup]="addressGroup">
+              <div class="item-header">
+                <h3>Address {{ $index + 1 }}</h3>
+                <button type="button" (click)="removeAddress($index)" class="remove-button">Remove</button>
+              </div>
+
+              <div class="form-group">
+                <label [for]="'streetLine1-' + $index">Street Address *</label>
+                <input 
+                  [id]="'streetLine1-' + $index"
+                  type="text" 
+                  formControlName="streetLine1"
+                  [class.error]="getAddressError($index, 'streetLine1')"
+                  placeholder="Enter street address"
+                />
+                @if (getAddressError($index, 'streetLine1')) {
+                  <span class="error-message">{{ getAddressError($index, 'streetLine1') }}</span>
+                }
+              </div>
+
+              <div class="form-group">
+                <label [for]="'streetLine2-' + $index">Apt, Suite, etc.</label>
+                <input 
+                  [id]="'streetLine2-' + $index"
+                  type="text" 
+                  formControlName="streetLine2"
+                  placeholder="Apartment, suite, unit, etc."
+                />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-2">
+                  <label [for]="'city-' + $index">City *</label>
+                  <input 
+                    [id]="'city-' + $index"
+                    type="text" 
+                    formControlName="city"
+                    [class.error]="getAddressError($index, 'city')"
+                    placeholder="Enter city"
+                  />
+                  @if (getAddressError($index, 'city')) {
+                    <span class="error-message">{{ getAddressError($index, 'city') }}</span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label [for]="'stateProvince-' + $index">State *</label>
+                  <input 
+                    [id]="'stateProvince-' + $index"
+                    type="text" 
+                    formControlName="stateProvince"
+                    [class.error]="getAddressError($index, 'stateProvince')"
+                    placeholder="State"
+                    maxlength="2"
+                  />
+                  @if (getAddressError($index, 'stateProvince')) {
+                    <span class="error-message">{{ getAddressError($index, 'stateProvince') }}</span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label [for]="'postalCode-' + $index">ZIP Code *</label>
+                  <input 
+                    [id]="'postalCode-' + $index"
+                    type="text" 
+                    formControlName="postalCode"
+                    [class.error]="getAddressError($index, 'postalCode')"
+                    placeholder="ZIP"
+                    maxlength="10"
+                  />
+                  @if (getAddressError($index, 'postalCode')) {
+                    <span class="error-message">{{ getAddressError($index, 'postalCode') }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label [for]="'country-' + $index">Country *</label>
+                  <input 
+                    [id]="'country-' + $index"
+                    type="text" 
+                    formControlName="country"
+                    [class.error]="getAddressError($index, 'country')"
+                    placeholder="Country"
+                  />
+                  @if (getAddressError($index, 'country')) {
+                    <span class="error-message">{{ getAddressError($index, 'country') }}</span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label [for]="'addressType-' + $index">Type</label>
+                  <select [id]="'addressType-' + $index" formControlName="addressType">
+                    <option value="home">Home</option>
+                    <option value="work">Work</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div class="form-group-checkbox">
+                  <label>
+                    <input 
+                      type="radio" 
+                      [name]="'primaryAddress'"
+                      [checked]="addressGroup.controls.isPrimary.value"
+                      (change)="setPrimaryAddress($index)"
+                    />
+                    Primary
+                  </label>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert-error">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      @if (successMessage()) {
+        <div class="alert-success">
+          {{ successMessage() }}
+        </div>
+      }
+
+      <div class="form-actions">
+        <button 
+          type="button" 
+          class="cancel-button"
+          (click)="cancel()"
+          [disabled]="isSaving()">
+          Cancel
+        </button>
+        <button 
+          type="submit" 
+          class="submit-button"
+          [disabled]="profileForm.invalid || isSaving()">
+          @if (isSaving()) {
+            <span class="loading-spinner"></span>
+            Saving...
+          } @else {
+            Save Changes
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>

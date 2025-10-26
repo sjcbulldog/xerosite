@@ -1,0 +1,202 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="register-header">
+      <h1>Create Account</h1>
+      <p>Join us today</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="firstName">First Name</label>
+          <input 
+            id="firstName"
+            type="text" 
+            formControlName="firstName"
+            [class.error]="getFieldError('firstName')"
+            placeholder="Enter your first name"
+            autocomplete="given-name"
+          />
+          @if (getFieldError('firstName')) {
+            <span class="error-message">{{ getFieldError('firstName') }}</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="lastName">Last Name</label>
+          <input 
+            id="lastName"
+            type="text" 
+            formControlName="lastName"
+            [class.error]="getFieldError('lastName')"
+            placeholder="Enter your last name"
+            autocomplete="family-name"
+          />
+          @if (getFieldError('lastName')) {
+            <span class="error-message">{{ getFieldError('lastName') }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input 
+          id="email"
+          type="email" 
+          formControlName="email"
+          [class.error]="getFieldError('email')"
+          placeholder="Enter your email"
+          autocomplete="email"
+        />
+        @if (getFieldError('email')) {
+          <span class="error-message">{{ getFieldError('email') }}</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number <span class="optional">(Optional)</span></label>
+        <input 
+          id="phone"
+          type="tel" 
+          formControlName="phone"
+          [class.error]="getFieldError('phone')"
+          placeholder="Enter your phone number"
+          autocomplete="tel"
+        />
+        @if (getFieldError('phone')) {
+          <span class="error-message">{{ getFieldError('phone') }}</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          id="password"
+          type="password" 
+          formControlName="password"
+          [class.error]="getFieldError('password')"
+          placeholder="Enter your password"
+          autocomplete="new-password"
+        />
+        @if (getFieldError('password')) {
+          <span class="error-message">{{ getFieldError('password') }}</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input 
+          id="confirmPassword"
+          type="password" 
+          formControlName="confirmPassword"
+          [class.error]="getFieldError('confirmPassword')"
+          placeholder="Confirm your password"
+          autocomplete="new-password"
+        />
+        @if (getFieldError('confirmPassword')) {
+          <span class="error-message">{{ getFieldError('confirmPassword') }}</span>
+        }
+      </div>
+
+      <div class="form-section-header">
+        <h3>Home Address <span class="optional">(Optional)</span></h3>
+      </div>
+
+      <div class="form-group">
+        <label for="address">Street Address</label>
+        <input 
+          id="address"
+          type="text" 
+          formControlName="address"
+          [class.error]="getFieldError('address')"
+          placeholder="Enter your street address"
+          autocomplete="street-address"
+        />
+        @if (getFieldError('address')) {
+          <span class="error-message">{{ getFieldError('address') }}</span>
+        }
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="city">City</label>
+          <input 
+            id="city"
+            type="text" 
+            formControlName="city"
+            [class.error]="getFieldError('city')"
+            placeholder="Enter city"
+            autocomplete="address-level2"
+          />
+          @if (getFieldError('city')) {
+            <span class="error-message">{{ getFieldError('city') }}</span>
+          }
+        </div>
+
+        <div class="form-group form-group-small">
+          <label for="state">State</label>
+          <input 
+            id="state"
+            type="text" 
+            formControlName="state"
+            [class.error]="getFieldError('state')"
+            placeholder="State"
+            autocomplete="address-level1"
+            maxlength="2"
+          />
+          @if (getFieldError('state')) {
+            <span class="error-message">{{ getFieldError('state') }}</span>
+          }
+        </div>
+
+        <div class="form-group form-group-small">
+          <label for="zipCode">ZIP Code</label>
+          <input 
+            id="zipCode"
+            type="text" 
+            formControlName="zipCode"
+            [class.error]="getFieldError('zipCode')"
+            placeholder="ZIP"
+            autocomplete="postal-code"
+            maxlength="10"
+          />
+          @if (getFieldError('zipCode')) {
+            <span class="error-message">{{ getFieldError('zipCode') }}</span>
+          }
+        </div>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert-error">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      @if (successMessage()) {
+        <div class="alert-success">
+          {{ successMessage() }}
+        </div>
+      }
+
+      <button 
+        type="submit" 
+        class="register-button"
+        [disabled]="isLoading()"
+      >
+        @if (isLoading()) {
+          <span class="loading-spinner"></span>
+          Creating Account...
+        } @else {
+          Create Account
+        }
+      </button>
+    </form>
+
+    <div class="register-footer">
+      <p>
+        Already have an account? 
+        <a routerLink="/login" class="login-link">Sign in here</a>
+      </p>
+    </div>
+  </div>
+</div>

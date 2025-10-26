@@ -1,0 +1,234 @@
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, LessThan } from 'typeorm';
+import { UsersService } from '../users/users.service';
+import { EmailService } from '../email/email.service';
+import { RegisterUserDto } from '../users/dto/register-user.dto';
+import { SimpleRegisterUserDto } from '../users/dto/simple-register-user.dto';
+import { UserResponseDto } from '../users/dto/user-response.dto';
+import { User } from '../users/entities/user.entity';
+import { UserState } from '../users/enums/user-state.enum';
+import { EmailVerificationToken } from './entities/email-verification-token.entity';
+import * as crypto from 'crypto';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
+    @InjectRepository(EmailVerificationToken)
+    private readonly verificationTokenRepository: Repository<EmailVerificationToken>,
+  ) {}
+
+  async validateUser(email: string, password: string): Promise<User | null> {
+    // Find user by email
+    const user = await this.usersService.findByEmail(email);
+    
+    if (
+      user &&
+      (user.state === UserState.ACTIVE || user.state === UserState.ADMIN) &&
+      (await user.validatePassword(password))
+    ) {
+      // Update last login
+      await this.usersService.updateLastLogin(user.id);
+      return user;
+    }
+    return null;
+  }
+
+  async register(registerDto: RegisterUserDto): Promise<{
+    user: UserResponseDto;
+    access_token: string;
+  }> {
+    // Check if this is the first user
+    const userCount = await this.usersService.getUserCount();
+    const isFirstUser = userCount === 0;
+
+    // Create user - first user gets active state, others get pending
+    const user = await this.usersService.register(registerDto, isFirstUser);
+
+    // If not first user, send verification email
+    if (!isFirstUser) {
+      await this.createAndSendVerificationToken(user);
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.primaryEmail,
+      fullName: user.fullName,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: this.transformToUserResponse(user),
+    };
+  }
+
+  async simpleRegister(simpleRegisterDto: SimpleRegisterUserDto): Promise<{
+    user: UserResponseDto;
+    access_token: string;
+  }> {
+    // Convert simple DTO to full registration DTO
+    const fullRegisterDto: RegisterUserDto = {
+      firstName: simpleRegisterDto.firstName,
+      lastName: simpleRegisterDto.lastName,
+      password: simpleRegisterDto.password,
+      emails: [
+        {
+          email: simpleRegisterDto.email,
+          emailType: 'personal',
+          isPrimary: true,
+        },
+      ],
+      // Add optional phone if provided
+      ...(simpleRegisterDto.phone && {
+        phones: [
+          {
+            phoneNumber: simpleRegisterDto.phone,
+            phoneType: 'mobile',
+            isPrimary: true,
+          },
+        ],
+      }),
+      // Add optional address if provided
+      ...(simpleRegisterDto.address && {
+        addresses: [
+          {
+            streetLine1: simpleRegisterDto.address,
+            city: simpleRegisterDto.city || '',
+            stateProvince: simpleRegisterDto.state || '',
+            postalCode: simpleRegisterDto.zipCode || '',
+            country: 'USA',
+            addressType: 'home',
+            isPrimary: true,
+          },
+        ],
+      }),
+    };
+
+    return this.register(fullRegisterDto);
+  }
+
+  async login(user: User): Promise<{
+    user: UserResponseDto;
+    access_token: string;
+  }> {
+    const payload = {
+      sub: user.id,
+      email: user.primaryEmail,
+      fullName: user.fullName,
+    };
+
+    // Update last login
+    await this.usersService.updateLastLogin(user.id);
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: this.transformToUserResponse(user),
+    };
+  }
+
+  async validateUserById(userId: string): Promise<User | null> {
+    return this.usersService.findById(userId);
+  }
+
+  async verifyEmail(token: string): Promise<UserResponseDto> {
+    // Find the verification token
+    const verificationToken = await this.verificationTokenRepository.findOne({
+      where: { token, isUsed: false },
+      relations: ['user'],
+    });
+
+    if (!verificationToken) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    // Check if token is expired
+    if (new Date() > verificationToken.expiresAt) {
+      throw new BadRequestException('Verification token has expired');
+    }
+
+    // Mark token as used
+    verificationToken.isUsed = true;
+    verificationToken.usedAt = new Date();
+    await this.verificationTokenRepository.save(verificationToken);
+
+    // Update user state to active
+    const user = await this.usersService.updateUserState(
+      verificationToken.userId,
+      UserState.ACTIVE,
+    );
+
+    // Send welcome email
+    await this.emailService.sendWelcomeEmail(
+      user.primaryEmail,
+      user.firstName,
+    );
+
+    return this.transformToUserResponse(user);
+  }
+
+  async resendVerificationEmail(email: string): Promise<void> {
+    const user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.state !== UserState.PENDING) {
+      throw new BadRequestException('User is already verified');
+    }
+
+    // Invalidate old tokens
+    await this.verificationTokenRepository.update(
+      { userId: user.id, isUsed: false },
+      { isUsed: true },
+    );
+
+    // Create and send new verification token
+    await this.createAndSendVerificationToken(user);
+  }
+
+  private async createAndSendVerificationToken(user: User): Promise<void> {
+    // Generate random token
+    const token = crypto.randomBytes(32).toString('hex');
+
+    // Set expiration to 24 hours from now
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    // Save token to database
+    const verificationToken = this.verificationTokenRepository.create({
+      token,
+      userId: user.id,
+      expiresAt,
+    });
+    await this.verificationTokenRepository.save(verificationToken);
+
+    // Send verification email
+    await this.emailService.sendVerificationEmail(
+      user.primaryEmail,
+      user.firstName,
+      token,
+    );
+  }
+
+  private transformToUserResponse(user: User): UserResponseDto {
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      middleName: user.middleName,
+      lastName: user.lastName,
+      fullName: user.fullName,
+      primaryEmail: user.primaryEmail,
+      state: user.state,
+      emails: user.emails || [],
+      phones: user.phones || [],
+      addresses: user.addresses || [],
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+}
