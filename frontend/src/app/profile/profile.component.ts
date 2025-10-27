@@ -1,6 +1,6 @@
 import { Component, inject, ChangeDetectionStrategy, signal, OnInit } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { UsersService, UserProfile } from './users.service';
 
@@ -50,11 +50,18 @@ export class ProfileComponent implements OnInit {
   protected readonly authService = inject(AuthService);
   protected readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly isLoading = signal(false);
   protected readonly isSaving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
+  protected readonly viewingUserId = signal<string | null>(null);
+  protected readonly viewingUserProfile = signal<UserProfile | null>(null);
+  protected readonly selectedUserState = signal<string>('active');
+  protected readonly showEmails = signal(true);
+  protected readonly showPhones = signal(true);
+  protected readonly showAddresses = signal(true);
 
   protected readonly profileForm = new FormGroup<ProfileForm>({
     firstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(100)] }),
@@ -66,19 +73,41 @@ export class ProfileComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    await this.loadProfile();
+    // Check if we're viewing another user's profile (admin feature)
+    this.route.params.subscribe(async (params) => {
+      const userId = params['userId'];
+      if (userId) {
+        this.viewingUserId.set(userId);
+        await this.loadProfile(userId);
+      } else {
+        await this.loadProfile();
+      }
+    });
   }
 
-  private async loadProfile(): Promise<void> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) {
+  protected isAdmin(): boolean {
+    return this.authService.currentUser()?.state === 'admin';
+  }
+
+  protected isViewingOtherUser(): boolean {
+    return this.viewingUserId() !== null && this.viewingUserId() !== this.authService.currentUser()?.id;
+  }
+
+  private async loadProfile(userId?: string): Promise<void> {
+    const targetUserId = userId || this.authService.currentUser()?.id;
+    if (!targetUserId) {
       this.router.navigate(['/login']);
       return;
     }
 
     this.isLoading.set(true);
     try {
-      const profile: UserProfile = await this.usersService.getProfile(userId);
+      const profile: UserProfile = await this.usersService.getProfile(targetUserId);
+      
+      if (userId) {
+        this.viewingUserProfile.set(profile);
+        this.selectedUserState.set(profile.state);
+      }
       
       // Populate basic fields
       this.profileForm.patchValue({
@@ -212,6 +241,18 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  protected toggleEmails(): void {
+    this.showEmails.update(value => !value);
+  }
+
+  protected togglePhones(): void {
+    this.showPhones.update(value => !value);
+  }
+
+  protected toggleAddresses(): void {
+    this.showAddresses.update(value => !value);
+  }
+
   protected async onSubmit(): Promise<void> {
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
@@ -265,6 +306,29 @@ export class ProfileComponent implements OnInit {
 
   protected cancel(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  protected async updateUserState(): Promise<void> {
+    const userId = this.viewingUserId();
+    if (!userId || !this.isAdmin()) return;
+
+    this.isSaving.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      await this.usersService.updateUserState(userId, this.selectedUserState());
+      this.successMessage.set('User state updated successfully!');
+      
+      // Reload the profile
+      await this.loadProfile(userId);
+      
+      setTimeout(() => this.successMessage.set(null), 3000);
+    } catch (error: any) {
+      this.errorMessage.set(error.message || 'Failed to update user state');
+    } finally {
+      this.isSaving.set(false);
+    }
   }
 
   protected getFieldError(fieldName: string): string | null {

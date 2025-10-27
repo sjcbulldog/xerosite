@@ -1,6 +1,12 @@
 <div class="profile-container">
   <header class="profile-header">
-    <h1>Edit Profile</h1>
+    <h1>
+      @if (isViewingOtherUser()) {
+        Edit User Profile
+      } @else {
+        Edit Profile
+      }
+    </h1>
     <button (click)="cancel()" class="back-button">← Back to Dashboard</button>
   </header>
 
@@ -10,6 +16,69 @@
       <p>Loading profile...</p>
     </div>
   } @else {
+    @if (isAdmin() && isViewingOtherUser()) {
+      <div class="admin-section">
+        <div class="form-section">
+          <h2>User State Management</h2>
+          <p class="admin-note">As an administrator, you can change this user's state.</p>
+          
+          <div class="user-state-info">
+            <p><strong>User:</strong> {{ viewingUserProfile()?.fullName }}</p>
+            <p><strong>Email:</strong> {{ viewingUserProfile()?.primaryEmail }}</p>
+            <p><strong>Current State:</strong> 
+              @if (viewingUserProfile()?.state === 'admin') {
+                <span class="role-badge admin">Administrator</span>
+              } @else if (viewingUserProfile()?.state === 'active') {
+                <span class="role-badge active">Active</span>
+              } @else if (viewingUserProfile()?.state === 'pending') {
+                <span class="role-badge pending">Pending</span>
+              } @else if (viewingUserProfile()?.state === 'disabled') {
+                <span class="role-badge disabled">Disabled</span>
+              }
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label for="userState">Change User State</label>
+            <select 
+              id="userState" 
+              [value]="selectedUserState()"
+              (change)="selectedUserState.set($any($event.target).value)"
+              class="state-select">
+              <option value="active">Active</option>
+              <option value="admin">Administrator</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          </div>
+
+          <button 
+            type="button"
+            (click)="updateUserState()" 
+            class="update-state-button"
+            [disabled]="isSaving() || selectedUserState() === viewingUserProfile()?.state">
+            @if (isSaving()) {
+              <span class="loading-spinner"></span>
+              Updating...
+            } @else {
+              Update User State
+            }
+          </button>
+
+          @if (errorMessage()) {
+            <div class="alert-error">
+              {{ errorMessage() }}
+            </div>
+          }
+
+          @if (successMessage()) {
+            <div class="alert-success">
+              {{ successMessage() }}
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="profile-form">
       <div class="form-section">
         <h2>Personal Information</h2>
@@ -57,13 +126,21 @@
 
       <div class="form-section">
         <div class="section-header">
-          <h2>Email Addresses</h2>
-          @if (emails.length < 3) {
+          <button 
+            type="button"
+            class="collapsible-header" 
+            (click)="toggleEmails()"
+            [class.active]="showEmails()">
+            <span class="chevron">{{ showEmails() ? '▼' : '▶' }}</span>
+            <h2>Email Addresses</h2>
+          </button>
+          @if (emails.length < 3 && showEmails()) {
             <button type="button" (click)="addEmail()" class="add-button">+ Add Email</button>
           }
         </div>
 
-        @for (emailGroup of emails.controls; track $index) {
+        @if (showEmails()) {
+          @for (emailGroup of emails.controls; track $index) {
           <div class="item-card" [formGroup]="emailGroup">
             <div class="item-header">
               <h3>Email {{ $index + 1 }}</h3>
@@ -111,19 +188,28 @@
             </div>
           </div>
         }
+        }
       </div>
 
       <div class="form-section">
         <div class="section-header">
-          <h2>Phone Numbers</h2>
-          @if (phones.length < 5) {
+          <button 
+            type="button"
+            class="collapsible-header" 
+            (click)="togglePhones()"
+            [class.active]="showPhones()">
+            <span class="chevron">{{ showPhones() ? '▼' : '▶' }}</span>
+            <h2>Phone Numbers</h2>
+          </button>
+          @if (phones.length < 5 && showPhones()) {
             <button type="button" (click)="addPhone()" class="add-button">+ Add Phone</button>
           }
         </div>
 
-        @if (phones.length === 0) {
-          <p class="empty-message">No phone numbers added. Click "Add Phone" to add one.</p>
-        } @else {
+        @if (showPhones()) {
+          @if (phones.length === 0) {
+            <p class="empty-message">No phone numbers added. Click "Add Phone" to add one.</p>
+          } @else {
           @for (phoneGroup of phones.controls; track $index) {
             <div class="item-card" [formGroup]="phoneGroup">
               <div class="item-header">
@@ -170,21 +256,30 @@
               </div>
             </div>
           }
+          }
         }
       </div>
 
       <div class="form-section">
         <div class="section-header">
-          <h2>Addresses</h2>
-          @if (addresses.length < 5) {
+          <button 
+            type="button"
+            class="collapsible-header" 
+            (click)="toggleAddresses()"
+            [class.active]="showAddresses()">
+            <span class="chevron">{{ showAddresses() ? '▼' : '▶' }}</span>
+            <h2>Addresses</h2>
+          </button>
+          @if (addresses.length < 5 && showAddresses()) {
             <button type="button" (click)="addAddress()" class="add-button">+ Add Address</button>
           }
         </div>
 
-        @if (addresses.length === 0) {
-          <p class="empty-message">No addresses added. Click "Add Address" to add one.</p>
-        } @else {
-          @for (addressGroup of addresses.controls; track $index) {
+        @if (showAddresses()) {
+          @if (addresses.length === 0) {
+            <p class="empty-message">No addresses added. Click "Add Address" to add one.</p>
+          } @else {
+            @for (addressGroup of addresses.controls; track $index) {
             <div class="item-card" [formGroup]="addressGroup">
               <div class="item-header">
                 <h3>Address {{ $index + 1 }}</h3>
@@ -298,6 +393,7 @@
                 </div>
               </div>
             </div>
+            }
           }
         }
       </div>

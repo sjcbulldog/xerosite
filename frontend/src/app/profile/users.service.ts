@@ -71,6 +71,12 @@ export class UsersService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = '/api/users';
 
+  async getAllUsers(): Promise<UserProfile[]> {
+    return firstValueFrom(
+      this.http.get<UserProfile[]>(this.apiUrl)
+    );
+  }
+
   async getProfile(userId: string): Promise<UserProfile> {
     return firstValueFrom(
       this.http.get<UserProfile>(`${this.apiUrl}/${userId}`)
@@ -86,6 +92,12 @@ export class UsersService {
   async toggleUserActiveStatus(userId: string, isActive: boolean): Promise<UserProfile> {
     return firstValueFrom(
       this.http.patch<UserProfile>(`${this.apiUrl}/${userId}/active`, { isActive })
+    );
+  }
+
+  async updateUserState(userId: string, state: string): Promise<UserProfile> {
+    return firstValueFrom(
+      this.http.patch<UserProfile>(`${this.apiUrl}/${userId}/state`, { state })
     );
   }
 }

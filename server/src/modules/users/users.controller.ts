@@ -110,6 +110,25 @@ export class UpdateProfileDto {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get()
+  async getAllUsers(): Promise<UserResponseDto[]> {
+    const users = await this.usersService.findAll();
+    return users.map(user => ({
+      id: user.id,
+      firstName: user.firstName,
+      middleName: user.middleName,
+      lastName: user.lastName,
+      fullName: user.fullName,
+      primaryEmail: user.primaryEmail,
+      state: user.state,
+      emails: user.emails || [],
+      phones: user.phones || [],
+      addresses: user.addresses || [],
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }));
+  }
+
   @Get(':id')
   async getUser(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.usersService.findById(id);
@@ -188,6 +207,36 @@ export class UsersController {
       };
     } catch (error) {
       console.error('Error updating user active status:', error);
+      throw error;
+    }
+  }
+
+  @Patch(':id/state')
+  async updateUserState(
+    @Param('id') id: string,
+    @Body('state') state: string,
+  ): Promise<UserResponseDto> {
+    try {
+      const user = await this.usersService.updateUserState(id, state as any);
+      if (!user) {
+        throw new NotFoundException(`User with id ${id} not found`);
+      }
+      return {
+        id: user.id,
+        firstName: user.firstName,
+        middleName: user.middleName,
+        lastName: user.lastName,
+        fullName: user.fullName,
+        primaryEmail: user.primaryEmail,
+        state: user.state,
+        emails: user.emails || [],
+        phones: user.phones || [],
+        addresses: user.addresses || [],
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      };
+    } catch (error) {
+      console.error('Error updating user state:', error);
       throw error;
     }
   }

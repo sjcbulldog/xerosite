@@ -12,5 +12,6 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
   { path: 'team/:id', component: TeamDetailComponent },
   { path: 'profile', component: ProfileComponent },
+  { path: 'profile/:userId', component: ProfileComponent },
   { path: '**', redirectTo: '/login' }
 ];

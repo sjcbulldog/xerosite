@@ -49,6 +49,131 @@
   }
 }
 
+.admin-section {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+
+  .form-section {
+    background: #fffbeb;
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    padding: 2rem;
+
+    h2 {
+      color: #92400e;
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .admin-note {
+      color: #92400e;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+}
+
+.user-state-info {
+  background: white;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+
+  p {
+    margin: 0.5rem 0;
+    color: #374151;
+    font-size: 0.875rem;
+
+    strong {
+      font-weight: 600;
+      color: #1f2937;
+    }
+  }
+}
+
+.state-select {
+  width: 100%;
+  max-width: 300px;
+  padding: 0.75rem;
+  border: 2px solid #fbbf24;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: white;
+  color: #1f2937;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+  }
+}
+
+.update-state-button {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #d97706;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+
+  &.admin {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fbbf24;
+  }
+
+  &.active {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+  }
+
+  &.pending {
+    background-color: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #6366f1;
+  }
+
+  &.disabled {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+  }
+}
+
 .profile-form {
   max-width: 900px;
   margin: 0 auto;

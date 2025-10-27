@@ -42,44 +42,115 @@
     </div>
 
     <div class="dashboard-card">
-      <div class="teams-header">
-        <h2>My Teams</h2>
+      <div class="my-teams-header">
+        <button 
+          class="collapsible-header" 
+          (click)="toggleMyTeams()"
+          [class.active]="showMyTeams()">
+          <span class="chevron">{{ showMyTeams() ? '▼' : '▶' }}</span>
+          <h2>My Teams</h2>
+        </button>
         <button (click)="openCreateTeamDialog()" class="create-team-button">
           <span class="plus-icon">+</span> Create Team
         </button>
       </div>
       
-      @if (isLoadingTeams()) {
-        <p class="loading-message">Loading teams...</p>
-      } @else if (teamsService.userTeams().length === 0) {
-        <p class="empty-message">You haven't joined any teams yet. Create a new team to get started!</p>
-      } @else {
-        <div class="teams-grid">
-          @for (team of teamsService.userTeams(); track team.id) {
-            <div class="team-card clickable" [class.admin]="isTeamAdmin(team.id)" (click)="viewTeam(team.id)">
-              <div class="team-card-header">
-                <h3>{{ team.name }}</h3>
-                <div class="badges">
-                  @if (isTeamAdmin(team.id)) {
-                    <span class="admin-badge">Admin</span>
+      @if (showMyTeams()) {
+        <div class="collapsible-content">
+          @if (isLoadingTeams()) {
+            <p class="loading-message">Loading teams...</p>
+          } @else if (teamsService.userTeams().length === 0) {
+            <p class="empty-message">You haven't joined any teams yet. Create a new team to get started!</p>
+          } @else {
+            <div class="teams-grid">
+              @for (team of teamsService.userTeams(); track team.id) {
+                <div class="team-card clickable" [class.admin]="isTeamAdmin(team.id)" (click)="viewTeam(team.id)">
+                  <div class="team-card-header">
+                    <h3>{{ team.name }}</h3>
+                    <div class="badges">
+                      @if (isTeamAdmin(team.id)) {
+                        <span class="admin-badge">Admin</span>
+                      }
+                      <span class="visibility-badge {{ team.visibility }}">{{ team.visibility | titlecase }}</span>
+                    </div>
+                  </div>
+                  @if (team.description) {
+                    <p class="team-description">{{ team.description }}</p>
                   }
-                  <span class="visibility-badge {{ team.visibility }}">{{ team.visibility | titlecase }}</span>
+                  <div class="team-meta">
+                    <span class="member-count">{{ team.memberCount || 0 }} member{{ (team.memberCount || 0) === 1 ? '' : 's' }}</span>
+                    @if (team.pendingCount && team.pendingCount > 0) {
+                      <span class="pending-count">{{ team.pendingCount }} pending</span>
+                    }
+                  </div>
                 </div>
-              </div>
-              @if (team.description) {
-                <p class="team-description">{{ team.description }}</p>
               }
-              <div class="team-meta">
-                <span class="member-count">{{ team.memberCount || 0 }} member{{ (team.memberCount || 0) === 1 ? '' : 's' }}</span>
-                @if (team.pendingCount && team.pendingCount > 0) {
-                  <span class="pending-count">{{ team.pendingCount }} pending</span>
-                }
-              </div>
             </div>
           }
         </div>
       }
     </div>
+
+    @if (isAdmin()) {
+      <div class="dashboard-card">
+        <button 
+          class="collapsible-header" 
+          (click)="toggleAllUsers()"
+          [class.active]="showAllUsers()">
+          <span class="chevron">{{ showAllUsers() ? '▼' : '▶' }}</span>
+          <h2>All Users</h2>
+        </button>
+        
+        @if (showAllUsers()) {
+          <div class="collapsible-content">
+            @if (isLoadingUsers()) {
+              <p class="loading-message">Loading users...</p>
+            } @else if (allUsers().length === 0) {
+              <p class="empty-message">No users found.</p>
+            } @else {
+              <div class="users-table-container">
+                <table class="users-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>State</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (user of allUsers(); track user.id) {
+                      <tr>
+                        <td>{{ user.fullName }}</td>
+                        <td>{{ user.primaryEmail }}</td>
+                        <td>
+                          @if (user.state === 'admin') {
+                            <span class="role-badge admin">Administrator</span>
+                          } @else if (user.state === 'active') {
+                            <span class="role-badge active">Active</span>
+                          } @else if (user.state === 'pending') {
+                            <span class="role-badge pending">Pending</span>
+                          } @else if (user.state === 'disabled') {
+                            <span class="role-badge disabled">Disabled</span>
+                          } @else {
+                            <span class="role-badge {{ user.state }}">{{ user.state | titlecase }}</span>
+                          }
+                        </td>
+                        <td>
+                          <button (click)="viewUserProfile(user.id)" class="view-profile-button">
+                            View Profile
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
 
     <div class="dashboard-card">
       <button 

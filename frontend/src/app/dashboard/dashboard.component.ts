@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { TitleCasePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TeamsService } from './teams.service';
+import { UsersService, UserProfile } from '../profile/users.service';
 
 interface CreateTeamForm {
   name: FormControl<string>;
@@ -22,19 +23,24 @@ interface CreateTeamForm {
 export class DashboardComponent implements OnInit {
   protected readonly authService = inject(AuthService);
   protected readonly teamsService = inject(TeamsService);
+  protected readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
 
   protected readonly showCreateTeamDialog = signal(false);
+  protected readonly showMyTeams = signal(true);
+  protected readonly showAllUsers = signal(true);
   protected readonly showPublicTeams = signal(false);
   protected readonly showPendingTeams = signal(false);
   protected readonly isLoadingTeams = signal(false);
   protected readonly isLoadingPublicTeams = signal(false);
   protected readonly isLoadingPendingTeams = signal(false);
+  protected readonly isLoadingUsers = signal(false);
   protected readonly isCreatingTeam = signal(false);
   protected readonly isJoiningTeam = signal(false);
   protected readonly createTeamError = signal<string | null>(null);
   protected readonly showUserMenu = signal(false);
   protected readonly adminTeamIds = signal<Set<string>>(new Set());
+  protected readonly allUsers = signal<UserProfile[]>([]);
 
   protected readonly createTeamForm = new FormGroup<CreateTeamForm>({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(100)] }),
@@ -45,6 +51,36 @@ export class DashboardComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.loadTeams();
+    console.log('Current user:', this.authService.currentUser());
+    console.log('Is admin?', this.isAdmin());
+    if (this.isAdmin()) {
+      console.log('Loading all users...');
+      await this.loadAllUsers();
+    }
+  }
+
+  protected isAdmin(): boolean {
+    return this.authService.currentUser()?.state === 'admin';
+  }
+
+  private async loadAllUsers(): Promise<void> {
+    this.isLoadingUsers.set(true);
+    try {
+      console.log('Calling getAllUsers API...');
+      const users = await this.usersService.getAllUsers();
+      console.log('Loaded users:', users);
+      this.allUsers.set(users);
+    } catch (error: any) {
+      console.error('Error loading users:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        url: error.url
+      });
+    } finally {
+      this.isLoadingUsers.set(false);
+    }
   }
 
   private async loadTeams(): Promise<void> {
@@ -112,6 +148,14 @@ export class DashboardComponent implements OnInit {
     } finally {
       this.isCreatingTeam.set(false);
     }
+  }
+
+  protected async toggleMyTeams(): Promise<void> {
+    this.showMyTeams.update(value => !value);
+  }
+
+  protected async toggleAllUsers(): Promise<void> {
+    this.showAllUsers.update(value => !value);
   }
 
   protected async togglePublicTeams(): Promise<void> {
@@ -208,6 +252,10 @@ export class DashboardComponent implements OnInit {
 
   protected viewTeam(teamId: string): void {
     this.router.navigate(['/team', teamId]);
+  }
+
+  protected viewUserProfile(userId: string): void {
+    this.router.navigate(['/profile', userId]);
   }
 
   protected isTeamAdmin(teamId: string): boolean {

@@ -21,11 +21,25 @@
   margin-bottom: 2rem;
 }
 
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.robot-icon {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+}
+
 .login-header h1 {
   font-size: 1.875rem;
   font-weight: 700;
   color: #1f2937;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
 }
 
 .login-header p {
