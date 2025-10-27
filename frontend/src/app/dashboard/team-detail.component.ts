@@ -1,7 +1,9 @@
-import { Component, inject, ChangeDetectionStrategy, signal, OnInit } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, OnInit, computed } from '@angular/core';
 import { TeamsService, Team, TeamMember } from './teams.service';
 import { TitleCasePipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
+import { AuthService } from '../auth/auth.service';
+import { UsersService } from '../profile/users.service';
 
 @Component({
   selector: 'app-team-detail',
@@ -12,6 +14,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 })
 export class TeamDetailComponent implements OnInit {
   protected readonly teamsService = inject(TeamsService);
+  protected readonly authService = inject(AuthService);
+  protected readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -22,6 +26,17 @@ export class TeamDetailComponent implements OnInit {
   protected readonly isLoadingMembers = signal(false);
   protected readonly showPendingMembers = signal(false);
   protected readonly showActiveMembers = signal(false);
+  
+  // Computed signal to check if current user is admin of this team
+  protected readonly isTeamAdmin = computed(() => {
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) return false;
+    
+    const allMembers = this.members();
+    const userMembership = allMembers.find(m => m.userId === currentUserId);
+    
+    return userMembership?.roles.includes('admin') || false;
+  });
 
   async ngOnInit(): Promise<void> {
     const teamId = this.route.snapshot.paramMap.get('id');
@@ -43,9 +58,22 @@ export class TeamDetailComponent implements OnInit {
 
       // Separate pending and active members
       const pending = allMembers.filter(m => m.status === 'pending');
-      const active = allMembers.filter(m => m.status === 'active');
-
       this.pendingMembers.set(pending);
+      
+      // Filter active members - include disabled users if current user is admin
+      const currentUserId = this.authService.currentUser()?.id;
+      const userMembership = allMembers.find(m => m.userId === currentUserId);
+      const isAdmin = userMembership?.roles.includes('admin') || false;
+      
+      let active: TeamMember[];
+      if (isAdmin) {
+        // Admin sees all active members, including disabled users
+        active = allMembers.filter(m => m.status === 'active');
+      } else {
+        // Non-admin only sees active members who are not disabled
+        active = allMembers.filter(m => m.status === 'active' && m.user?.isActive !== false);
+      }
+
       this.activeMembers.set(active);
     } catch (error) {
       console.error('Error loading team details:', error);
@@ -91,6 +119,23 @@ export class TeamDetailComponent implements OnInit {
       await this.loadTeamDetails(teamId);
     } catch (error: any) {
       alert(error.message || 'Failed to reject member');
+    }
+  }
+
+  protected async toggleUserActiveStatus(userId: string, currentIsActive: boolean): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    const action = currentIsActive ? 'disable' : 'enable';
+    if (!confirm(`Are you sure you want to ${action} this user?`)) {
+      return;
+    }
+
+    try {
+      await this.usersService.toggleUserActiveStatus(userId, !currentIsActive);
+      await this.loadTeamDetails(teamId);
+    } catch (error: any) {
+      alert(error.message || `Failed to ${action} user`);
     }
   }
 }

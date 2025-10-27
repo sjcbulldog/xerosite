@@ -228,13 +228,25 @@ export class ProfileComponent implements OnInit {
     try {
       const formValue = this.profileForm.getRawValue();
       
+      // Filter out empty/invalid phones (those with empty phone numbers)
+      const validPhones = formValue.phones.filter(phone => phone.phoneNumber && phone.phoneNumber.trim().length > 0);
+      
+      // Filter out empty/invalid addresses (those with empty required fields)
+      const validAddresses = formValue.addresses.filter(address => 
+        address.streetLine1 && address.streetLine1.trim().length > 0 &&
+        address.city && address.city.trim().length > 0 &&
+        address.stateProvince && address.stateProvince.trim().length > 0 &&
+        address.postalCode && address.postalCode.trim().length > 0 &&
+        address.country && address.country.trim().length > 0
+      );
+      
       await this.usersService.updateProfile(userId, {
         firstName: formValue.firstName,
         middleName: formValue.middleName || undefined,
         lastName: formValue.lastName,
         emails: formValue.emails,
-        phones: formValue.phones,
-        addresses: formValue.addresses
+        phones: validPhones,
+        addresses: validAddresses
       });
 
       // Reload the user info

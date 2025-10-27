@@ -180,19 +180,19 @@ export class UsersService {
     middleName?: string;
     lastName?: string;
     emails?: Array<{
-      id?: string | null;
+      id?: string | number | null;
       email: string;
       emailType: string;
       isPrimary: boolean;
     }>;
     phones?: Array<{
-      id?: string | null;
+      id?: string | number | null;
       phoneNumber: string;
       phoneType: string;
       isPrimary: boolean;
     }>;
     addresses?: Array<{
-      id?: string | null;
+      id?: string | number | null;
       streetLine1: string;
       streetLine2?: string;
       city: string;
@@ -216,6 +216,11 @@ export class UsersService {
 
     // Update emails if provided
     if (updateData.emails) {
+      // Ensure at least one email
+      if (updateData.emails.length === 0) {
+        throw new BadRequestException('At least one email is required');
+      }
+
       // Get existing emails
       const existingEmails = await this.userEmailRepository.find({
         where: { userId },
@@ -354,5 +359,17 @@ export class UsersService {
     }
 
     await this.userRepository.remove(user);
+  }
+
+  async updateActiveStatus(userId: string, isActive: boolean): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.isActive = isActive;
+    await this.userRepository.save(user);
+
+    return this.findById(userId);
   }
 }

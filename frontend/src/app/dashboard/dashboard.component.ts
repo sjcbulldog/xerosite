@@ -34,6 +34,7 @@ export class DashboardComponent implements OnInit {
   protected readonly isJoiningTeam = signal(false);
   protected readonly createTeamError = signal<string | null>(null);
   protected readonly showUserMenu = signal(false);
+  protected readonly adminTeamIds = signal<Set<string>>(new Set());
 
   protected readonly createTeamForm = new FormGroup<CreateTeamForm>({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(100)] }),
@@ -53,6 +54,17 @@ export class DashboardComponent implements OnInit {
     this.isLoadingTeams.set(true);
     try {
       await this.teamsService.loadUserTeams(userId);
+      
+      // Check which teams the user is an admin of
+      const adminTeams = new Set<string>();
+      for (const team of this.teamsService.userTeams()) {
+        const members = await this.teamsService.getTeamMembers(team.id);
+        const userMember = members.find(m => m.userId === userId);
+        if (userMember?.roles.includes('admin')) {
+          adminTeams.add(team.id);
+        }
+      }
+      this.adminTeamIds.set(adminTeams);
     } catch (error) {
       console.error('Error loading teams:', error);
     } finally {
@@ -196,5 +208,9 @@ export class DashboardComponent implements OnInit {
 
   protected viewTeam(teamId: string): void {
     this.router.navigate(['/team', teamId]);
+  }
+
+  protected isTeamAdmin(teamId: string): boolean {
+    return this.adminTeamIds().has(teamId);
   }
 }

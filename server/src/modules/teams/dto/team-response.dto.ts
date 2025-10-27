@@ -26,6 +26,8 @@ export class TeamMemberDto {
     lastName: string;
     fullName: string;
     primaryEmail?: string;
+    primaryPhone?: string;
+    isActive: boolean;
   };
   createdAt: Date;
   updatedAt: Date;

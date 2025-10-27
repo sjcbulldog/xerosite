@@ -154,7 +154,7 @@ export class TeamsService {
   async getTeamMembers(teamId: string): Promise<TeamMemberDto[]> {
     const userTeams = await this.userTeamRepository.find({
       where: { teamId },
-      relations: ['user', 'user.emails'],
+      relations: ['user', 'user.emails', 'user.phones'],
     });
 
     return userTeams.map((userTeam) => this.transformToMemberDto(userTeam));
@@ -169,7 +169,7 @@ export class TeamsService {
 
     const userTeam = await this.userTeamRepository.findOne({
       where: { userId, teamId },
-      relations: ['user', 'user.emails'],
+      relations: ['user', 'user.emails', 'user.phones'],
     });
 
     if (!userTeam) {
@@ -200,7 +200,7 @@ export class TeamsService {
   async updateMemberStatus(teamId: string, userId: string, updateStatusDto: UpdateMemberStatusDto): Promise<TeamMemberDto> {
     const userTeam = await this.userTeamRepository.findOne({
       where: { userId, teamId },
-      relations: ['user', 'user.emails'],
+      relations: ['user', 'user.emails', 'user.phones'],
     });
 
     if (!userTeam) {
@@ -262,6 +262,8 @@ export class TeamsService {
   }
 
   private transformToMemberDto(userTeam: UserTeam): TeamMemberDto {
+    const primaryPhone = userTeam.user?.phones?.find(phone => phone.isPrimary);
+    
     return {
       userId: userTeam.userId,
       teamId: userTeam.teamId,
@@ -273,6 +275,8 @@ export class TeamsService {
         lastName: userTeam.user.lastName,
         fullName: userTeam.user.fullName,
         primaryEmail: userTeam.user.primaryEmail,
+        primaryPhone: primaryPhone?.phoneNumber,
+        isActive: userTeam.user.isActive,
       } : undefined,
       createdAt: userTeam.createdAt,
       updatedAt: userTeam.updatedAt,

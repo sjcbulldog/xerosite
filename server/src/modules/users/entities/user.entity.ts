@@ -44,6 +44,9 @@ export class User {
   })
   state: UserState;
 
+  @Column({ name: 'is_active', default: true })
+  isActive: boolean;
+
   @Column({ name: 'last_login', type: 'timestamp', nullable: true })
   lastLogin?: Date;
 

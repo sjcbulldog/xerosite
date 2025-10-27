@@ -82,4 +82,10 @@ export class UsersService {
       this.http.patch<UserProfile>(`${this.apiUrl}/${userId}/profile`, data)
     );
   }
+
+  async toggleUserActiveStatus(userId: string, isActive: boolean): Promise<UserProfile> {
+    return firstValueFrom(
+      this.http.patch<UserProfile>(`${this.apiUrl}/${userId}/active`, { isActive })
+    );
+  }
 }

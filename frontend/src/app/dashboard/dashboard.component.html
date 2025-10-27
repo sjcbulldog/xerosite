@@ -29,7 +29,7 @@
         <h3>User Information</h3>
         <p><strong>Name:</strong> {{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</p>
         <p><strong>Email:</strong> {{ authService.currentUser()?.primaryEmail }}</p>
-        <p><strong>Role:</strong> 
+        <p><strong>Role:&nbsp;&nbsp;</strong> 
           @if (authService.currentUser()?.state === 'admin') {
             <span class="role-badge admin">Administrator</span>
           } @else if (authService.currentUser()?.state === 'active') {
@@ -56,10 +56,15 @@
       } @else {
         <div class="teams-grid">
           @for (team of teamsService.userTeams(); track team.id) {
-            <div class="team-card clickable" (click)="viewTeam(team.id)">
+            <div class="team-card clickable" [class.admin]="isTeamAdmin(team.id)" (click)="viewTeam(team.id)">
               <div class="team-card-header">
                 <h3>{{ team.name }}</h3>
-                <span class="visibility-badge {{ team.visibility }}">{{ team.visibility | titlecase }}</span>
+                <div class="badges">
+                  @if (isTeamAdmin(team.id)) {
+                    <span class="admin-badge">Admin</span>
+                  }
+                  <span class="visibility-badge {{ team.visibility }}">{{ team.visibility | titlecase }}</span>
+                </div>
               </div>
               @if (team.description) {
                 <p class="team-description">{{ team.description }}</p>

@@ -32,55 +32,58 @@
         </div>
       </div>
 
-      <div class="members-card">
-        <button 
-          class="collapsible-header" 
-          (click)="togglePendingMembers()"
-          [class.active]="showPendingMembers()">
-          <span class="chevron">{{ showPendingMembers() ? '▼' : '▶' }}</span>
-          <h2>Pending Membership Requests ({{ pendingMembers().length }})</h2>
-        </button>
+      @if (pendingMembers().length > 0) {
+        <div class="members-card">
+          <button 
+            class="collapsible-header" 
+            (click)="togglePendingMembers()"
+            [class.active]="showPendingMembers()">
+            <span class="chevron">{{ showPendingMembers() ? '▼' : '▶' }}</span>
+            <h2>Pending Membership Requests ({{ pendingMembers().length }})</h2>
+          </button>
 
-        @if (showPendingMembers()) {
-          <div class="collapsible-content">
-            @if (isLoadingMembers()) {
-              <p class="loading-message">Loading members...</p>
-            } @else if (pendingMembers().length === 0) {
-              <p class="empty-message">No pending membership requests.</p>
-            } @else {
-              <div class="members-list">
-                @for (member of pendingMembers(); track member.userId) {
-                  <div class="member-item pending">
-                    <div class="member-info">
-                      <div class="member-name">
-                        {{ member.user?.fullName || 'Unknown User' }}
+          @if (showPendingMembers()) {
+            <div class="collapsible-content">
+              @if (isLoadingMembers()) {
+                <p class="loading-message">Loading members...</p>
+              } @else {
+                <div class="members-list">
+                  @for (member of pendingMembers(); track member.userId) {
+                    <div class="member-item pending">
+                      <div class="member-info">
+                        <div class="member-name">
+                          {{ member.user?.fullName || 'Unknown User' }}
+                        </div>
+                        @if (member.user?.primaryEmail) {
+                          <div class="member-email">{{ member.user?.primaryEmail }}</div>
+                        }
+                        @if (member.user?.primaryPhone) {
+                          <div class="member-phone">{{ member.user?.primaryPhone }}</div>
+                        }
+                        <div class="member-roles">
+                          <span class="role-tag">{{ member.roles.join(', ') }}</span>
+                        </div>
                       </div>
-                      @if (member.user?.primaryEmail) {
-                        <div class="member-email">{{ member.user?.primaryEmail }}</div>
-                      }
-                      <div class="member-roles">
-                        <span class="role-tag">{{ member.roles.join(', ') }}</span>
+                      <div class="member-actions">
+                        <button 
+                          class="approve-button"
+                          (click)="approveMember(member.userId)">
+                          Approve
+                        </button>
+                        <button 
+                          class="reject-button"
+                          (click)="rejectMember(member.userId)">
+                          Reject
+                        </button>
                       </div>
                     </div>
-                    <div class="member-actions">
-                      <button 
-                        class="approve-button"
-                        (click)="approveMember(member.userId)">
-                        Approve
-                      </button>
-                      <button 
-                        class="reject-button"
-                        (click)="rejectMember(member.userId)">
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        }
-      </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
 
       <div class="members-card">
         <button 
@@ -100,13 +103,19 @@
             } @else {
               <div class="members-list">
                 @for (member of activeMembers(); track member.userId) {
-                  <div class="member-item active">
+                  <div class="member-item active" [class.disabled]="member.user?.isActive === false">
                     <div class="member-info">
                       <div class="member-name">
                         {{ member.user?.fullName || 'Unknown User' }}
+                        @if (member.user?.isActive === false) {
+                          <span class="disabled-badge">Disabled</span>
+                        }
                       </div>
                       @if (member.user?.primaryEmail) {
                         <div class="member-email">{{ member.user?.primaryEmail }}</div>
+                      }
+                      @if (member.user?.primaryPhone) {
+                        <div class="member-phone">{{ member.user?.primaryPhone }}</div>
                       }
                       <div class="member-roles">
                         @for (role of member.roles; track role) {
@@ -116,6 +125,15 @@
                     </div>
                     <div class="member-status">
                       <span class="status-badge active">Active</span>
+                      @if (isTeamAdmin()) {
+                        <button 
+                          class="toggle-active-button"
+                          [class.enable]="member.user?.isActive === false"
+                          [class.disable]="member.user?.isActive !== false"
+                          (click)="toggleUserActiveStatus(member.userId, member.user?.isActive !== false)">
+                          {{ member.user?.isActive === false ? 'Enable' : 'Disable' }}
+                        </button>
+                      }
                     </div>
                   </div>
                 }
