@@ -30,6 +30,13 @@ export class LoginComponent implements OnInit {
   protected readonly successMessage = signal<string | null>(null);
 
   ngOnInit(): void {
+    // Auth is guaranteed to be ready thanks to APP_INITIALIZER
+    // If already authenticated, redirect to dashboard
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+      return;
+    }
+
     // Check for verification status in query params
     this.route.queryParams.subscribe(params => {
       if (params['verified'] === 'true') {

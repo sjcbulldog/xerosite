@@ -1,7 +1,7 @@
 Login
 =====
 - Basic login screen                                                                            X
-- Account can have multiple emails, any can be used to login
+- Account can have multiple emails, any can be used to login                                    X
 
 Registrations
 =============
@@ -16,9 +16,9 @@ Dashboard
 
 Profile Editor
 ==============
-- Add/remove email addresses
-- Add/remove phone numbers
-- Add/remove physical addresses
+- Add/remove email addresses                                                                    X
+- Add/remove phone numbers                                                                      X
+- Add/remove physical addresses                                                                 X
 
 Team roles
 ==========
@@ -28,17 +28,26 @@ Team roles
 
 Teams
 =====
-- For private teams, have the ability for the team admin to sent out invites via email
+- For private teams, have the ability for the team admin to sent out invites via email          X
 - Import CSV rosters
 
 Add subteams
 ============
-- Name, Student lead, Mentor Lead, Description
+- Subteam Name, Members, Student Leads, Mentor Leads, Description
 - A person can belong to multiple subteams
+- A subteam can have multiple student leads
+- A subteam can have multiple lead mentors
 
 Add calendar
 ============
-- Email/Text reminders
+- Calendar view
+- Select attendees based on entire team, roles, subteams, or individuals
+- One off meetings
+- Recuring meetings
+- Send email when meeting is schedule with calendar invites.
+- Email and Text reminders to users based on user preferences (what type, how often, lead time)
+- Subscriptions: RFC 5545 (iCalendar), RFC 4791 (CalDAV), RFC 3744 (ACL), RFC 6578 (WebDAV Sync)
+
 
 Send Email
 ==========

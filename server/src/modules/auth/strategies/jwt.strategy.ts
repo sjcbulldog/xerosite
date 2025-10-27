@@ -23,10 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || (user.state !== UserState.ACTIVE && user.state !== UserState.ADMIN)) {
       return null;
     }
-    return {
-      id: user.id,
-      email: user.primaryEmail,
-      fullName: user.fullName,
-    };
+    // Return the full user object so it's available in controllers
+    return user;
   }
 }

@@ -55,6 +55,13 @@ export class DashboardComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    // Auth is guaranteed to be ready thanks to APP_INITIALIZER
+    // If not authenticated, redirect to login
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+    
     await this.loadTeams();
     if (this.isAdmin()) {
       await this.loadAllUsers();

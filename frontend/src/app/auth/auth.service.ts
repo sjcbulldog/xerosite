@@ -45,23 +45,37 @@ export class AuthService {
 
   private readonly currentUserSignal = signal<User | null>(null);
   private readonly isAuthenticatedSignal = signal<boolean>(false);
+  private readonly isAuthReadySignal = signal<boolean>(false);
 
   // Public readonly signals
   public readonly currentUser = this.currentUserSignal.asReadonly();
   public readonly isAuthenticated = this.isAuthenticatedSignal.asReadonly();
+  public readonly isAuthReady = this.isAuthReadySignal.asReadonly();
 
   constructor() {
-    // Check for existing token on service initialization
-    this.checkExistingAuth();
+    // Initialization will be handled by APP_INITIALIZER
   }
 
-  private checkExistingAuth(): void {
+  // Called by APP_INITIALIZER to ensure auth is loaded before app starts
+  async initialize(): Promise<void> {
     const token = localStorage.getItem('auth_token');
     if (token) {
-      // TODO: Validate token with backend
-      // For now, just assume it's valid
-      this.isAuthenticatedSignal.set(true);
+      try {
+        // Fetch current user data from the server
+        const user = await firstValueFrom(
+          this.http.get<User>(`${this.apiUrl}/me`)
+        );
+        this.currentUserSignal.set(user);
+        this.isAuthenticatedSignal.set(true);
+      } catch (error) {
+        // Token is invalid, clear it
+        console.error('Failed to fetch user data, token may be invalid:', error);
+        localStorage.removeItem('auth_token');
+        this.isAuthenticatedSignal.set(false);
+      }
     }
+    // Mark auth as ready (whether we found a valid token or not)
+    this.isAuthReadySignal.set(true);
   }
 
   async login(email: string, password: string): Promise<void> {
