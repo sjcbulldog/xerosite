@@ -3,7 +3,11 @@
     <h1>Welcome, {{ authService.currentUser()?.firstName || 'User' }}!</h1>
     <div class="user-menu-container">
       <button (click)="toggleUserMenu()" class="user-menu-button">
-        <span class="user-initials">{{ authService.currentUser()?.firstName?.charAt(0) }}{{ authService.currentUser()?.lastName?.charAt(0) }}</span>
+        <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
         <span class="chevron-down">▼</span>
       </button>
       @if (showUserMenu()) {
@@ -316,6 +320,55 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+}
+
+@if (showInvitationNotification()) {
+  <div class="dialog-overlay" (click)="closeInvitationNotification()">
+    <div class="dialog-content invitation-notification" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Team Invitations</h2>
+        <button class="close-button" (click)="closeInvitationNotification()">×</button>
+      </div>
+
+      <div class="notification-content">
+        <p class="notification-message">
+          You have been invited to join the following team(s). Accept to request membership (admin approval required):
+        </p>
+
+        <div class="invitations-list">
+          @for (invitation of pendingInvitations(); track invitation.id) {
+            <div class="invitation-card">
+              <div class="invitation-info">
+                <h3>{{ invitation.teamName }}</h3>
+                <p class="invitation-email">Invited to: {{ invitation.email }}</p>
+                <p class="invitation-date">Sent: {{ invitation.createdAt | date:'short' }}</p>
+              </div>
+              <div class="invitation-actions">
+                <button 
+                  class="accept-button"
+                  (click)="acceptInvitation(invitation.id)">
+                  Accept
+                </button>
+                <button 
+                  class="decline-button"
+                  (click)="declineInvitation(invitation.id)">
+                  Decline
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeInvitationNotification()">
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 }

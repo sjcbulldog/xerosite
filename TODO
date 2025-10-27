@@ -1,22 +1,52 @@
-Management of team roles
-- Editable by team, must have admin
-- Editor
-- Permissions
+Login
+=====
+- Basic login screen                                                                            X
+- Account can have multiple emails, any can be used to login
 
-Add the concept of subteams
+Registrations
+=============
+- Basic registration screen                                                                     X
+- Email verification before added to site                                                       X
+
+Dashboard
+=========
+- Highlight teams where the user is an admin differently.                                       X
+- Provide ability for admin to make other users admin, active, or disabled.                     X
+- Create new teams (public or private)                                                          X
+
+Profile Editor
+==============
+- Add/remove email addresses
+- Add/remove phone numbers
+- Add/remove physical addresses
+
+Team roles
+==========
+- Team admin can add and remove roles                                                           X
+- Team admin can assign member to specific roles                                                X
+- Provide an interface to specify role exclusions
+
+Teams
+=====
+- For private teams, have the ability for the team admin to sent out invites via email
+- Import CSV rosters
+
+Add subteams
+============
 - Name, Student lead, Mentor Lead, Description
+- A person can belong to multiple subteams
 
-Team Dashbaord
-- When looking at the team members
-  o admin can change anyone's roles
+Add calendar
+============
+- Email/Text reminders
 
-Calendar
--
+Send Email
+==========
+- Select based on entire team, roles, subteams, or individuals
 
-Email
--
 
-Done
-- Highlight teams where the user is an admin differently.
-- Provide ability for admin to make other users admin, active, or disabled.
+IOS App
+=======
 
+Android App
+===========

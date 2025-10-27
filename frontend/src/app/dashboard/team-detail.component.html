@@ -11,9 +11,19 @@
             <h1>{{ team()?.name }}</h1>
             <p class="team-number">Team #{{ team()?.teamNumber }}</p>
           </div>
-          <span class="visibility-badge {{ team()?.visibility }}">
-            {{ team()?.visibility | titlecase }}
-          </span>
+          <div class="header-actions">
+            @if (isTeamAdmin()) {
+              <button (click)="openRoleEditor()" class="edit-roles-button">
+                Edit Team Roles
+              </button>
+              <button (click)="openInviteDialog()" class="invite-button">
+                Invite Member
+              </button>
+            }
+            <span class="visibility-badge {{ team()?.visibility }}">
+              {{ team()?.visibility | titlecase }}
+            </span>
+          </div>
         </div>
         
         @if (team()?.description) {
@@ -117,11 +127,31 @@
                       @if (member.user?.primaryPhone) {
                         <div class="member-phone">{{ member.user?.primaryPhone }}</div>
                       }
-                      <div class="member-roles">
-                        @for (role of member.roles; track role) {
-                          <span class="role-tag">{{ role }}</span>
-                        }
-                      </div>
+                      
+                      @if (isTeamAdmin()) {
+                        <div class="member-roles-edit">
+                          <label>Roles:</label>
+                          <div class="roles-checkboxes">
+                            @for (role of availableRoles(); track role) {
+                              <label class="role-checkbox">
+                                <input 
+                                  type="checkbox"
+                                  [checked]="memberHasRole(member, role)"
+                                  (change)="toggleMemberRole(member.userId, role, $event)"
+                                  [disabled]="isUpdatingMemberRoles()"
+                                />
+                                <span>{{ role }}</span>
+                              </label>
+                            }
+                          </div>
+                        </div>
+                      } @else {
+                        <div class="member-roles">
+                          @for (role of member.roles; track role) {
+                            <span class="role-tag">{{ role }}</span>
+                          }
+                        </div>
+                      }
                     </div>
                     <div class="member-status">
                       <span class="status-badge active">Active</span>
@@ -149,3 +179,148 @@
     </div>
   }
 </div>
+
+@if (showRoleEditor()) {
+  <div class="dialog-overlay" (click)="closeRoleEditor()">
+    <div class="dialog-content role-editor" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Edit Team Roles</h2>
+        <button class="close-button" (click)="closeRoleEditor()">×</button>
+      </div>
+
+      <div class="role-editor-content">
+        <p class="editor-description">
+          Manage the available roles for this team. The Administrator role cannot be deleted.
+        </p>
+
+        <div class="current-roles">
+          <h3>Current Roles</h3>
+          <div class="roles-list">
+            @for (role of editingRoles(); track role) {
+              <div class="role-item" [class.protected]="role === 'Administrator'">
+                <span class="role-name">{{ role }}</span>
+                @if (role === 'Administrator') {
+                  <span class="protected-badge">Protected</span>
+                } @else {
+                  <button 
+                    class="remove-role-button"
+                    (click)="removeRoleFromEditor(role)"
+                    [disabled]="isSavingRoles()">
+                    Remove
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="add-role-section">
+          <h3>Add New Role</h3>
+          <div class="add-role-form">
+            <input 
+              type="text"
+              [(ngModel)]="newRoleName"
+              placeholder="Enter role name"
+              [disabled]="isSavingRoles()"
+              (keyup.enter)="addRoleToEditor()"
+            />
+            <button 
+              class="add-role-button"
+              (click)="addRoleToEditor()"
+              [disabled]="!newRoleName().trim() || isSavingRoles()">
+              Add Role
+            </button>
+          </div>
+        </div>
+
+        @if (roleEditorError()) {
+          <div class="alert-error">
+            {{ roleEditorError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeRoleEditor()"
+            [disabled]="isSavingRoles()">
+            Cancel
+          </button>
+          <button 
+            class="save-button"
+            (click)="saveRoles()"
+            [disabled]="isSavingRoles()">
+            {{ isSavingRoles() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showInviteDialog()) {
+  <div class="dialog-overlay" (click)="closeInviteDialog()">
+    <div class="dialog-content invite-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Invite Member to Team</h2>
+        <button class="close-button" (click)="closeInviteDialog()">×</button>
+      </div>
+
+      <div class="invite-content">
+        <p class="dialog-description">
+          Enter the email address of the person you want to invite to join {{ team()?.name }}.
+          They will receive an email invitation.
+        </p>
+
+        <div class="invite-form">
+          <label for="inviteEmail">Email Address</label>
+          <input 
+            id="inviteEmail"
+            type="email"
+            [(ngModel)]="inviteEmail"
+            placeholder="user@example.com"
+            [disabled]="isSendingInvitation()"
+            (keyup.enter)="sendInvitation()"
+          />
+          <button 
+            class="send-button"
+            (click)="sendInvitation()"
+            [disabled]="!inviteEmail().trim() || isSendingInvitation()">
+            {{ isSendingInvitation() ? 'Sending...' : 'Send Invitation' }}
+          </button>
+        </div>
+
+        @if (invitationError()) {
+          <div class="alert-error">
+            {{ invitationError() }}
+          </div>
+        }
+
+        <div class="invitations-list">
+          <h3>Pending Invitations</h3>
+          @if (teamInvitations().length === 0) {
+            <p class="no-invitations">No pending invitations</p>
+          } @else {
+            <div class="invitations">
+              @for (invitation of teamInvitations(); track invitation.id) {
+                <div class="invitation-item" [class.status]="invitation.status">
+                  <div class="invitation-email">{{ invitation.email }}</div>
+                  <div class="invitation-status">{{ invitation.status }}</div>
+                  <div class="invitation-date">{{ invitation.createdAt | date:'short' }}</div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeInviteDialog()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

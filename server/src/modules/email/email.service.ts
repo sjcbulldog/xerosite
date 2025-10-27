@@ -54,4 +54,30 @@ export class EmailService {
       // Don't throw - welcome email failure shouldn't block the process
     }
   }
+
+  async sendTeamInvitationEmail(
+    email: string,
+    teamName: string,
+    teamNumber: number,
+  ): Promise<void> {
+    const apiUrl = this.configService.get('email.apiUrl');
+    const loginUrl = `${apiUrl}/login`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `Invitation to join team: ${teamName}`,
+        html: `
+          <p>You have been invited to join the team <strong>${teamName}</strong> (Team #${teamNumber}).</p>
+          <p>Please log in to accept or decline this invitation:</p>
+          <p><a href="${loginUrl}">Click here to log in</a></p>
+        `,
+      });
+
+      this.logger.log(`Team invitation email sent to ${email} for team ${teamName}`);
+    } catch (error) {
+      this.logger.error(`Failed to send team invitation email to ${email}`, error);
+      throw error;
+    }
+  }
 }

@@ -8,6 +8,7 @@ export interface Team {
   teamNumber: number;
   description?: string;
   roles: string[];
+  roleConstraints?: string;
   visibility: 'public' | 'private';
   memberCount?: number;
   pendingCount?: number;
@@ -39,6 +40,17 @@ export interface CreateTeamRequest {
   description?: string;
   visibility?: 'public' | 'private';
   roles?: string[];
+}
+
+export interface TeamInvitation {
+  id: string;
+  teamId: string;
+  email: string;
+  invitedBy?: string;
+  status: 'pending' | 'accepted' | 'declined';
+  teamName?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 @Injectable({
@@ -149,7 +161,7 @@ export class TeamsService {
       await firstValueFrom(
         this.http.post(`${this.apiUrl}/${team.id}/members`, {
           userId: userId,
-          roles: ['admin'],
+          roles: ['Administrator'],
           status: 'active'
         })
       );
@@ -219,6 +231,17 @@ export class TeamsService {
     }
   }
 
+  async updateTeam(teamId: string, updateData: { roles?: string[], roleConstraints?: string }): Promise<Team> {
+    try {
+      return await firstValueFrom(
+        this.http.patch<Team>(`${this.apiUrl}/${teamId}`, updateData)
+      );
+    } catch (error: any) {
+      console.error('Error updating team:', error);
+      throw new Error(error.error?.message || 'Failed to update team');
+    }
+  }
+
   async removeMember(teamId: string, userId: string): Promise<void> {
     try {
       await firstValueFrom(
@@ -227,6 +250,85 @@ export class TeamsService {
     } catch (error: any) {
       console.error('Error removing member:', error);
       throw new Error(error.error?.message || 'Failed to remove member');
+    }
+  }
+
+  // Role Management Methods - simplified to just return role names
+  async getTeamRoles(teamId: string): Promise<string[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<string[]>(`${this.apiUrl}/${teamId}/roles`)
+      );
+    } catch (error: any) {
+      console.error('Error getting team roles:', error);
+      throw new Error(error.error?.message || 'Failed to get team roles');
+    }
+  }
+  
+  async updateMemberRoles(teamId: string, userId: string, roles: string[]): Promise<TeamMember> {
+    try {
+      return await firstValueFrom(
+        this.http.patch<TeamMember>(`${this.apiUrl}/${teamId}/members/${userId}`, { roles })
+      );
+    } catch (error: any) {
+      console.error('Error updating member roles:', error);
+      throw new Error(error.error?.message || 'Failed to update member roles');
+    }
+  }
+
+  // Invitation Management Methods
+  async sendInvitation(teamId: string, email: string): Promise<TeamInvitation> {
+    try {
+      return await firstValueFrom(
+        this.http.post<TeamInvitation>(`${this.apiUrl}/${teamId}/invitations`, { email })
+      );
+    } catch (error: any) {
+      console.error('Error sending invitation:', error);
+      throw new Error(error.error?.message || 'Failed to send invitation');
+    }
+  }
+
+  async getTeamInvitations(teamId: string): Promise<TeamInvitation[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<TeamInvitation[]>(`${this.apiUrl}/${teamId}/invitations`)
+      );
+    } catch (error: any) {
+      console.error('Error getting team invitations:', error);
+      throw new Error(error.error?.message || 'Failed to get team invitations');
+    }
+  }
+
+  async getUserInvitations(): Promise<TeamInvitation[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<TeamInvitation[]>(`${this.apiUrl}/invitations/user`)
+      );
+    } catch (error: any) {
+      console.error('Error getting user invitations:', error);
+      throw new Error(error.error?.message || 'Failed to get user invitations');
+    }
+  }
+
+  async acceptInvitation(invitationId: string): Promise<TeamMember> {
+    try {
+      return await firstValueFrom(
+        this.http.post<TeamMember>(`${this.apiUrl}/invitations/${invitationId}/accept`, {})
+      );
+    } catch (error: any) {
+      console.error('Error accepting invitation:', error);
+      throw new Error(error.error?.message || 'Failed to accept invitation');
+    }
+  }
+
+  async declineInvitation(invitationId: string): Promise<TeamInvitation> {
+    try {
+      return await firstValueFrom(
+        this.http.post<TeamInvitation>(`${this.apiUrl}/invitations/${invitationId}/decline`, {})
+      );
+    } catch (error: any) {
+      console.error('Error declining invitation:', error);
+      throw new Error(error.error?.message || 'Failed to decline invitation');
     }
   }
 }

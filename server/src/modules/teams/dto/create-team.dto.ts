@@ -38,6 +38,11 @@ export class CreateTeamDto {
   roles?: string[];
 
   @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  roleConstraints?: string;
+
+  @IsOptional()
   @IsEnum(TeamVisibility)
   visibility?: TeamVisibility;
 }

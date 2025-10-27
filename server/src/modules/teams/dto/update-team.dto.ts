@@ -18,6 +18,10 @@ export class UpdateTeamDto extends PartialType(CreateTeamDto) {
   roles?: string[];
 
   @IsOptional()
+  @IsString()
+  roleConstraints?: string;
+
+  @IsOptional()
   @IsEnum(TeamVisibility)
   visibility?: TeamVisibility;
 }

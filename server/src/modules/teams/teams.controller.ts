@@ -7,11 +7,13 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateTeamMemberRolesDto, UpdateMemberStatusDto } from './dto/team-response.dto';
+import { SendInvitationDto, TeamInvitationResponseDto } from './dto/team-invitation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -35,6 +37,25 @@ export class TeamsController {
     return this.teamsService.findPublicTeamsForUser(user.id);
   }
 
+  // Invitation Management - must come before :id routes
+  @Get('invitations/user')
+  async getUserInvitations(@CurrentUser() user: any): Promise<TeamInvitationResponseDto[]> {
+    return this.teamsService.getUserInvitations(user.primaryEmail);
+  }
+
+  @Post('invitations/:id/accept')
+  async acceptInvitation(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<TeamMemberDto> {
+    return this.teamsService.acceptInvitation(id, user.id);
+  }
+
+  @Post('invitations/:id/decline')
+  async declineInvitation(@Param('id') id: string): Promise<TeamInvitationResponseDto> {
+    return this.teamsService.declineInvitation(id);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<TeamResponseDto> {
     return this.teamsService.findOne(id);
@@ -53,6 +74,20 @@ export class TeamsController {
     return this.teamsService.remove(id);
   }
 
+  @Post(':id/invitations')
+  async sendInvitation(
+    @Param('id') id: string,
+    @Body() sendInvitationDto: SendInvitationDto,
+    @CurrentUser() user: any,
+  ): Promise<TeamInvitationResponseDto> {
+    return this.teamsService.sendInvitation(id, sendInvitationDto, user.id);
+  }
+
+  @Get(':id/invitations')
+  async getTeamInvitations(@Param('id') id: string): Promise<TeamInvitationResponseDto[]> {
+    return this.teamsService.getTeamInvitations(id);
+  }
+
   @Post(':id/members')
   async addMember(
     @Param('id') id: string,
@@ -64,6 +99,20 @@ export class TeamsController {
   @Get(':id/members')
   async getMembers(@Param('id') id: string): Promise<TeamMemberDto[]> {
     return this.teamsService.getTeamMembers(id);
+  }
+
+  @Post(':id/request-join')
+  async requestToJoin(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<TeamMemberDto> {
+    return this.teamsService.requestToJoin(id, user.id);
+  }
+
+  // Simplified Role Management - just returns array of role names
+  @Get(':id/roles')
+  async getTeamRoles(@Param('id') id: string): Promise<string[]> {
+    return this.teamsService.getTeamRoles(id);
   }
 
   @Patch(':teamId/members/:userId')
@@ -90,13 +139,5 @@ export class TeamsController {
     @Body() updateStatusDto: UpdateMemberStatusDto,
   ): Promise<TeamMemberDto> {
     return this.teamsService.updateMemberStatus(teamId, userId, updateStatusDto);
-  }
-
-  @Post(':id/request-join')
-  async requestToJoin(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ): Promise<TeamMemberDto> {
-    return this.teamsService.requestToJoin(id, user.id);
   }
 }

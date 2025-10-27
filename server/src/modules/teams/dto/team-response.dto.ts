@@ -8,6 +8,7 @@ export class TeamResponseDto {
   teamNumber: number;
   description?: string;
   roles: string[];
+  roleConstraints?: string;
   visibility: TeamVisibility;
   memberCount?: number;
   pendingCount?: number;

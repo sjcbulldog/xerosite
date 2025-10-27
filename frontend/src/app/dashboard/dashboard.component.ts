@@ -1,9 +1,9 @@
 import { Component, inject, ChangeDetectionStrategy, signal, OnInit } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
-import { TitleCasePipe } from '@angular/common';
+import { TitleCasePipe, DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { TeamsService } from './teams.service';
+import { TeamsService, TeamInvitation } from './teams.service';
 import { UsersService, UserProfile } from '../profile/users.service';
 
 interface CreateTeamForm {
@@ -15,7 +15,7 @@ interface CreateTeamForm {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TitleCasePipe, ReactiveFormsModule],
+  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -41,6 +41,11 @@ export class DashboardComponent implements OnInit {
   protected readonly showUserMenu = signal(false);
   protected readonly adminTeamIds = signal<Set<string>>(new Set());
   protected readonly allUsers = signal<UserProfile[]>([]);
+  
+  // Invitation signals
+  protected readonly showInvitationNotification = signal(false);
+  protected readonly pendingInvitations = signal<TeamInvitation[]>([]);
+  protected readonly isLoadingInvitations = signal(false);
 
   protected readonly createTeamForm = new FormGroup<CreateTeamForm>({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(100)] }),
@@ -51,12 +56,10 @@ export class DashboardComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.loadTeams();
-    console.log('Current user:', this.authService.currentUser());
-    console.log('Is admin?', this.isAdmin());
     if (this.isAdmin()) {
-      console.log('Loading all users...');
       await this.loadAllUsers();
     }
+    await this.checkPendingInvitations();
   }
 
   protected isAdmin(): boolean {
@@ -66,18 +69,9 @@ export class DashboardComponent implements OnInit {
   private async loadAllUsers(): Promise<void> {
     this.isLoadingUsers.set(true);
     try {
-      console.log('Calling getAllUsers API...');
       const users = await this.usersService.getAllUsers();
-      console.log('Loaded users:', users);
       this.allUsers.set(users);
     } catch (error: any) {
-      console.error('Error loading users:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        statusText: error.statusText,
-        url: error.url
-      });
     } finally {
       this.isLoadingUsers.set(false);
     }
@@ -96,7 +90,7 @@ export class DashboardComponent implements OnInit {
       for (const team of this.teamsService.userTeams()) {
         const members = await this.teamsService.getTeamMembers(team.id);
         const userMember = members.find(m => m.userId === userId);
-        if (userMember?.roles.includes('admin')) {
+        if (userMember?.roles.includes('Administrator')) {
           adminTeams.add(team.id);
         }
       }
@@ -260,5 +254,67 @@ export class DashboardComponent implements OnInit {
 
   protected isTeamAdmin(teamId: string): boolean {
     return this.adminTeamIds().has(teamId);
+  }
+
+  // Invitation Methods
+  protected async checkPendingInvitations(): Promise<void> {
+    this.isLoadingInvitations.set(true);
+    try {
+      const invitations = await this.teamsService.getUserInvitations();
+      if (invitations.length > 0) {
+        this.pendingInvitations.set(invitations);
+        this.showInvitationNotification.set(true);
+      }
+    } catch (error: any) {
+      console.error('Failed to load invitations:', error);
+    } finally {
+      this.isLoadingInvitations.set(false);
+    }
+  }
+
+  protected closeInvitationNotification(): void {
+    this.showInvitationNotification.set(false);
+  }
+
+  protected async acceptInvitation(invitationId: string): Promise<void> {
+    try {
+      await this.teamsService.acceptInvitation(invitationId);
+      
+      // Remove the accepted invitation from the list
+      const remaining = this.pendingInvitations().filter(inv => inv.id !== invitationId);
+      this.pendingInvitations.set(remaining);
+      
+      // Close notification if no more invitations
+      if (remaining.length === 0) {
+        this.showInvitationNotification.set(false);
+      }
+      
+      // Reload teams to show the new membership request
+      await this.loadTeams();
+      
+      const userId = this.authService.currentUser()?.id;
+      if (userId) {
+        await this.teamsService.loadPendingTeams(userId);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to accept invitation');
+    }
+  }
+
+  protected async declineInvitation(invitationId: string): Promise<void> {
+    try {
+      await this.teamsService.declineInvitation(invitationId);
+      
+      // Remove the declined invitation from the list
+      const remaining = this.pendingInvitations().filter(inv => inv.id !== invitationId);
+      this.pendingInvitations.set(remaining);
+      
+      // Close notification if no more invitations
+      if (remaining.length === 0) {
+        this.showInvitationNotification.set(false);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to decline invitation');
+    }
   }
 }
