@@ -10,13 +10,13 @@ Add the following environment variables to your `.env` file:
 
 ```env
 # Email Configuration
-EMAIL_HOST=smtp.comcast.com
-EMAIL_PORT=587
-EMAIL_SECURE=true
-EMAIL_USER=butchg@comcast.net
-EMAIL_PASSWORD=Meridian$$1970
-EMAIL_FROM=butchg@comcast.net
-APP_URL=http://localhost:4200
+EMAIL_HOST=
+EMAIL_PORT=
+EMAIL_SECURE=
+EMAIL_USER=
+EMAIL_PASSWORD=
+EMAIL_FROM=
+APP_URL=http://localhost:3000
 ```
 
 ### Gmail Configuration
