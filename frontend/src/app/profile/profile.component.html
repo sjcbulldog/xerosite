@@ -125,22 +125,21 @@
       </div>
 
       <div class="form-section">
-        <div class="section-header">
-          <button 
-            type="button"
-            class="collapsible-header" 
-            (click)="toggleEmails()"
-            [class.active]="showEmails()">
-            <span class="chevron">{{ showEmails() ? '▼' : '▶' }}</span>
-            <h2>Email Addresses</h2>
-          </button>
-          @if (emails.length < 3 && showEmails()) {
-            <button type="button" (click)="addEmail()" class="add-button">+ Add Email</button>
-          }
-        </div>
+        <button 
+          type="button"
+          class="collapsible-header" 
+          (click)="toggleEmails()"
+          [class.active]="showEmails()">
+          <span class="chevron">{{ showEmails() ? '▼' : '▶' }}</span>
+          <h2>Email Addresses</h2>
+        </button>
 
         @if (showEmails()) {
-          @for (emailGroup of emails.controls; track $index) {
+          <div class="collapsible-content">
+            @if (emails.length < 3) {
+              <button type="button" (click)="addEmail()" class="add-button">+ Add Email</button>
+            }
+            @for (emailGroup of emails.controls; track $index) {
           <div class="item-card" [formGroup]="emailGroup">
             <div class="item-header">
               <h3>Email {{ $index + 1 }}</h3>
@@ -187,30 +186,30 @@
               </div>
             </div>
           </div>
-        }
+            }
+          </div>
         }
       </div>
 
       <div class="form-section">
-        <div class="section-header">
-          <button 
-            type="button"
-            class="collapsible-header" 
-            (click)="togglePhones()"
-            [class.active]="showPhones()">
-            <span class="chevron">{{ showPhones() ? '▼' : '▶' }}</span>
-            <h2>Phone Numbers</h2>
-          </button>
-          @if (phones.length < 5 && showPhones()) {
-            <button type="button" (click)="addPhone()" class="add-button">+ Add Phone</button>
-          }
-        </div>
+        <button 
+          type="button"
+          class="collapsible-header" 
+          (click)="togglePhones()"
+          [class.active]="showPhones()">
+          <span class="chevron">{{ showPhones() ? '▼' : '▶' }}</span>
+          <h2>Phone Numbers</h2>
+        </button>
 
         @if (showPhones()) {
-          @if (phones.length === 0) {
-            <p class="empty-message">No phone numbers added. Click "Add Phone" to add one.</p>
-          } @else {
-          @for (phoneGroup of phones.controls; track $index) {
+          <div class="collapsible-content">
+            @if (phones.length < 5) {
+              <button type="button" (click)="addPhone()" class="add-button">+ Add Phone</button>
+            }
+            @if (phones.length === 0) {
+              <p class="empty-message">No phone numbers added. Click "Add Phone" to add one.</p>
+            } @else {
+              @for (phoneGroup of phones.controls; track $index) {
             <div class="item-card" [formGroup]="phoneGroup">
               <div class="item-header">
                 <h3>Phone {{ $index + 1 }}</h3>
@@ -255,31 +254,31 @@
                 </div>
               </div>
             </div>
-          }
-          }
+              }
+            }
+          </div>
         }
       </div>
 
       <div class="form-section">
-        <div class="section-header">
-          <button 
-            type="button"
-            class="collapsible-header" 
-            (click)="toggleAddresses()"
-            [class.active]="showAddresses()">
-            <span class="chevron">{{ showAddresses() ? '▼' : '▶' }}</span>
-            <h2>Addresses</h2>
-          </button>
-          @if (addresses.length < 5 && showAddresses()) {
-            <button type="button" (click)="addAddress()" class="add-button">+ Add Address</button>
-          }
-        </div>
+        <button 
+          type="button"
+          class="collapsible-header" 
+          (click)="toggleAddresses()"
+          [class.active]="showAddresses()">
+          <span class="chevron">{{ showAddresses() ? '▼' : '▶' }}</span>
+          <h2>Addresses</h2>
+        </button>
 
         @if (showAddresses()) {
-          @if (addresses.length === 0) {
-            <p class="empty-message">No addresses added. Click "Add Address" to add one.</p>
-          } @else {
-            @for (addressGroup of addresses.controls; track $index) {
+          <div class="collapsible-content">
+            @if (addresses.length < 5) {
+              <button type="button" (click)="addAddress()" class="add-button">+ Add Address</button>
+            }
+            @if (addresses.length === 0) {
+              <p class="empty-message">No addresses added. Click "Add Address" to add one.</p>
+            } @else {
+              @for (addressGroup of addresses.controls; track $index) {
             <div class="item-card" [formGroup]="addressGroup">
               <div class="item-header">
                 <h3>Address {{ $index + 1 }}</h3>
@@ -393,8 +392,9 @@
                 </div>
               </div>
             </div>
+              }
             }
-          }
+          </div>
         }
       </div>
 

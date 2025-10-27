@@ -186,13 +186,41 @@
   padding: 2rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.collapsible-header {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  transition: opacity 0.2s ease;
+  margin-bottom: 0;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  .chevron {
+    font-size: 0.875rem;
+    color: #6b7280;
+    transition: transform 0.2s ease;
+  }
 
   h2 {
     color: #1f2937;
-    margin: 0 0 1.5rem 0;
+    margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
   }
+}
+
+.collapsible-content {
+  margin-top: 1.5rem;
 }
 
 .section-header {
@@ -216,16 +244,15 @@
   font-weight: 500;
   font-size: 0.875rem;
   transition: all 0.2s ease;
+  margin-bottom: 1rem;
 
   &:hover {
     background: #5a67d8;
-    transform: translateY(-1px);
   }
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
   }
 }
 

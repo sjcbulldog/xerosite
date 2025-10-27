@@ -156,6 +156,19 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    // If changing from admin to non-admin, check if this is the last admin
+    if (user.state === UserState.ADMIN && state !== UserState.ADMIN) {
+      const adminCount = await this.userRepository.count({
+        where: { state: UserState.ADMIN },
+      });
+      
+      if (adminCount <= 1) {
+        throw new BadRequestException(
+          'Cannot change the last administrator account. There must be at least one administrator.',
+        );
+      }
+    }
+
     user.state = state;
     await this.userRepository.save(user);
 
