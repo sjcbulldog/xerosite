@@ -12,29 +12,54 @@
             <p class="team-number">Team #{{ team()?.teamNumber }}</p>
           </div>
           <div class="header-actions">
-            @if (isTeamAdmin()) {
-              <button (click)="openRoleEditor()" class="edit-roles-button">
-                Edit Team Roles
-              </button>
-              <button (click)="openConstraintsEditor()" class="edit-constraints-button">
-                Edit Role Constraints
-              </button>
-              <button (click)="openImportDialog()" class="import-roster-button">
-                Import Roster
-              </button>
-              <button (click)="openInviteDialog()" class="invite-button">
-                Invite Member
-              </button>
-            }
             <span class="visibility-badge {{ team()?.visibility }}">
               {{ team()?.visibility | titlecase }}
             </span>
+            @if (isTeamAdmin()) {
+              <div class="admin-menu-container">
+                <button (click)="toggleAdminMenu()" class="hamburger-button" [class.active]="showAdminMenu()">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </svg>
+                </button>
+                @if (showAdminMenu()) {
+                  <div class="admin-menu-dropdown">
+                    <button (click)="openDescriptionEditor()" class="menu-item">
+                      <span class="menu-icon">📝</span>
+                      Edit Team Information
+                    </button>                    
+                    <button (click)="openRoleEditor()" class="menu-item">
+                      <span class="menu-icon">🎭</span>
+                      Edit Team Roles
+                    </button>
+                    <button (click)="openConstraintsEditor()" class="menu-item">
+                      <span class="menu-icon">⚖️</span>
+                      Edit Role Constraints
+                    </button>
+                    <button (click)="openInviteDialog()" class="menu-item">
+                      <span class="menu-icon">✉️</span>
+                      Invite Member
+                    </button>                    
+                    <button (click)="openImportDialog()" class="menu-item">
+                      <span class="menu-icon">📋</span>
+                      Import Roster
+                    </button>
+                  </div>
+                }
+              </div>
+            }
           </div>
         </div>
         
-        @if (team()?.description) {
-          <p class="team-description">{{ team()?.description }}</p>
-        }
+        <div class="team-description-section">
+          @if (team()?.description) {
+            <p class="team-description">{{ team()?.description }}</p>
+          } @else if (isTeamAdmin()) {
+            <p class="team-description empty">No description set</p>
+          }
+        </div>
 
         <div class="team-stats">
           <div class="stat">
@@ -180,38 +205,33 @@
       </div>
 
       <!-- Subteams Section -->
-      @if (isTeamAdmin()) {
-        <div class="members-section">
-          <div class="section-header" (click)="toggleSubteamsSection()">
-            <h2>
-              Subteams
-              @if (showSubteamsSection()) {
-                <span class="collapse-icon">▼</span>
-              } @else {
-                <span class="collapse-icon">▶</span>
-              }
-            </h2>
-            @if (isLoadingSubteams()) {
-              <span class="loading-indicator">Loading...</span>
-            }
-          </div>
+      <div class="members-section">
+        <div class="subteams-header-wrapper">
+          <button class="section-header" (click)="toggleSubteamsSection()">
+            <span class="chevron">{{ showSubteamsSection() ? '▼' : '▶' }}</span>
+            <h2>Subteams</h2>
+          </button>
+          @if (isTeamAdmin()) {
+            <button (click)="openCreateSubteamDialog()" class="create-subteam-button">
+              <span class="plus-icon">+</span> Create Subteam
+            </button>
+          }
+          @if (isLoadingSubteams()) {
+            <span class="loading-indicator">Loading...</span>
+          }
+        </div>
 
-          @if (showSubteamsSection()) {
-            <div class="members-list">
-              <div class="subteams-header">
-                <button (click)="openCreateSubteamDialog()" class="create-subteam-button">
-                  + Create Subteam
-                </button>
-              </div>
-
-              @if (subteams().length === 0) {
-                <p class="no-subteams">No subteams created yet. Click "Create Subteam" to get started.</p>
-              } @else {
-                <div class="subteams-grid">
-                  @for (subteam of subteams(); track subteam.id) {
-                    <div class="subteam-card">
-                      <div class="subteam-header">
-                        <h3>{{ subteam.name }}</h3>
+        @if (showSubteamsSection()) {
+          <div class="members-list">
+            @if (subteams().length === 0) {
+              <p class="no-subteams">No subteams created yet.@if (isTeamAdmin()) { Click "Create Subteam" to get started.}</p>
+            } @else {
+              <div class="subteams-grid">
+                @for (subteam of subteams(); track subteam.id) {
+                  <div class="subteam-card">
+                    <div class="subteam-header">
+                      <h3>{{ subteam.name }}</h3>
+                      @if (isTeamAdmin()) {
                         <div class="subteam-actions">
                           <button 
                             class="action-button edit"
@@ -232,9 +252,10 @@
                             🗑
                           </button>
                         </div>
-                      </div>
+                      }
+                    </div>
 
-                      @if (subteam.description) {
+                    @if (subteam.description) {
                         <p class="subteam-description">{{ subteam.description }}</p>
                       }
 
@@ -279,7 +300,6 @@
             </div>
           }
         </div>
-      }
     </main>
   } @else {
     <div class="loading-container">
@@ -359,6 +379,66 @@
             (click)="saveRoles()"
             [disabled]="isSavingRoles()">
             {{ isSavingRoles() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showDescriptionEditor()) {
+  <div class="dialog-overlay" (click)="closeDescriptionEditor()">
+    <div class="dialog-content description-editor" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Edit Team Description</h2>
+        <button class="close-button" (click)="closeDescriptionEditor()">×</button>
+      </div>
+
+      <div class="description-editor-content">
+        <p class="editor-description">
+          Update the description and visibility for {{ team()?.name }}.
+        </p>
+
+        <div class="form-group">
+          <label for="teamDescription">Description</label>
+          <textarea 
+            id="teamDescription"
+            [(ngModel)]="editingDescription"
+            rows="6"
+            placeholder="Enter a description for your team"
+            [disabled]="isSavingDescription()">
+          </textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="teamVisibility">Team Visibility</label>
+          <select 
+            id="teamVisibility"
+            [(ngModel)]="editingVisibility"
+            [disabled]="isSavingDescription()">
+            <option value="public">Public - Anyone can request to join</option>
+            <option value="private">Private - Only invited members can join</option>
+          </select>
+        </div>
+
+        @if (descriptionEditorError()) {
+          <div class="alert-error">
+            {{ descriptionEditorError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeDescriptionEditor()"
+            [disabled]="isSavingDescription()">
+            Cancel
+          </button>
+          <button 
+            class="save-button"
+            (click)="saveDescription()"
+            [disabled]="isSavingDescription()">
+            {{ isSavingDescription() ? 'Saving...' : 'Save Changes' }}
           </button>
         </div>
       </div>

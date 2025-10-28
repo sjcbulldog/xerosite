@@ -1,6 +1,7 @@
 Open Questions
 --------------
 - How to tie students to their parents
+- How to store per user per team specific fields (e.g. gender, birthday, etc.)
 
 Login
 =====
@@ -14,19 +15,16 @@ Registrations
 - Email verification before added to site                                                       X
 - Password strength indicator                                                                   X
 
-Users
-=====
-- Birthday
-- Grade: 8, 9, 10, 11, 12
-- Gender: Male, Female, Other
-- Dietary Concerns: 
-
-
 Dashboard
 =========
 - Highlight teams where the user is an admin differently.                                       X
 - Provide ability for admin to make other users admin, active, or disabled.                     X
 - Create new teams (public or private)                                                          X
+- In all users list, provide a filter that matches names and emails
+
+Team Dashboard
+==============
+- Display subteams for non-admins                                                               X
 
 Profile
 ==============
@@ -49,15 +47,16 @@ Teams
   o Progress bar timed to 30 seconds                                                            X
   o Active vs Pending user create                                                               X
   o Split email addresses at semicolons and add as different emails                             X
+- Create an edit description/public/private dialog                                              X
 
 Add subteams
 ============
-- Subteam Name, Members, Student Leads, Mentor Leads, Description
-- A person can belong to multiple subteams
-- A subteam can have multiple student leads
-- A subteam can have multiple lead mentors
+- Subteam Name, Members, Student Leads, Mentor Leads, Description                               X
+- A person can belong to multiple subteams                                                      X
+- A subteam can have multiple student leads                                                     X
+- A subteam can have multiple lead mentors                                                      X
 
-Add calendar
+Calendar
 ============
 - Calendar view
 - Select attendees based on entire team, roles, subteams, or individuals
@@ -67,11 +66,20 @@ Add calendar
 - Email and Text reminders to users based on user preferences (what type, how often, lead time)
 - Subscriptions: RFC 5545 (iCalendar), RFC 4791 (CalDAV), RFC 3744 (ACL), RFC 6578 (WebDAV Sync)
 
-
 Send Email
 ==========
 - Select based on entire team, roles, subteams, or individuals
 - Detect bounced email an alert team administrators
+
+Users
+=====
+- Birthday
+- Grade: 8, 9, 10, 11, 12
+- Gender: Male, Female, Other
+- Dietary Concerns: 
+
+Real Time Chat
+==============
 
 IOS App
 =======

@@ -3,6 +3,7 @@ import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
 import { TitleCasePipe, DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { TeamsService, TeamInvitation } from './teams.service';
 import { UsersService, UserProfile } from '../profile/users.service';
 
@@ -24,7 +25,7 @@ interface CreateTeamForm {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule],
+  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -77,14 +78,28 @@ export class DashboardComponent implements OnInit {
   // User sorting signals
   protected readonly userSortField = signal<SortField>('firstName');
   protected readonly userSortDirection = signal<SortDirection>('asc');
+  protected readonly userSearchFilter = signal<string>('');
+  
+  // Public teams filter signal
+  protected readonly publicTeamsSearchFilter = signal<string>('');
   
   // Computed signal for sorted users
   protected readonly sortedUsers = computed(() => {
     const users = [...this.allUsers()];
     const field = this.userSortField();
     const direction = this.userSortDirection();
+    const searchText = this.userSearchFilter().toLowerCase();
     
-    users.sort((a, b) => {
+    // Filter users based on search text
+    const filteredUsers = searchText === '' 
+      ? users
+      : users.filter(u => 
+          u.firstName.toLowerCase().includes(searchText) ||
+          u.lastName.toLowerCase().includes(searchText) ||
+          u.primaryEmail.toLowerCase().includes(searchText)
+        );
+    
+    filteredUsers.sort((a, b) => {
       let aValue: string;
       let bValue: string;
       
@@ -104,7 +119,23 @@ export class DashboardComponent implements OnInit {
       return 0;
     });
     
-    return users;
+    return filteredUsers;
+  });
+  
+  // Computed signal for filtered public teams
+  protected readonly filteredPublicTeams = computed(() => {
+    const teams = this.teamsService.publicTeams();
+    const searchText = this.publicTeamsSearchFilter().toLowerCase();
+    
+    if (searchText === '') {
+      return teams;
+    }
+    
+    return teams.filter(t => 
+      t.name.toLowerCase().includes(searchText) ||
+      t.teamNumber.toString().includes(searchText) ||
+      (t.description && t.description.toLowerCase().includes(searchText))
+    );
   });
   
   // Invitation signals
@@ -132,6 +163,7 @@ export class DashboardComponent implements OnInit {
       await this.loadAllUsers();
     }
     await this.checkPendingInvitations();
+    await this.loadPublicTeamsInitial();
   }
 
   protected isAdmin(): boolean {
@@ -171,6 +203,17 @@ export class DashboardComponent implements OnInit {
       console.error('Error loading teams:', error);
     } finally {
       this.isLoadingTeams.set(false);
+    }
+  }
+
+  private async loadPublicTeamsInitial(): Promise<void> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    try {
+      await this.teamsService.loadPublicTeams(userId);
+    } catch (error) {
+      console.error('Error loading public teams:', error);
     }
   }
 

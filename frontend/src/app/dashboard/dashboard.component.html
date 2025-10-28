@@ -111,6 +111,13 @@
         
         @if (showAllUsers()) {
           <div class="collapsible-content">
+            <input 
+              type="text"
+              [(ngModel)]="userSearchFilter"
+              placeholder="Search users..."
+              class="user-search-input"
+            />
+            
             @if (isLoadingUsers()) {
               <p class="loading-message">Loading users...</p>
             } @else if (allUsers().length === 0) {
@@ -168,43 +175,43 @@
       </div>
     }
 
-    <div class="dashboard-card">
-      <button 
-        class="collapsible-header" 
-        (click)="togglePendingTeams()"
-        [class.active]="showPendingTeams()">
-        <span class="chevron">{{ showPendingTeams() ? '▼' : '▶' }}</span>
-        <h2>Pending Team Requests</h2>
-      </button>
-      
-      @if (showPendingTeams()) {
-        <div class="collapsible-content">
-          @if (isLoadingPendingTeams()) {
-            <p class="loading-message">Loading pending requests...</p>
-          } @else if (teamsService.pendingTeams().length === 0) {
-            <p class="empty-message">No pending team requests.</p>
-          } @else {
-            <div class="teams-grid">
-              @for (team of teamsService.pendingTeams(); track team.id) {
-                <div class="team-card pending">
-                  <div class="team-card-header">
-                    <h3>{{ team.name }}</h3>
-                    <span class="status-badge pending">Pending Approval</span>
+    @if (teamsService.pendingTeams().length > 0) {
+      <div class="dashboard-card">
+        <button 
+          class="collapsible-header" 
+          (click)="togglePendingTeams()"
+          [class.active]="showPendingTeams()">
+          <span class="chevron">{{ showPendingTeams() ? '▼' : '▶' }}</span>
+          <h2>Pending Team Requests</h2>
+        </button>
+        
+        @if (showPendingTeams()) {
+          <div class="collapsible-content">
+            @if (isLoadingPendingTeams()) {
+              <p class="loading-message">Loading pending requests...</p>
+            } @else {
+              <div class="teams-grid">
+                @for (team of teamsService.pendingTeams(); track team.id) {
+                  <div class="team-card pending">
+                    <div class="team-card-header">
+                      <h3>{{ team.name }}</h3>
+                      <span class="status-badge pending">Pending Approval</span>
+                    </div>
+                    @if (team.description) {
+                      <p class="team-description">{{ team.description }}</p>
+                    }
+                    <div class="team-meta">
+                      <span class="member-count">{{ team.memberCount || 0 }} member{{ (team.memberCount || 0) === 1 ? '' : 's' }}</span>
+                    </div>
+                    <p class="pending-info">Your request to join this team is awaiting approval from a team administrator.</p>
                   </div>
-                  @if (team.description) {
-                    <p class="team-description">{{ team.description }}</p>
-                  }
-                  <div class="team-meta">
-                    <span class="member-count">{{ team.memberCount || 0 }} member{{ (team.memberCount || 0) === 1 ? '' : 's' }}</span>
-                  </div>
-                  <p class="pending-info">Your request to join this team is awaiting approval from a team administrator.</p>
-                </div>
-              }
-            </div>
-          }
-        </div>
-      }
-    </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
 
     <div class="dashboard-card">
       <button 
@@ -212,21 +219,32 @@
         (click)="togglePublicTeams()"
         [class.active]="showPublicTeams()">
         <span class="chevron">{{ showPublicTeams() ? '▼' : '▶' }}</span>
-        <h2>Available Public Teams</h2>
+        <h2>Available Public Teams ({{ teamsService.publicTeams().length }})</h2>
       </button>
       
       @if (showPublicTeams()) {
         <div class="collapsible-content">
+          <input 
+            type="text"
+            [(ngModel)]="publicTeamsSearchFilter"
+            placeholder="Search teams by name, number, or description..."
+            class="team-search-input"
+          />
+          
           @if (isLoadingPublicTeams()) {
             <p class="loading-message">Loading public teams...</p>
-          } @else if (teamsService.publicTeams().length === 0) {
-            <p class="empty-message">No public teams available to join.</p>
+          } @else if (filteredPublicTeams().length === 0) {
+            @if (publicTeamsSearchFilter() === '') {
+              <p class="empty-message">No public teams available to join.</p>
+            } @else {
+              <p class="empty-message">No teams match your search.</p>
+            }
           } @else {
             <div class="teams-grid">
-              @for (team of teamsService.publicTeams(); track team.id) {
+              @for (team of filteredPublicTeams(); track team.id) {
                 <div class="team-card public">
                   <div class="team-card-header">
-                    <h3>{{ team.name }}</h3>
+                    <h3>{{ team.name }} <span class="team-number-badge">#{{ team.teamNumber }}</span></h3>
                   </div>
                   @if (team.description) {
                     <p class="team-description">{{ team.description }}</p>

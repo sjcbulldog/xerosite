@@ -232,7 +232,7 @@ export class TeamsService {
     }
   }
 
-  async updateTeam(teamId: string, updateData: { roles?: string[], roleConstraints?: string }): Promise<Team> {
+  async updateTeam(teamId: string, updateData: { roles?: string[], roleConstraints?: string, description?: string, visibility?: 'public' | 'private' }): Promise<Team> {
     try {
       return await firstValueFrom(
         this.http.patch<Team>(`${this.apiUrl}/${teamId}`, updateData)

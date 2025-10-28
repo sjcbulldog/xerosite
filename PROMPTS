@@ -1,0 +1,182 @@
+Prompts
+=======
+Create the .env file needed for the server
+
+Update the dashboard to have the 'My Teams' collaspable but expanded to start.
+
+Change the title of the site to 'FRC Teams' and find a free to use robot icon to use as the icon beside the title.
+
+Change the favicon that is used in the browwser tab to be the same robot used in the title.
+
+If the user is a site admin (user state is admin), then add a collaspable table after 'My Teams' that lists all users in the site and provides the ability to click a user to get to a profile update page.  The profile update page already exists, but if it is being invoked by the admin, please add the ability to change the user to state active, admin, or disabled.
+
+There is an all users section but no users are displayed.  I know there are users in the database.
+
+The message was 'Error loading users:', and 'Unexpected token '<', "<!doctype "... is not valid JSON'.
+
+In the user profile, make the Email Addresses, Phone Numbers, and Addresses sections collaspable.
+
+I don;t like the collapsable sections in the user profile.  Make them look and act like the collapsable sections in the main dashboard.
+
+When changing users from adminstrator to active, do not allow the last adminstrator account to be changed to active.  There should always be at least one adminstrative.
+
+In the Team dashboard add a button in the top most card that is 'Edit Roles'.  Provide a user interface that popup up over the Team dashboard, that allows the user to add or remove roles for the team.  The 'admin' role should not be removable.  The roles editor and roles encoding in the database should allow some roles to be mutually exclusive and even some roles to be mutually exclusive as a group.  For instance, a 'Student' cannot be either a 'Mentor' nor a 'Parent'.  The UI should provide the ability to specify these exclusions.
+
+The existing roles from the roles column in the team database are not listed in the roles editor as the current state.
+
+If the user has the admin role for a given team, the list of team members should include the ability to add or remove roles from that member for that team.  The team member may have multiple roles so that UI needs to accomodate multiple roles per team members.
+
+There are errors in the build
+
+In the roles editor for a team, remove the Mutually Exclusive Roles and Exclusion Groups and the Roles can be removed sections.
+
+Change the 'admin' role for a team member to 'Adminstrator' but keep the special meaning that the 'admin' role currently has.  Also, be sure the team roles for a team always contains 'Adminstrator'.
+
+Change the 'admin' role for a team member to 'Adminstrator' but keep the special meaning that the 'admin' role currently has.  Also, be sure when list team members with their roles to be edited, that the Adminstrator role is included.
+
+The row of buttons to set roles for a team member on a team, the Adminstrator button is not present.
+
+Remove the team role repository and just use the roles field in the team database to store roles for a given team.
+
+This file is still referenceing the teamRoleRepository.
+
+Create a string column in the teams database that are roleconstraints.  This column will hold a comma separated list of colon seperated role pairs that both cannot be active at the same time.  In team members list in the frontend, if a role is selected in either side of a constraint pair, the if the other side of this contraint pair is deselected.
+
+In the team dashboard, under team members, when editing roles, the first role height is smaller than the others.  Be sure all of the roles are the same height.
+
+In the team dashboard, under team members, when editing roles, the first role height (Adminstrator) is smaller than the others.  Be sure all of the roles are the same height.
+
+On the dashboard, replace the user's initials in the upper right corner with an icon that indicates a menu.
+
+Add a team role editor that allows a adminstrator for a team to add and remove roles for a given team.  Note, the Administrator role should be shown, but should not be allowed to be deleted.
+
+When adding new teams, to not allow teams to be created with duplicate team numbers.
+
+Add a button to the team dashboard for administrators that pops up a box to enter an email.  This should send an email to the user with an invitation to join the associated team and a link to the main login page.  These invitations to specific teams should be managed per email address.  When that user logins into the system, they should get a popup indicating they a have been added to the specific team and are waiting on team administrator approval.
+
+When inviting a new team member, I got the error 'Cannot POST /api/teams/326f9de1-8b14-4eff-bf3d-6c12bbed0e32/invitations'.
+
+When trying to invite a new member to a team, I am still getting an error, Cannot POST /api/teams/326f9de1-8b14-4eff-bf3d-6c12bbed0e32/invitations.
+
+If I am at the main dashboard page and I refresh the HTML page in the browser, it loses all data for the page.
+
+The last change did not fix the problem.  The application now shows the dashboard with no data for a few seconds and then jumps to the login screen.
+
+This did not fix the issue.  Now when the screen is refreshed, it jumps right to the login screen.
+
+The last change partially fixed the problem.  The teams under My Teams are there, but the User Information section is still blank.
+
+This almost fixed the problem.  Currenly, on the email address under the User Information disappears and is not restored.
+
+In the team dashboard, for team administrators, add a button next to the Edit Roles button add a button which is Edit Constraints.  This should be a popup that lists existing role contraints and allows for role constraints to be removed or added.  When adding constraints it should be done as pairs of roles.  There should be a help icon somewhere on this page that when you hover over the icon you get the text 'This establishes pairs of team roles that a member cannot have at the same time.'.
+
+After editing constraints and pressing Save Changes, I get this error message 'constraints.0.property role1 should not exist,constraints.0.property role2 should not exist,constraints.1.property role1 should not exist,constraints.1.property role2 should not exist,constraints.2.property role1 should not exist,constraints.2.property role2 should not exist'
+
+When the team role Administrator is being turned off and if this is the last user what that role, disallow this operation and tell the user why.
+
+On the team dashbaord, if the user is an adminstrator, add a button that is import roster.  This button should bring up a popup that has a field for a csv file on the local machine.  There should be a browse button and a region clearly labeled for drag and drop. There should also be a field that indicates if the new users should be added as pending or active.  From the CSV file the import should process the colums labeled First, Last, Address, City, State, Zip, Email, and Phone Number.
+
+When importing members to a team, I get errors messages, 'members.0.property first should not exist,members.0.property last should not exist,members.0.property email should not exist,members.0.property address should not exist,members.0.property city should not exist,members.0.property state should not exist,members.0.property zip should not exist,members.0.property phoneNumber should not exist,members.1.property first should not exist,members.1.property last should not exist,members.1.property email should not exist,members.1.property address should not exist,members.1.property city should not exist,members.1.property state should not exist,members.1.property zip should not exist,members.1.property phoneNumber should not exist,members.2.property first should not exist,members.2.property last should not exist,members.2.property email should not exist,members.2.property address should not exist,members.2.property city should not exist,members.2.property state should not exist,members.2.property zip should not exist,members.2.property phoneNumber should not exist,members.3.property first should not exist,members.3.property last should not exist,members.3.property email should not exist,members.3.property address should not exist,members.3.property city should not exist,members.3.property state should not'.
+
+To be sure the implementation is a expected, when importing team members from a csv file, if the email is already assocaited with a user, that user is invited to the team just like a private invite and an email is sent to the user telling them they have an invite..  If the email is not associated with a user, then the user is added to the system, and the pending email for the user is sent to be added to the site.  In this case, the user should also have an invite for the team like a private invite so that when they log into the system they get asked about their invite.
+
+Update the outgoing email agent so that if EMAIL_DONT_SEND is true in the .env file, the email agent does not try to send email, but rather prints a message in the console about 'It would have sent an email to address X', where X is the target email address.
+
+When importing a roster from a csv file, I get the error 'property defaultStatus should not exist'
+
+There is a build error
+
+When importing a roster, add a field near the pending, active choice that allow for a default password for all imported users.
+
+While importing from a CSV file, provide a progress bar indicaing progress while importing.
+
+When importing roster via CSV file, if the phone number has a semicolon, split the string based on the semicolon and add multiple phone numbers.
+
+When importing a roster via a CSV file, if the value is set to Active in the import form, the new users are still created as pending.  The new users should be created as active if the active button is selected.
+
+When importing users the pending versus active selection should be assocaited with create new user accounts and not assocaited with binding users that exist to the team.  Please update accordingly as the new users that are all created are all in the pending state.
+
+The users that are added to the site as part of importing a roster via CSV are all still pending.  When importing, if the Active button is checked, the state field of the user database needs to be active.
+
+The timed progress bar for importing CSV roster should be timed to about 30 seconds.
+
+When a user is registering, require the password to be at least 8 characters long, contain an upper case letter, a lower case letter, a symbol and a number.   For each of these four requirements display each with a red X in a smaller font and when the requirement is met, change it to a green check.
+
+The last change broke the registration screen.  There is an error 'Cannot read properties of undefined (reading 'set').
+
+The last change did not fix the issue.  Still getting error 'TypeError: Cannot read properties of undefined (reading 'set')'.
+
+The percentage that is displayed while importing a csv roster should be fixed point with zero places after the decimal.
+
+The import is still not working right.  The new accounts that are created are created with the active button selected in the import dialog are all still created with the user state field in the database set to pending.  It should be set to active.
+
+This issue is not about the team membership status but about the user being added to the user database to be a member of the site.  THIS IS NOT ABOUT TEAM MEMBERSHIP state.
+
+The state field needs to be added to the RegisterUserDto class as an optional member as it is being used by the import roster field.
+
+On the login screen, add a forgetting password link.  This link should prompt for the email address assocaited with an account and send an email to that account with a link that can be used to reset the password.  The reset password form should have the same password requirements display as the registration form.
+
+When using the forgot password feature, I got the error 'Cannot POST /api/auth/forgot-password'.
+
+When importing email address from a CSV file, if there is a semicolon in the string, split the string at the semicolons and treat each segment as a different email address.
+
+When displaying users in the dash board of site adminstrators, the names should be sortable by name, last name, or email address.
+
+Add a new menu item to the menu in the upper right that is Change Password.  This should display a popup that allows the user to change their password by entering their old password and their new password twice.  The new password should use the same password restrictions and UI as in the registration form.
+
+Add a new concept called subteams.  Subteams are per team and different teams will each have their own subteams. The administrator for a team should be able to create and delete subteams.  Users belong to subteams and the subteam should have a list of user team roles that are valid for the subteam.  A single user can belong to multiple subteams. Each subteam should have leads. The creator of the subteam should be able to add any number of lead positions.  For each lead position there is a title and the team role a user must have to fulfill that lead roll. When a subteam is created, there should be a way to create the lead positions and specify that roles that are valid for that subteam.  There should also be an edit subteam function available to the team administrators that can be used to set the users in the lead roles as well as assign any user that belongs to the team to that subteam.  There should also be an edit function for subteam leads that can be used to add and remove people from a subteam.
+
+The nest server crashes at startup
+
+The popup form for creating a new subteam looks really bad and needs to be improved visually.
+
+When creating a new subteam, but backend crashed with the following stack 'query failed: INSERT INTO `subteams`(`id`, `name`, `description`, `team_id`, `valid_roles`, `created_by`, `created_at`, `updated_at`) VALUES (?, ?, DEFAULT, ?, ?, DEFAULT, DEFAULT, DEFAULT) -- PARAMETERS: ["d7f6b45a-517a-47d4-827a-32dab07c8b11","Software","c6271219-c578-440e-a46b-bec00595e7ae","Mentor,Student"]
+
+Adding a subteam is continuing to fail.  The error is 'query failed: INSERT INTO `subteams`(`id`, `name`, `description`, `team_id`, `valid_roles`, `created_by`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?, DEFAULT, DEFAULT, DEFAULT) -- PARAMETERS: ["556a3be1-76e2-4e0f-844d-81585fa60501","Software",null,"c6271219-c578-440e-a46b-bec00595e7ae","Mentor,Student"]
+
+The Manage Members dialog is not very good and needs to be improved visually.
+
+In the subteam Manage Members dialog box, add a drop down in the Add Members section that filters the users listed by team role.
+
+On a users's dashboard, only who the Pending Team Requests section if there are pending team requests.
+
+On the team dashboard, if the user is a team administrator, there should be a Edit Description button that allows the user to change the description of the team.
+
+On the team dashboard for the administrator, there are five buttons.  I would like a single hamburger button to the right of the Public/Private label that triggers a menu with the buttons moved to the menu.  The five buttons would be 'Edit Team Roles', 'Edit Role Constraints', 'Import Roster', 'Invite Member', and 'Edit Description'.
+
+On the form that allows an administrator to edit the team description, add the ability to change the team between public and private.
+
+On the team dashboard for non-administrators, the subteams should be displayed but there should be no ability to edit or delete them.
+
+There are errors building the front end, please fix.
+
+On the team display for administrators, the Create Subteam button should be at the same level as the Subteams collaspable label and not within it.  Position this like the Create Team button on in the My Teams section of the main dashboard.
+
+In the All Users list on the main dashboard, there should be a text field to the right of the All Users label.  When text is typed into that text field, the list of users should be filtered based on that text being in the first name, last name, or email.
+
+The position of the newly creates 'Search Users' text field is misplaced.  While it is right of the All Users label, it is out of the card.  I would like it to be below the All Users label and above the users table so that when that collaspable selection is closed it is not visiable.  It should span with width of the table below it.
+
+On the main dashbaord, the Available Public Teams label should show the number in parenthesis.  Also, there should be a text field that is displayed when this collaspable section is expanded that can be used to filter teams baed on term name, number, or description.
+
+On the main dashboard, the Available Teams, the team number should be displayed.
+
+On the main dashboard, the Available Public Teams count is zero until the collaspable is opened.  It should reflect the right count all the time.
+
+In Progress
+===========
+
+
+Pending
+=======
+On the team dashboard, the Subteams display differs from the Team Members display.  I would like the Subteams display to be like the Team Members in that it should be its own card, with individual subteams as smaller cards within the 
+subteam card.
+
+When a subteam card is clicked, it should popup a subteam display page that shows the subteam name and description, the leads, and all of the members in different sections based on roles.
+
+On the All Users section on the main dashboard, chagne the View Profile button to the hamburger button for a menu.  The menu items should be the existing View Profile and a new item that is Change Password, that allows a user with user state administrator to change any user's password.
+
+Create a calendar where events are per team.  Each event should have a time, date, location, short name, and description.  Each event can be a one time event, or can be recurring with a recurrance pattern.  The recurrance should enable daily, weekly with multiple days in a week, monthly, with specific days of the month, or patterns like the first tuesday or last thursday.  Each event should have a visibility field that can be tied to user role on a team, or subteam membership, or subteam lead users.  On the team dashboard form, there should be a collapsable section that contains the calendar that is viewable at a daily, weekly, monthly, or yearly granularity. Within this UI for the calendar, there should be a control to select the view (Day, Month, Week, Year) and a button to add a new event.
+
+--- ADD MESSAGE SENDING PROMPT HERE
+
+Add the concept of per user per team permissions allowing the permissions for certain operations to be controlled per user per team.  Initially there will be permissions for sending message (messages) or for scheduling calendar events (events).  Both the sending message and the calendar events features are not in place yet, so this should just be general permissions infrastructure.  There should be a 

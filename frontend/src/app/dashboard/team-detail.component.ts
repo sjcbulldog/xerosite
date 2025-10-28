@@ -57,6 +57,16 @@ export class TeamDetailComponent implements OnInit {
   protected readonly isSavingConstraints = signal(false);
   protected readonly constraintsEditorError = signal<string | null>(null);
   
+  // Description editor signals
+  protected readonly showDescriptionEditor = signal(false);
+  protected readonly editingDescription = signal('');
+  protected readonly editingVisibility = signal<'public' | 'private'>('private');
+  protected readonly isSavingDescription = signal(false);
+  protected readonly descriptionEditorError = signal<string | null>(null);
+  
+  // Admin menu signals
+  protected readonly showAdminMenu = signal(false);
+  
   // Import roster signals
   protected readonly showImportDialog = signal(false);
   protected readonly importFile = signal<File | null>(null);
@@ -184,6 +194,14 @@ export class TeamDetailComponent implements OnInit {
 
   protected goBack(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  protected toggleAdminMenu(): void {
+    this.showAdminMenu.set(!this.showAdminMenu());
+  }
+
+  protected closeAdminMenu(): void {
+    this.showAdminMenu.set(false);
   }
 
   protected async approveMember(userId: string): Promise<void> {
@@ -356,6 +374,7 @@ export class TeamDetailComponent implements OnInit {
 
   // Role Editor Methods
   protected openRoleEditor(): void {
+    this.closeAdminMenu();
     this.editingRoles.set([...this.teamRoles()]);
     this.newRoleName.set('');
     this.roleEditorError.set(null);
@@ -451,6 +470,7 @@ export class TeamDetailComponent implements OnInit {
   }
 
   protected openInviteDialog(): void {
+    this.closeAdminMenu();
     this.inviteEmail.set('');
     this.invitationError.set(null);
     this.showInviteDialog.set(true);
@@ -499,6 +519,7 @@ export class TeamDetailComponent implements OnInit {
 
   // Constraints Editor Methods
   protected async openConstraintsEditor(): Promise<void> {
+    this.closeAdminMenu();
     const teamId = this.team()?.id;
     if (!teamId) return;
 
@@ -577,8 +598,54 @@ export class TeamDetailComponent implements OnInit {
     }
   }
 
+  // Description Editor Methods
+  protected openDescriptionEditor(): void {
+    this.closeAdminMenu();
+    const currentDescription = this.team()?.description || '';
+    const currentVisibility = this.team()?.visibility || 'private';
+    this.editingDescription.set(currentDescription);
+    this.editingVisibility.set(currentVisibility);
+    this.descriptionEditorError.set(null);
+    this.showDescriptionEditor.set(true);
+  }
+
+  protected closeDescriptionEditor(): void {
+    this.showDescriptionEditor.set(false);
+    this.editingDescription.set('');
+    this.editingVisibility.set('private');
+    this.descriptionEditorError.set(null);
+  }
+
+  protected async saveDescription(): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    const description = this.editingDescription().trim();
+    const visibility = this.editingVisibility();
+
+    this.isSavingDescription.set(true);
+    this.descriptionEditorError.set(null);
+
+    try {
+      await this.teamsService.updateTeam(teamId, { description, visibility });
+      
+      // Update local team state
+      const currentTeam = this.team();
+      if (currentTeam) {
+        this.team.set({ ...currentTeam, description, visibility });
+      }
+      
+      this.closeDescriptionEditor();
+    } catch (error: any) {
+      this.descriptionEditorError.set(error.message || 'Failed to save description');
+    } finally {
+      this.isSavingDescription.set(false);
+    }
+  }
+
   // Import Roster Methods
   protected openImportDialog(): void {
+    this.closeAdminMenu();
     this.importFile.set(null);
     this.importStatus.set('pending');
     this.importDefaultPassword.set('');
