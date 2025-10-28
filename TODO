@@ -58,13 +58,13 @@ Add subteams
 
 Calendar
 ============
-- Calendar view
+- Calendar view                                                                                 X
 - Select attendees based on entire team, roles, subteams, or individuals
 - One off meetings
 - Recuring meetings
 - Send email when meeting is schedule with calendar invites.
-- Email and Text reminders to users based on user preferences (what type, how often, lead time)
-- Subscriptions: RFC 5545 (iCalendar), RFC 4791 (CalDAV), RFC 3744 (ACL), RFC 6578 (WebDAV Sync)
+- Email/Text reminders to users based on user preferences (what type, how often, lead time)
+- Subscriptions: RFC5545 (iCalendar), RFC4791 (CalDAV), RFC3744 (ACL), RFC6578 (WebDAV Sync)
 
 Send Email
 ==========

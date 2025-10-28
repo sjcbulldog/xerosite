@@ -1,0 +1,120 @@
+<div class="dialog-overlay">
+  <div class="dialog-content" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2>User Preferences</h2>
+      <button class="close-button" (click)="closeDialog()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="preferences-form">
+      @if (errorMessage()) {
+        <div class="error-banner">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Event Notifications Section -->
+      <div class="preference-section">
+        <h3>Event Notifications</h3>
+        <p class="section-description">
+          Configure when you want to be notified before team events.
+        </p>
+
+        @if (eventNotifications().length === 0) {
+          <p class="empty-state">No notification preferences set. Click "Add Notification" to create one.</p>
+        }
+
+        @for (notification of eventNotifications(); track $index) {
+          <div class="notification-item">
+            <div class="notification-controls">
+              <div class="form-group">
+                <label>Notify me</label>
+                <select 
+                  [value]="notification.timeBefore" 
+                  (change)="updateNotificationTime($index, $any($event.target).value)"
+                  class="time-select">
+                  @for (option of timeOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Via</label>
+                <div class="method-buttons">
+                  <button 
+                    type="button"
+                    [class.active]="notification.method === 'email'"
+                    (click)="updateNotificationMethod($index, 'email')"
+                    class="method-button">
+                    Email
+                  </button>
+                  <button 
+                    type="button"
+                    [class.active]="notification.method === 'text'"
+                    (click)="updateNotificationMethod($index, 'text')"
+                    class="method-button">
+                    Text
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                type="button"
+                (click)="removeNotification($index)" 
+                class="remove-button"
+                aria-label="Remove notification">
+                &times;
+              </button>
+            </div>
+          </div>
+        }
+
+        <button type="button" (click)="addNotification()" class="add-button">
+          + Add Notification
+        </button>
+      </div>
+
+      <!-- Message Delivery Section -->
+      <div class="preference-section">
+        <h3>Team Message Delivery</h3>
+        <p class="section-description">
+          Choose how you want to receive team messages.
+        </p>
+
+        <div class="form-group">
+          <label>Delivery Method</label>
+          <div class="method-buttons">
+            <button 
+              type="button"
+              [class.active]="messageDeliveryMethod() === 'email'"
+              (click)="messageDeliveryMethod.set('email')"
+              class="method-button large">
+              Email
+            </button>
+            <button 
+              type="button"
+              [class.active]="messageDeliveryMethod() === 'text'"
+              (click)="messageDeliveryMethod.set('text')"
+              class="method-button large">
+              Text Message
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="dialog-actions">
+        <button type="button" (click)="closeDialog()" class="cancel-button" [disabled]="loading()">
+          Cancel
+        </button>
+        <button type="button" (click)="savePreferences()" class="save-button" [disabled]="loading()">
+          @if (loading()) {
+            <span>Saving...</span>
+          } @else {
+            <span>Save Preferences</span>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

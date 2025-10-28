@@ -103,6 +103,16 @@
                         }
                         <div class="member-roles">
                           <span class="role-tag">{{ member.roles.join(', ') }}</span>
+                          @if (member.subteams && member.subteams.length > 0) {
+                            @for (subteam of member.subteams; track subteam) {
+                              <span class="subteam-tag">{{ subteam }}</span>
+                            }
+                          }
+                          @if (member.leadPositions && member.leadPositions.length > 0) {
+                            @for (leadPos of member.leadPositions; track $index) {
+                              <span class="lead-position-tag">{{ leadPos.subteamName }} {{ leadPos.positionTitle }}</span>
+                            }
+                          }
                         </div>
                       </div>
                       <div class="member-actions">
@@ -137,13 +147,33 @@
 
         @if (showActiveMembers()) {
           <div class="collapsible-content">
+            <div class="member-filter-container">
+              <input 
+                type="text"
+                class="member-filter-input"
+                placeholder="Filter by name or email..."
+                [(ngModel)]="memberFilter"
+                [disabled]="isLoadingMembers()"
+              />
+              @if (memberFilter()) {
+                <button 
+                  class="clear-filter-button"
+                  (click)="memberFilter.set('')"
+                  title="Clear filter">
+                  ×
+                </button>
+              }
+            </div>
+            
             @if (isLoadingMembers()) {
               <p class="loading-message">Loading members...</p>
+            } @else if (filteredActiveMembers().length === 0 && memberFilter()) {
+              <p class="empty-message">No members match "{{ memberFilter() }}"</p>
             } @else if (activeMembers().length === 0) {
               <p class="empty-message">No active members.</p>
             } @else {
               <div class="members-list">
-                @for (member of activeMembers(); track member.userId) {
+                @for (member of filteredActiveMembers(); track member.userId) {
                   <div class="member-item active" [class.disabled]="member.user?.isActive === false">
                     <div class="member-info">
                       <div class="member-name">
@@ -180,6 +210,16 @@
                         <div class="member-roles">
                           @for (role of member.roles; track role) {
                             <span class="role-tag">{{ role }}</span>
+                          }
+                          @if (member.subteams && member.subteams.length > 0) {
+                            @for (subteam of member.subteams; track subteam) {
+                              <span class="subteam-tag">{{ subteam }}</span>
+                            }
+                          }
+                          @if (member.leadPositions && member.leadPositions.length > 0) {
+                            @for (leadPos of member.leadPositions; track $index) {
+                              <span class="lead-position-tag">{{ leadPos.subteamName }} {{ leadPos.positionTitle }}</span>
+                            }
                           }
                         </div>
                       }
@@ -296,6 +336,28 @@
                 }
               </div>
             }
+          </div>
+        }
+      </div>
+
+      <!-- Calendar Section -->
+      <div class="members-card">
+        <div class="calendar-header-wrapper">
+          <button class="collapsible-header" (click)="toggleCalendarSection()" [class.active]="showCalendarSection()">
+            <span class="chevron">{{ showCalendarSection() ? '▼' : '▶' }}</span>
+            <h2>Calendar</h2>
+          </button>
+        </div>
+
+        @if (showCalendarSection()) {
+          <div class="collapsible-content">
+            <div class="calendar-wrapper">
+              <app-calendar 
+                [teamId]="team()!.id"
+                [teamRoles]="teamRoles()"
+                [isAdmin]="isTeamAdmin()">
+              </app-calendar>
+            </div>
           </div>
         }
       </div>
@@ -840,21 +902,19 @@
         </div>
 
         <div class="form-group">
-          <label>Valid Roles</label>
+          <label for="validRolesSelect">Valid Roles</label>
           <p class="field-help">Select which roles can be members of this subteam (leave empty for all roles)</p>
-          <div class="role-checkboxes">
+          <select 
+            id="validRolesSelect"
+            multiple
+            [(ngModel)]="subteamValidRoles"
+            [disabled]="isSavingSubteam()"
+            class="role-multiselect"
+            size="6">
             @for (role of teamRoles(); track role) {
-              <label class="checkbox-label">
-                <input 
-                  type="checkbox"
-                  [checked]="subteamValidRoles().includes(role)"
-                  (change)="toggleValidRole(role)"
-                  [disabled]="isSavingSubteam()"
-                />
-                {{ role }}
-              </label>
+              <option [value]="role">{{ role }}</option>
             }
-          </div>
+          </select>
         </div>
 
         <div class="form-group">
@@ -962,21 +1022,19 @@
         </div>
 
         <div class="form-group">
-          <label>Valid Roles</label>
+          <label for="editValidRolesSelect">Valid Roles</label>
           <p class="field-help">Select which roles can be members of this subteam</p>
-          <div class="role-checkboxes">
+          <select 
+            id="editValidRolesSelect"
+            multiple
+            [(ngModel)]="subteamValidRoles"
+            [disabled]="isSavingSubteam()"
+            class="role-multiselect"
+            size="6">
             @for (role of teamRoles(); track role) {
-              <label class="checkbox-label">
-                <input 
-                  type="checkbox"
-                  [checked]="subteamValidRoles().includes(role)"
-                  (change)="toggleValidRole(role)"
-                  [disabled]="isSavingSubteam()"
-                />
-                {{ role }}
-              </label>
+              <option [value]="role">{{ role }}</option>
             }
-          </div>
+          </select>
         </div>
 
         <div class="form-group">
@@ -990,6 +1048,12 @@
                   <span class="position-info">
                     <strong>{{ position.title }}</strong> ({{ position.requiredRole }})
                   </span>
+                  <button 
+                    class="remove-button"
+                    (click)="removeExistingLeadPosition(selectedSubteam()!, position.id)"
+                    [disabled]="isSavingSubteam()">
+                    Remove
+                  </button>
                 </div>
                 <div class="position-assignment">
                   <label>Assigned to:</label>
@@ -997,25 +1061,33 @@
                     [value]="position.userId || ''"
                     (change)="assignLeadPosition(selectedSubteam()!, position.id, $any($event.target).value || null)"
                     [disabled]="isSavingSubteam()">
-                    <option value="">Unassigned</option>
+                    <option value="" [selected]="!position.userId">Unassigned</option>
                     @for (member of getEligibleLeads(selectedSubteam()!, position.requiredRole); track member.userId) {
-                      <option [value]="member.userId">{{ member.user?.fullName || member.user?.firstName }} ({{ member.user?.primaryEmail }})</option>
+                      <option [value]="member.userId" [selected]="position.userId === member.userId">{{ member.user?.fullName || member.user?.firstName }} ({{ member.user?.primaryEmail }})</option>
                     }
                   </select>
                 </div>
               </div>
             }
             @for (position of subteamLeadPositions(); track $index) {
-              <div class="lead-position-item">
-                <span class="position-info">
-                  <strong>{{ position.title }}</strong> ({{ position.requiredRole }}) <em class="new-tag">New</em>
-                </span>
-                <button 
-                  class="remove-button"
-                  (click)="removeLeadPosition($index)"
-                  [disabled]="isSavingSubteam()">
-                  Remove
-                </button>
+              <div class="lead-position-item edit-mode">
+                <div class="position-header">
+                  <span class="position-info">
+                    <strong>{{ position.title }}</strong> ({{ position.requiredRole }}) <em class="new-tag">New</em>
+                  </span>
+                  <button 
+                    class="remove-button"
+                    (click)="removeLeadPosition($index)"
+                    [disabled]="isSavingSubteam()">
+                    Remove
+                  </button>
+                </div>
+                <div class="position-assignment">
+                  <label>Assigned to:</label>
+                  <select disabled>
+                    <option value="">Unassigned</option>
+                  </select>
+                </div>
               </div>
             }
             @if (selectedSubteam()!.leadPositions.length === 0 && subteamLeadPositions().length === 0) {

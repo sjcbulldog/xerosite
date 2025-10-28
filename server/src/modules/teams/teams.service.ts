@@ -4,6 +4,9 @@ import { Repository } from 'typeorm';
 import { Team } from './entities/team.entity';
 import { UserTeam } from './entities/user-team.entity';
 import { TeamInvitation } from './entities/team-invitation.entity';
+import { Subteam } from './entities/subteam.entity';
+import { SubteamMember } from './entities/subteam-member.entity';
+import { SubteamLeadPosition } from './entities/subteam-lead-position.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateMemberStatusDto } from './dto/team-response.dto';
@@ -27,6 +30,12 @@ export class TeamsService {
     private readonly invitationRepository: Repository<TeamInvitation>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Subteam)
+    private readonly subteamRepository: Repository<Subteam>,
+    @InjectRepository(SubteamMember)
+    private readonly subteamMemberRepository: Repository<SubteamMember>,
+    @InjectRepository(SubteamLeadPosition)
+    private readonly subteamLeadPositionRepository: Repository<SubteamLeadPosition>,
     private readonly emailService: EmailService,
     private readonly usersService: UsersService,
   ) {}
@@ -185,7 +194,60 @@ export class TeamsService {
       relations: ['user', 'user.emails', 'user.phones'],
     });
 
-    return userTeams.map((userTeam) => this.transformToMemberDto(userTeam));
+    // Get all subteam memberships for this team
+    const subteamMembers = await this.subteamMemberRepository
+      .createQueryBuilder('sm')
+      .leftJoin('sm.subteam', 'subteam')
+      .where('subteam.teamId = :teamId', { teamId })
+      .select(['sm.userId', 'subteam.name'])
+      .getMany();
+
+    // Create a map of userId to subteam names
+    const userSubteamsMap = new Map<string, string[]>();
+    for (const member of subteamMembers) {
+      const subteamName = (member as any).subteam?.name;
+      if (subteamName) {
+        if (!userSubteamsMap.has(member.userId)) {
+          userSubteamsMap.set(member.userId, []);
+        }
+        userSubteamsMap.get(member.userId)!.push(subteamName);
+      }
+    }
+
+    // Get all lead positions for this team
+    const leadPositions = await this.subteamLeadPositionRepository
+      .createQueryBuilder('slp')
+      .leftJoin('slp.subteam', 'subteam')
+      .where('subteam.teamId = :teamId', { teamId })
+      .andWhere('slp.userId IS NOT NULL')
+      .select(['slp.userId', 'slp.title', 'subteam.name'])
+      .getMany();
+
+    // Create a map of userId to lead positions
+    const userLeadPositionsMap = new Map<string, Array<{ subteamName: string; positionTitle: string }>>();
+    for (const position of leadPositions) {
+      if (position.userId) {
+        const subteamName = (position as any).subteam?.name;
+        const positionTitle = position.title;
+        if (subteamName && positionTitle) {
+          if (!userLeadPositionsMap.has(position.userId)) {
+            userLeadPositionsMap.set(position.userId, []);
+          }
+          userLeadPositionsMap.get(position.userId)!.push({
+            subteamName,
+            positionTitle
+          });
+        }
+      }
+    }
+
+    return userTeams.map((userTeam) => 
+      this.transformToMemberDto(
+        userTeam, 
+        userSubteamsMap.get(userTeam.userId),
+        userLeadPositionsMap.get(userTeam.userId)
+      )
+    );
   }
 
   async updateMemberRoles(teamId: string, userId: string, roles: string[]): Promise<TeamMemberDto> {
@@ -322,7 +384,11 @@ export class TeamsService {
     };
   }
 
-  private transformToMemberDto(userTeam: UserTeam): TeamMemberDto {
+  private transformToMemberDto(
+    userTeam: UserTeam, 
+    subteams?: string[],
+    leadPositions?: Array<{ subteamName: string; positionTitle: string }>
+  ): TeamMemberDto {
     const primaryPhone = userTeam.user?.phones?.find(phone => phone.isPrimary);
     
     return {
@@ -330,6 +396,8 @@ export class TeamsService {
       teamId: userTeam.teamId,
       roles: userTeam.getRolesArray(),
       status: userTeam.status,
+      subteams: subteams && subteams.length > 0 ? subteams : undefined,
+      leadPositions: leadPositions && leadPositions.length > 0 ? leadPositions : undefined,
       user: userTeam.user ? {
         id: userTeam.user.id,
         firstName: userTeam.user.firstName,

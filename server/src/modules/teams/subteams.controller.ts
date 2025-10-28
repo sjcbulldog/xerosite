@@ -88,4 +88,13 @@ export class SubteamsController {
   ): Promise<SubteamResponseDto> {
     return this.subteamsService.updateLeadPosition(subteamId, req.user.id, updateDto);
   }
+
+  @Delete(':subteamId/lead-positions/:positionId')
+  async deleteLeadPosition(
+    @Param('subteamId') subteamId: string,
+    @Param('positionId') positionId: string,
+    @Request() req: any,
+  ): Promise<SubteamResponseDto> {
+    return this.subteamsService.deleteLeadPosition(subteamId, positionId, req.user.id);
+  }
 }

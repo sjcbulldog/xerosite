@@ -6,6 +6,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators, AbstractContro
 import { FormsModule } from '@angular/forms';
 import { TeamsService, TeamInvitation } from './teams.service';
 import { UsersService, UserProfile } from '../profile/users.service';
+import { PreferencesDialogComponent } from '../preferences/preferences-dialog.component';
 
 type SortField = 'firstName' | 'lastName' | 'email';
 type SortDirection = 'asc' | 'desc';
@@ -25,7 +26,7 @@ interface CreateTeamForm {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule],
+  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -63,6 +64,9 @@ export class DashboardComponent implements OnInit {
   protected readonly isChangingPassword = signal(false);
   protected readonly changePasswordError = signal<string | null>(null);
   protected readonly changePasswordSuccess = signal<string | null>(null);
+  
+  // Preferences dialog signal
+  protected readonly showPreferencesDialog = signal(false);
   
   // Password requirement signals - must be defined before form
   protected readonly newPasswordValue = signal('');
@@ -291,6 +295,7 @@ export class DashboardComponent implements OnInit {
 
       this.closeCreateTeamDialog();
       await this.loadTeams();
+      await this.loadSiteStatistics(); // Refresh statistics after creating team
     } catch (error: any) {
       this.createTeamError.set(error.message || 'Failed to create team');
     } finally {
@@ -616,6 +621,15 @@ export class DashboardComponent implements OnInit {
     this.changePasswordError.set(null);
     this.changePasswordSuccess.set(null);
     this.newPasswordValue.set('');
+  }
+
+  protected openPreferencesDialog(): void {
+    this.showUserMenu.set(false);
+    this.showPreferencesDialog.set(true);
+  }
+
+  protected closePreferencesDialog(): void {
+    this.showPreferencesDialog.set(false);
   }
 
   protected async onChangePassword(): Promise<void> {

@@ -22,6 +22,8 @@ export interface TeamMember {
   teamId: string;
   roles: string[];
   status: 'pending' | 'active' | 'disabled';
+  subteams?: string[]; // Names of subteams this member belongs to
+  leadPositions?: Array<{ subteamName: string; positionTitle: string }>; // Lead positions this member holds
   user?: {
     id: string;
     firstName: string;
@@ -470,6 +472,17 @@ export class TeamsService {
     } catch (error: any) {
       console.error('Error updating lead position:', error);
       throw new Error(error.error?.message || 'Failed to update lead position');
+    }
+  }
+
+  async deleteLeadPosition(teamId: string, subteamId: string, positionId: string): Promise<Subteam> {
+    try {
+      return await firstValueFrom(
+        this.http.delete<Subteam>(`${this.apiUrl}/${teamId}/subteams/${subteamId}/lead-positions/${positionId}`)
+      );
+    } catch (error: any) {
+      console.error('Error deleting lead position:', error);
+      throw new Error(error.error?.message || 'Failed to delete lead position');
     }
   }
 

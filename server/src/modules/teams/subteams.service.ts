@@ -275,6 +275,35 @@ export class SubteamsService {
     return this.getSubteam(subteamId);
   }
 
+  async deleteLeadPosition(
+    subteamId: string,
+    positionId: string,
+    userId: string,
+  ): Promise<SubteamResponseDto> {
+    const subteam = await this.subteamRepository.findOne({
+      where: { id: subteamId },
+    });
+
+    if (!subteam) {
+      throw new NotFoundException('Subteam not found');
+    }
+
+    // Verify user is team admin
+    await this.verifyTeamAdmin(subteam.teamId, userId);
+
+    const position = await this.subteamLeadPositionRepository.findOne({
+      where: { id: positionId, subteamId },
+    });
+
+    if (!position) {
+      throw new NotFoundException('Lead position not found');
+    }
+
+    await this.subteamLeadPositionRepository.remove(position);
+
+    return this.getSubteam(subteamId);
+  }
+
   private async verifyTeamAdmin(teamId: string, userId: string): Promise<void> {
     const membership = await this.userTeamRepository.findOne({
       where: { teamId, userId },

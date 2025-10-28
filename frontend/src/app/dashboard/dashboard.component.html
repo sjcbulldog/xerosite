@@ -16,6 +16,10 @@
             <span class="menu-icon">👤</span>
             Edit Profile
           </button>
+          <button (click)="openPreferencesDialog()" class="menu-item">
+            <span class="menu-icon">⚙️</span>
+            Preferences
+          </button>
           <button (click)="openChangePasswordDialog()" class="menu-item">
             <span class="menu-icon">🔒</span>
             Change Password
@@ -33,22 +37,13 @@
     <div class="dashboard-card">
       <h2>Dashboard</h2>
       @if (isLoadingStatistics()) {
-        <p>Loading statistics...</p>
+        <p class="statistics-text">Loading statistics...</p>
       } @else {
-        <div class="site-statistics">
-          <div class="stat-item">
-            <span class="stat-label">Public Teams:</span>
-            <span class="stat-value">{{ publicTeamsCount() }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Private Teams:</span>
-            <span class="stat-value">{{ privateTeamsCount() }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Total Users:</span>
-            <span class="stat-value">{{ totalUsersCount() }}</span>
-          </div>
-        </div>
+        <p class="statistics-text">
+          <strong>Public Teams:</strong> {{ publicTeamsCount() }} | 
+          <strong>Private Teams:</strong> {{ privateTeamsCount() }} | 
+          <strong>Total Users:</strong> {{ totalUsersCount() }}
+        </p>
       }
       <div class="user-info">
         <h3>User Information</h3>
@@ -541,6 +536,11 @@
       </form>
     </div>
   </div>
+}
+
+<!-- Preferences Dialog -->
+@if (showPreferencesDialog()) {
+  <app-preferences-dialog (close)="closePreferencesDialog()" />
 }
 
 <!-- Admin Change User Password Dialog -->

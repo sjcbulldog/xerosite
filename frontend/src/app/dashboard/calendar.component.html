@@ -1,0 +1,362 @@
+<div class="calendar-container">
+  <!-- Calendar Header with Controls -->
+  <div class="calendar-header">
+    <div class="calendar-navigation">
+      <button class="nav-button" (click)="previousPeriod()" title="Previous">‹</button>
+      <button class="nav-button today-button" (click)="today()">Today</button>
+      <button class="nav-button" (click)="nextPeriod()" title="Next">›</button>
+      <h3 class="calendar-title">{{ monthName() }}</h3>
+    </div>
+    
+    <div class="calendar-actions">
+      <div class="view-selector">
+        <button 
+          class="view-button"
+          [class.active]="currentView() === 'day'"
+          (click)="changeView('day')">
+          Day
+        </button>
+        <button 
+          class="view-button"
+          [class.active]="currentView() === 'week'"
+          (click)="changeView('week')">
+          Week
+        </button>
+        <button 
+          class="view-button"
+          [class.active]="currentView() === 'month'"
+          (click)="changeView('month')">
+          Month
+        </button>
+        <button 
+          class="view-button"
+          [class.active]="currentView() === 'year'"
+          (click)="changeView('year')">
+          Year
+        </button>
+      </div>
+      
+      @if (isAdmin()) {
+        <button class="add-event-button" (click)="openCreateEventDialog()">
+          + Add Event
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoadingEvents()) {
+    <div class="loading-state">Loading events...</div>
+  }
+
+  <!-- Calendar Views -->
+  @if (!isLoadingEvents()) {
+    <!-- Month View -->
+    @if (currentView() === 'month') {
+      <div class="calendar-month-view">
+        <div class="calendar-weekdays">
+          <div class="weekday">Sun</div>
+          <div class="weekday">Mon</div>
+          <div class="weekday">Tue</div>
+          <div class="weekday">Wed</div>
+          <div class="weekday">Thu</div>
+          <div class="weekday">Fri</div>
+          <div class="weekday">Sat</div>
+        </div>
+        
+        <div class="calendar-grid">
+          @for (day of calendarDays(); track day.date) {
+            <div 
+              class="calendar-day"
+              [class.other-month]="!day.isCurrentMonth"
+              [class.today]="day.isToday">
+              <div class="day-number">{{ day.date.getDate() }}</div>
+              
+              @if (day.events.length > 0) {
+                <div class="day-events">
+                  @for (event of day.events; track event.id) {
+                    <div 
+                      class="event-chip"
+                      (click)="openEditEventDialog(event)"
+                      [title]="event.name">
+                      {{ event.name }}
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Day/Week/Year Views - List Format -->
+    @if (currentView() !== 'month') {
+      <div class="calendar-list-view">
+        @if (filteredEvents().length === 0) {
+          <p class="no-events">No events for this period</p>
+        } @else {
+          @for (event of filteredEvents(); track event.id) {
+            <div class="event-card">
+              <div class="event-header">
+                <h4 class="event-title">{{ event.name }}</h4>
+                @if (isAdmin()) {
+                  <div class="event-actions">
+                    <button class="action-btn edit" (click)="openEditEventDialog(event)" title="Edit">✎</button>
+                    <button class="action-btn delete" (click)="deleteEvent(event)" title="Delete">🗑</button>
+                  </div>
+                }
+              </div>
+              
+              <div class="event-details">
+                <div class="event-detail">
+                  <strong>📅 Date:</strong> 
+                  {{ event.startDateTime | date:'MMM d, y' }}
+                </div>
+                <div class="event-detail">
+                  <strong>🕐 Time:</strong> 
+                  {{ event.startDateTime | date:'h:mm a' }}
+                  @if (event.endDateTime) {
+                    - {{ event.endDateTime | date:'h:mm a' }}
+                  }
+                </div>
+                @if (event.location) {
+                  <div class="event-detail">
+                    <strong>📍 Location:</strong> {{ event.location }}
+                  </div>
+                }
+                @if (event.description) {
+                  <div class="event-detail description">
+                    <strong>Description:</strong> {{ event.description }}
+                  </div>
+                }
+                @if (event.recurrenceType !== RecurrenceType.NONE) {
+                  <div class="event-detail">
+                    <strong>🔁 Recurring:</strong> {{ event.recurrenceType }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+    }
+  }
+</div>
+
+<!-- Event Create/Edit Dialog -->
+@if (showEventDialog()) {
+  <div class="dialog-overlay">
+    <div class="dialog-content event-dialog">
+      <div class="dialog-header">
+        <h2>{{ selectedEvent() ? 'Edit Event' : 'New Event' }}</h2>
+        <button class="close-button" (click)="closeEventDialog()">×</button>
+      </div>
+
+      <div class="dialog-body">
+        @if (eventError()) {
+          <div class="error-message">{{ eventError() }}</div>
+        }
+
+        <!-- Event Name -->
+        <div class="form-group">
+          <label for="eventName">Event Name *</label>
+          <input 
+            id="eventName"
+            type="text"
+            [(ngModel)]="eventName"
+            placeholder="e.g., Team Meeting"
+            required>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label for="eventDescription">Description</label>
+          <textarea 
+            id="eventDescription"
+            [(ngModel)]="eventDescription"
+            placeholder="Event details..."
+            rows="3"></textarea>
+        </div>
+
+        <!-- Location -->
+        <div class="form-group">
+          <label for="eventLocation">Location</label>
+          <input 
+            id="eventLocation"
+            type="text"
+            [(ngModel)]="eventLocation"
+            placeholder="e.g., Room 101 or Zoom link">
+        </div>
+
+        <!-- Start Date and Time -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eventStartDate">Start Date *</label>
+            <input 
+              id="eventStartDate"
+              type="date"
+              [(ngModel)]="eventStartDate"
+              required>
+          </div>
+          <div class="form-group">
+            <label for="eventStartTime">Start Time *</label>
+            <input 
+              id="eventStartTime"
+              type="time"
+              [(ngModel)]="eventStartTime"
+              required>
+          </div>
+        </div>
+
+        <!-- End Date and Time -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eventEndDate">End Date</label>
+            <input 
+              id="eventEndDate"
+              type="date"
+              [(ngModel)]="eventEndDate">
+          </div>
+          <div class="form-group">
+            <label for="eventEndTime">End Time</label>
+            <input 
+              id="eventEndTime"
+              type="time"
+              [(ngModel)]="eventEndTime">
+          </div>
+        </div>
+
+        <!-- Recurrence Type -->
+        <div class="form-group">
+          <label for="recurrenceType">Recurrence</label>
+          <select id="recurrenceType" [(ngModel)]="recurrenceType">
+            <option [value]="RecurrenceType.NONE">No Recurrence</option>
+            <option [value]="RecurrenceType.DAILY">Daily</option>
+            <option [value]="RecurrenceType.WEEKLY">Weekly</option>
+            <option [value]="RecurrenceType.MONTHLY">Monthly</option>
+          </select>
+        </div>
+
+        <!-- Weekly Recurrence Pattern -->
+        @if (recurrenceType() === RecurrenceType.WEEKLY) {
+          <div class="form-group">
+            <label>Days of Week</label>
+            <div class="weekday-selector">
+              <button 
+                type="button"
+                class="weekday-button"
+                [class.selected]="weeklyDays()[0]"
+                (click)="toggleWeekDay(0)">Sun</button>
+              <button 
+                type="button"
+                class="weekday-button"
+                [class.selected]="weeklyDays()[1]"
+                (click)="toggleWeekDay(1)">Mon</button>
+              <button 
+                type="button"
+                class="weekday-button"
+                [class.selected]="weeklyDays()[2]"
+                (click)="toggleWeekDay(2)">Tue</button>
+              <button 
+                type="button"
+                class="weekday-button"
+                [class.selected]="weeklyDays()[3]"
+                (click)="toggleWeekDay(3)">Wed</button>
+              <button 
+                type="button"
+                class="weekday-button"
+                [class.selected]="weeklyDays()[4]"
+                (click)="toggleWeekDay(4)">Thu</button>
+              <button 
+                type="button"
+                class="weekday-button"
+                [class.selected]="weeklyDays()[5]"
+                (click)="toggleWeekDay(5)">Fri</button>
+              <button 
+                type="button"
+                class="weekday-button"
+                [class.selected]="weeklyDays()[6]"
+                (click)="toggleWeekDay(6)">Sat</button>
+            </div>
+          </div>
+        }
+
+        <!-- Monthly Recurrence Pattern -->
+        @if (recurrenceType() === RecurrenceType.MONTHLY) {
+          <div class="form-group">
+            <label for="monthlyPattern">Monthly Pattern</label>
+            <select id="monthlyPattern" [(ngModel)]="monthlyPattern">
+              <option value="">Select pattern...</option>
+              <option value="first-monday">First Monday</option>
+              <option value="first-tuesday">First Tuesday</option>
+              <option value="first-wednesday">First Wednesday</option>
+              <option value="first-thursday">First Thursday</option>
+              <option value="first-friday">First Friday</option>
+              <option value="last-monday">Last Monday</option>
+              <option value="last-tuesday">Last Tuesday</option>
+              <option value="last-wednesday">Last Wednesday</option>
+              <option value="last-thursday">Last Thursday</option>
+              <option value="last-friday">Last Friday</option>
+            </select>
+          </div>
+        }
+
+        <!-- Recurrence End Date -->
+        @if (recurrenceType() !== RecurrenceType.NONE) {
+          <div class="form-group">
+            <label for="recurrenceEndDate">Recurrence End Date</label>
+            <input 
+              id="recurrenceEndDate"
+              type="date"
+              [(ngModel)]="recurrenceEndDate">
+          </div>
+        }
+
+        <!-- Visibility Type -->
+        <div class="form-group">
+          <label for="visibilityType">Visibility</label>
+          <select id="visibilityType" [(ngModel)]="visibilityType">
+            <option [value]="VisibilityType.ALL_MEMBERS">All Team Members</option>
+            <option [value]="VisibilityType.SPECIFIC_ROLES">Specific Roles</option>
+            <option [value]="VisibilityType.SUBTEAM">Specific Subteams</option>
+            <option [value]="VisibilityType.SUBTEAM_LEADS">Subteam Leads</option>
+          </select>
+        </div>
+
+        <!-- Role Selection -->
+        @if (visibilityType() === VisibilityType.SPECIFIC_ROLES) {
+          <div class="form-group">
+            <label>Select Roles</label>
+            <div class="role-selector">
+              @for (role of teamRoles(); track role) {
+                <button 
+                  type="button"
+                  class="role-button"
+                  [class.selected]="selectedRoles().includes(role)"
+                  (click)="toggleRole(role)">
+                  {{ role }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="dialog-actions">
+        <button 
+          class="cancel-button"
+          (click)="closeEventDialog()"
+          [disabled]="isSavingEvent()">
+          Cancel
+        </button>
+        <button 
+          class="save-button"
+          (click)="saveEvent()"
+          [disabled]="isSavingEvent() || !eventName() || !eventStartDate() || !eventStartTime()">
+          {{ isSavingEvent() ? 'Saving...' : 'Save Event' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

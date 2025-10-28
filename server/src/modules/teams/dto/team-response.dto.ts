@@ -21,6 +21,8 @@ export class TeamMemberDto {
   teamId: string;
   roles: string[];
   status: MembershipStatus;
+  subteams?: string[]; // Names of subteams this member belongs to
+  leadPositions?: Array<{ subteamName: string; positionTitle: string }>; // Lead positions in subteams
   user?: {
     id: string;
     firstName: string;

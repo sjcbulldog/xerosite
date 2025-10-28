@@ -6,10 +6,11 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../profile/users.service';
+import { CalendarComponent } from './calendar.component';
 
 @Component({
   selector: 'app-team-detail',
-  imports: [TitleCasePipe, DatePipe, FormsModule],
+  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent],
   templateUrl: './team-detail.component.html',
   styleUrl: './team-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -31,6 +32,29 @@ export class TeamDetailComponent implements OnInit {
   protected readonly isLoadingMembers = signal(false);
   protected readonly showPendingMembers = signal(false);
   protected readonly showActiveMembers = signal(false);
+  
+  // Member filter
+  protected readonly memberFilter = signal('');
+  
+  // Filtered members based on search text
+  protected readonly filteredActiveMembers = computed(() => {
+    const filter = this.memberFilter().toLowerCase().trim();
+    if (!filter) {
+      return this.activeMembers();
+    }
+    
+    return this.activeMembers().filter(member => {
+      const fullName = member.user?.fullName?.toLowerCase() || '';
+      const firstName = member.user?.firstName?.toLowerCase() || '';
+      const lastName = member.user?.lastName?.toLowerCase() || '';
+      const email = member.user?.primaryEmail?.toLowerCase() || '';
+      
+      return fullName.includes(filter) || 
+             firstName.includes(filter) || 
+             lastName.includes(filter) || 
+             email.includes(filter);
+    });
+  });
   
   // Simplified role management - just array of role names
   protected readonly teamRoles = signal<string[]>([]);
@@ -92,6 +116,9 @@ export class TeamDetailComponent implements OnInit {
   protected readonly selectedSubteam = signal<Subteam | null>(null);
   protected readonly showSubteamDetailDialog = signal(false);
   protected readonly selectedSubteamForDetail = signal<Subteam | null>(null);
+  
+  // Calendar signals
+  protected readonly showCalendarSection = signal(false);
   
   // Create/Edit Subteam form
   protected readonly subteamName = signal('');
@@ -869,6 +896,11 @@ export class TeamDetailComponent implements OnInit {
     }
   }
 
+  // Calendar management methods
+  protected toggleCalendarSection(): void {
+    this.showCalendarSection.set(!this.showCalendarSection());
+  }
+
   private async loadSubteams(): Promise<void> {
     const teamId = this.team()?.id;
     if (!teamId) return;
@@ -902,10 +934,7 @@ export class TeamDetailComponent implements OnInit {
     this.subteamName.set(subteam.name);
     this.subteamDescription.set(subteam.description || '');
     this.subteamValidRoles.set([...subteam.validRoles]);
-    this.subteamLeadPositions.set(subteam.leadPositions.map(p => ({
-      title: p.title,
-      requiredRole: p.requiredRole
-    })));
+    this.subteamLeadPositions.set([]); // Clear any new positions - existing positions are in selectedSubteam
     this.subteamError.set(null);
     this.showEditSubteamDialog.set(true);
   }
@@ -913,15 +942,6 @@ export class TeamDetailComponent implements OnInit {
   protected closeEditSubteamDialog(): void {
     this.showEditSubteamDialog.set(false);
     this.selectedSubteam.set(null);
-  }
-
-  protected toggleValidRole(role: string): void {
-    const currentRoles = this.subteamValidRoles();
-    if (currentRoles.includes(role)) {
-      this.subteamValidRoles.set(currentRoles.filter(r => r !== role));
-    } else {
-      this.subteamValidRoles.set([...currentRoles, role]);
-    }
   }
 
   protected addLeadPosition(): void {
@@ -938,6 +958,29 @@ export class TeamDetailComponent implements OnInit {
   protected removeLeadPosition(index: number): void {
     const positions = this.subteamLeadPositions();
     this.subteamLeadPositions.set(positions.filter((_, i) => i !== index));
+  }
+
+  protected async removeExistingLeadPosition(subteam: Subteam, positionId: string): Promise<void> {
+    if (!confirm('Are you sure you want to remove this lead position?')) {
+      return;
+    }
+
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    try {
+      await this.teamsService.deleteLeadPosition(teamId, subteam.id, positionId);
+      await this.loadSubteams();
+      
+      // Update selectedSubteam with the fresh data
+      const updatedSubteams = this.subteams();
+      const updatedSubteam = updatedSubteams.find(s => s.id === subteam.id);
+      if (updatedSubteam) {
+        this.selectedSubteam.set(updatedSubteam);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to remove lead position');
+    }
   }
 
   protected async createSubteam(): Promise<void> {
@@ -994,11 +1037,20 @@ export class TeamDetailComponent implements OnInit {
     this.subteamError.set(null);
 
     try {
+      // Update basic subteam properties (name, description, validRoles)
       await this.teamsService.updateSubteam(teamId, subteam.id, {
         name: this.subteamName().trim(),
         description: this.subteamDescription().trim() || undefined,
         validRoles: this.subteamValidRoles(),
-        leadPositions: this.subteamLeadPositions()
+        // Include ALL positions (existing + new) to preserve assignments
+        leadPositions: [
+          ...subteam.leadPositions.map(p => ({
+            title: p.title,
+            requiredRole: p.requiredRole,
+            userId: p.userId || undefined
+          })),
+          ...this.subteamLeadPositions()
+        ]
       });
 
       await this.loadSubteams();
@@ -1122,6 +1174,13 @@ export class TeamDetailComponent implements OnInit {
     try {
       await this.teamsService.updateLeadPosition(teamId, subteam.id, positionId, userId || undefined);
       await this.loadSubteams();
+      
+      // Update selectedSubteam with the fresh data to preserve assignments
+      const updatedSubteams = this.subteams();
+      const updatedSubteam = updatedSubteams.find(s => s.id === subteam.id);
+      if (updatedSubteam) {
+        this.selectedSubteam.set(updatedSubteam);
+      }
     } catch (error: any) {
       alert(error.message || 'Failed to update lead position');
     }

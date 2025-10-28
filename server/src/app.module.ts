@@ -11,6 +11,8 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TeamsModule } from './modules/teams/teams.module';
 import { EmailModule } from './modules/email/email.module';
+import { EventsModule } from './modules/events/events.module';
+import { PreferencesModule } from './modules/preferences/preferences.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { EmailModule } from './modules/email/email.module';
     AuthModule,
     TeamsModule,
     EmailModule,
+    EventsModule,
+    PreferencesModule,
   ],
   controllers: [AppController],
 })

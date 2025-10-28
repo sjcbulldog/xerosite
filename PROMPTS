@@ -177,17 +177,42 @@ When a subteam card is clicked, it should popup a subteam display page that show
 
 On the main dashboard, instead of the message 'You have sucessfully logged into the application', display a message that states, how many public teams, private teams, and total users are registered on the site.
 
+Create a calendar where events are per team.  Each event should have a time, date, location, short name, and description.  Each event can be a one time event, or can be recurring with a recurrance pattern.  The recurrance should enable daily, weekly with multiple days in a week, monthly, with specific days of the month, or patterns like the first tuesday or last thursday.  Each event should have a visibility field that can be tied to user role on a team, or subteam membership, or subteam lead users.  On the team dashboard form, there should be a collapsable section that contains the calendar that is viewable at a daily, weekly, monthly, or yearly granularity. Within this UI for the calendar, there 
+should be a control to select the view (Day, Month, Week, Year) and a button to add a new event.
+
+Make the team count and user count row at the top of the dashboard smaller, just display as a line of text.
+
+When an event is recurring, it only shows on the calendar on its original date.  It should show up based on the recurrance pattern.
+
+When a new team is added, the team count at the top of the dashboard is not updated.
+
+The calendar section on the team dashboard is not in a card.  The calendar collaspable should be in a card like the other sections on that page.  The calendar itself can be in another card within the calendar section.
+
+In the main dashboard, in the menu, create a new command that brings up a popup that display user preferences.  The initial preferences will be the duration of time before a team event that a user wants nodification.  There should be able to be multiple entries in this list so that they can ask for a notification a day before and a notification an hour before.  For each notification preference, there should be a choice of notification by email, or notification by text.  The notification system will be added later so for now just put the preferences in place.  In addition, there should be a preference for team messages to be delivered via text or via email.  The team messages system will be create later as well so don't worry about its implementation.
+
+In the team members view on the team dashboard, if user belongs to any subteams, display the subteam names in their information.  This should be to the right of their roles, but should be a different color than roles.
+
+In the team members view on the team dashboard, if user belongs to any subteams, display the subteam names in their information.  This should be to the right of their roles, but should be a different color than roles.
+
+In the Edit Subteam popup, when a users is assigned to a lead position, this information is lost and not stored.
+
+In the team members view on the team dashboard, if the user is a lead to any subteam, display the lead position and subteam name as 'SUBTEAM LEADPOSITION' in a different color than roles and subteam membership.
+
+When creating a new subteam, the display of valid roles should be a scrollable list with multiselect with one role per line.  This is instead of the set of check boxes with labels.
+
+In the team members view on the team dashboard, below the Team Members label there should be an input field that can be used to filter the displayed members based on first name, last name, or email.
+
 In Progress
 ===========
 
+Add the concept of per user per team per user permissions allowing the permissions for certain operations to be controlled per user per team. These permissions should be editable only by users with the adminstrator role for a team.  Initially there will be permissions for 'Send Messages' and for 'Schedule Events'. Only users with the 'Schedule Events' permissions should be able to add events to the calendar. The system should be created to be extensible to future permissions.  Invoking the permissions selection should be per user in the Team Members display of the Team dashboard.  There should be a button to edit the users attributes for the team.  This should include the role selection which should be moved from the check boxes at the bottom to this new popup as a multiselect list.  The disable button should be moved to this popup as a check box, and finally there should be a permissions section for each type of permission that is available, with a toggle control to turn it on of off.
 
 Pending
 =======
 
-
-
-Create a calendar where events are per team.  Each event should have a time, date, location, short name, and description.  Each event can be a one time event, or can be recurring with a recurrance pattern.  The recurrance should enable daily, weekly with multiple days in a week, monthly, with specific days of the month, or patterns like the first tuesday or last thursday.  Each event should have a visibility field that can be tied to user role on a team, or subteam membership, or subteam lead users.  On the team dashboard form, there should be a collapsable section that contains the calendar that is viewable at a daily, weekly, monthly, or yearly granularity. Within this UI for the calendar, there should be a control to select the view (Day, Month, Week, Year) and a button to add a new event.
-
 Create a messaging system where members of a team can send messages to other members of the team via email or text.  The target users should be selectable as all users on a team, only users with a specific team role, only users that belong to a given subteam, only users that are leads of a subteam.  These should be able to be combined.  For instance, a message should be able to be sent to users with a specific team role and users on a specific subteam.  The initiation of the send message should be on the team dashboard in the menu and should popup a window that enables the recipents to be selected as well as typing the message.  The message, with the sender and its recipents should be stored in the database for later use.
 
-Add the concept of per user per team permissions allowing the permissions for certain operations to be controlled per user per team.  Initially there will be permissions for sending message (messages) or for scheduling calendar events (events).  The availability of these features for a given user should be governed by these permissions.
+Add the concept of per user per team per user permissions allowing the permissions for certain operations to be controlled per user per team. These permissions should be editable only by users with the adminstrator role for a team.  Initially there will be permissions for 'Send Messages' and for 'Schedule Events'. Only users with the 'Schedule Events' permissions should be able to add events to the calendar. The system should be created to be extensible to future permissions.
+
+Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
+

@@ -338,6 +338,69 @@
   margin-top: 1.5rem;
 }
 
+.member-filter-container {
+  position: relative;
+  margin-bottom: 1.5rem;
+  
+  .member-filter-input {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    background: white;
+    
+    &:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    &::placeholder {
+      color: #9ca3af;
+    }
+    
+    &:disabled {
+      background: #f9fafb;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+  }
+  
+  .clear-filter-button {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #e5e7eb;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    line-height: 1;
+    padding: 0;
+    
+    &:hover {
+      background: #d1d5db;
+      color: #374151;
+      transform: translateY(-50%) scale(1.1);
+    }
+    
+    &:active {
+      transform: translateY(-50%) scale(0.95);
+    }
+  }
+}
+
 .members-list {
   display: flex;
   flex-direction: column;
@@ -505,6 +568,28 @@
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+.subteam-tag {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #ccfbf1;
+  color: #0f766e;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 0.25rem;
+}
+
+.lead-position-tag {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #fed7aa;
+  color: #92400e;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 0.25rem;
 }
 
 .member-actions {
@@ -2246,11 +2331,13 @@
   .role-checkboxes {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-auto-rows: min-content;
     gap: 0.75rem;
     padding: 1.25rem;
     background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
     border: 2px solid #e5e7eb;
     border-radius: 8px;
+    align-items: start;
 
     .checkbox-label {
       display: flex;
@@ -2264,18 +2351,82 @@
       font-size: 0.9rem;
       color: #374151;
       font-weight: 500;
+      min-height: 38px;
 
       input[type="checkbox"] {
         cursor: pointer;
         width: 18px;
         height: 18px;
         accent-color: #667eea;
+        flex-shrink: 0;
       }
 
       &:hover {
         background: white;
         color: #667eea;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+    }
+  }
+
+  .role-multiselect {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    
+    &:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    &:disabled {
+      background: #f9fafb;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    option {
+      padding: 0.75rem;
+      cursor: pointer;
+      border-radius: 4px;
+      margin: 0.25rem 0;
+      
+      &:checked {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 500;
+      }
+      
+      &:hover:not(:checked) {
+        background: #f3f4f6;
+      }
+    }
+    
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f9fafb;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #9ca3af;
       }
     }
   }
@@ -3204,3 +3355,12 @@
   }
 }
 
+// Calendar wrapper - card styling for the calendar component
+.calendar-wrapper {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
