@@ -33,7 +33,7 @@ Profile
 - Add/remove email addresses                                                                    X
 - Add/remove phone numbers                                                                      X
 - Add/remove physical addresses                                                                 X
-- Change password
+- Change password                                                                               X
 
 Team roles
 ==========
@@ -48,7 +48,7 @@ Teams
   o Split phone numbers at semicolons and add as different phone numbers                        X
   o Progress bar timed to 30 seconds                                                            X
   o Active vs Pending user create                                                               X
-  o Split email addresses at semicolons and add as different emails                             O
+  o Split email addresses at semicolons and add as different emails                             X
 
 Add subteams
 ============

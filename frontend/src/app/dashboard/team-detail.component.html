@@ -17,7 +17,7 @@
                 Edit Team Roles
               </button>
               <button (click)="openConstraintsEditor()" class="edit-constraints-button">
-                Edit Constraints
+                Edit Role Constraints
               </button>
               <button (click)="openImportDialog()" class="import-roster-button">
                 Import Roster
@@ -178,6 +178,108 @@
           </div>
         }
       </div>
+
+      <!-- Subteams Section -->
+      @if (isTeamAdmin()) {
+        <div class="members-section">
+          <div class="section-header" (click)="toggleSubteamsSection()">
+            <h2>
+              Subteams
+              @if (showSubteamsSection()) {
+                <span class="collapse-icon">▼</span>
+              } @else {
+                <span class="collapse-icon">▶</span>
+              }
+            </h2>
+            @if (isLoadingSubteams()) {
+              <span class="loading-indicator">Loading...</span>
+            }
+          </div>
+
+          @if (showSubteamsSection()) {
+            <div class="members-list">
+              <div class="subteams-header">
+                <button (click)="openCreateSubteamDialog()" class="create-subteam-button">
+                  + Create Subteam
+                </button>
+              </div>
+
+              @if (subteams().length === 0) {
+                <p class="no-subteams">No subteams created yet. Click "Create Subteam" to get started.</p>
+              } @else {
+                <div class="subteams-grid">
+                  @for (subteam of subteams(); track subteam.id) {
+                    <div class="subteam-card">
+                      <div class="subteam-header">
+                        <h3>{{ subteam.name }}</h3>
+                        <div class="subteam-actions">
+                          <button 
+                            class="action-button edit"
+                            (click)="openEditSubteamDialog(subteam)"
+                            title="Edit">
+                            ✎
+                          </button>
+                          <button 
+                            class="action-button manage"
+                            (click)="openManageMembersDialog(subteam)"
+                            title="Manage Members">
+                            👥
+                          </button>
+                          <button 
+                            class="action-button delete"
+                            (click)="deleteSubteam(subteam)"
+                            title="Delete">
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+
+                      @if (subteam.description) {
+                        <p class="subteam-description">{{ subteam.description }}</p>
+                      }
+
+                      <div class="subteam-info">
+                        <div class="info-item">
+                          <strong>Valid Roles:</strong>
+                          <span class="valid-roles">
+                            @if (subteam.validRoles.length === 0) {
+                              <em>All roles</em>
+                            } @else {
+                              {{ subteam.validRoles.join(', ') }}
+                            }
+                          </span>
+                        </div>
+
+                        <div class="info-item">
+                          <strong>Members:</strong>
+                          <span class="member-count">{{ subteam.members.length }}</span>
+                        </div>
+                      </div>
+
+                      @if (subteam.leadPositions.length > 0) {
+                        <div class="lead-positions">
+                          <strong>Lead Positions:</strong>
+                          @for (position of subteam.leadPositions; track position.id) {
+                            <div class="lead-position">
+                              <span class="position-title">{{ position.title }}</span>
+                              <span class="position-role">({{ position.requiredRole }})</span>:
+                              @if (position.userId) {
+                                <span class="assigned-user">{{ position.userName }}</span>
+                              } @else {
+                                <em class="unassigned">Unassigned</em>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
     </main>
   } @else {
     <div class="loading-container">
@@ -620,6 +722,374 @@
               {{ isImporting() ? 'Importing...' : 'Import Roster' }}
             </button>
           }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Create Subteam Dialog -->
+@if (showCreateSubteamDialog()) {
+  <div class="dialog-overlay" (click)="closeCreateSubteamDialog()">
+    <div class="dialog-content subteam-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Create Subteam</h2>
+        <button class="close-button" (click)="closeCreateSubteamDialog()">×</button>
+      </div>
+
+      <div class="subteam-form-content">
+        <div class="form-group">
+          <label for="subteamName">Subteam Name *</label>
+          <input 
+            id="subteamName"
+            type="text"
+            [(ngModel)]="subteamName"
+            placeholder="Enter subteam name"
+            [disabled]="isSavingSubteam()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="subteamDescription">Description</label>
+          <textarea 
+            id="subteamDescription"
+            [(ngModel)]="subteamDescription"
+            placeholder="Optional description"
+            rows="3"
+            [disabled]="isSavingSubteam()">
+          </textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Valid Roles</label>
+          <p class="field-help">Select which roles can be members of this subteam (leave empty for all roles)</p>
+          <div class="role-checkboxes">
+            @for (role of teamRoles(); track role) {
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox"
+                  [checked]="subteamValidRoles().includes(role)"
+                  (change)="toggleValidRole(role)"
+                  [disabled]="isSavingSubteam()"
+                />
+                {{ role }}
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Lead Positions</label>
+          <p class="field-help">Define leadership positions for this subteam</p>
+          
+          <div class="lead-positions-list">
+            @for (position of subteamLeadPositions(); track $index) {
+              <div class="lead-position-item">
+                <span class="position-info">
+                  <strong>{{ position.title }}</strong> ({{ position.requiredRole }})
+                </span>
+                <button 
+                  class="remove-button"
+                  (click)="removeLeadPosition($index)"
+                  [disabled]="isSavingSubteam()">
+                  Remove
+                </button>
+              </div>
+            }
+            @if (subteamLeadPositions().length === 0) {
+              <p class="no-positions">No lead positions defined</p>
+            }
+          </div>
+
+          <div class="add-lead-position">
+            <input 
+              type="text"
+              [(ngModel)]="newLeadTitle"
+              placeholder="Position title"
+              [disabled]="isSavingSubteam()"
+            />
+            <select 
+              [(ngModel)]="newLeadRole"
+              [disabled]="isSavingSubteam()">
+              <option value="">Select required role</option>
+              @for (role of teamRoles(); track role) {
+                <option [value]="role">{{ role }}</option>
+              }
+            </select>
+            <button 
+              class="add-button"
+              (click)="addLeadPosition()"
+              [disabled]="!newLeadTitle().trim() || !newLeadRole() || isSavingSubteam()">
+              Add Position
+            </button>
+          </div>
+        </div>
+
+        @if (subteamError()) {
+          <div class="alert-error">
+            {{ subteamError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeCreateSubteamDialog()"
+            [disabled]="isSavingSubteam()">
+            Cancel
+          </button>
+          <button 
+            class="save-button"
+            (click)="createSubteam()"
+            [disabled]="isSavingSubteam()">
+            {{ isSavingSubteam() ? 'Creating...' : 'Create Subteam' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Edit Subteam Dialog -->
+@if (showEditSubteamDialog() && selectedSubteam()) {
+  <div class="dialog-overlay" (click)="closeEditSubteamDialog()">
+    <div class="dialog-content subteam-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Edit Subteam</h2>
+        <button class="close-button" (click)="closeEditSubteamDialog()">×</button>
+      </div>
+
+      <div class="subteam-form-content">
+        <div class="form-group">
+          <label for="editSubteamName">Subteam Name *</label>
+          <input 
+            id="editSubteamName"
+            type="text"
+            [(ngModel)]="subteamName"
+            placeholder="Enter subteam name"
+            [disabled]="isSavingSubteam()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="editSubteamDescription">Description</label>
+          <textarea 
+            id="editSubteamDescription"
+            [(ngModel)]="subteamDescription"
+            placeholder="Optional description"
+            rows="3"
+            [disabled]="isSavingSubteam()">
+          </textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Valid Roles</label>
+          <p class="field-help">Select which roles can be members of this subteam</p>
+          <div class="role-checkboxes">
+            @for (role of teamRoles(); track role) {
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox"
+                  [checked]="subteamValidRoles().includes(role)"
+                  (change)="toggleValidRole(role)"
+                  [disabled]="isSavingSubteam()"
+                />
+                {{ role }}
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Lead Positions</label>
+          <p class="field-help">Define and assign leadership positions</p>
+          
+          <div class="lead-positions-list">
+            @for (position of selectedSubteam()!.leadPositions; track position.id) {
+              <div class="lead-position-item edit-mode">
+                <div class="position-header">
+                  <span class="position-info">
+                    <strong>{{ position.title }}</strong> ({{ position.requiredRole }})
+                  </span>
+                </div>
+                <div class="position-assignment">
+                  <label>Assigned to:</label>
+                  <select 
+                    [value]="position.userId || ''"
+                    (change)="assignLeadPosition(selectedSubteam()!, position.id, $any($event.target).value || null)"
+                    [disabled]="isSavingSubteam()">
+                    <option value="">Unassigned</option>
+                    @for (member of getEligibleLeads(selectedSubteam()!, position.requiredRole); track member.userId) {
+                      <option [value]="member.userId">{{ member.user?.fullName || member.user?.firstName }} ({{ member.user?.primaryEmail }})</option>
+                    }
+                  </select>
+                </div>
+              </div>
+            }
+            @for (position of subteamLeadPositions(); track $index) {
+              <div class="lead-position-item">
+                <span class="position-info">
+                  <strong>{{ position.title }}</strong> ({{ position.requiredRole }}) <em class="new-tag">New</em>
+                </span>
+                <button 
+                  class="remove-button"
+                  (click)="removeLeadPosition($index)"
+                  [disabled]="isSavingSubteam()">
+                  Remove
+                </button>
+              </div>
+            }
+            @if (selectedSubteam()!.leadPositions.length === 0 && subteamLeadPositions().length === 0) {
+              <p class="no-positions">No lead positions defined</p>
+            }
+          </div>
+
+          <div class="add-lead-position">
+            <input 
+              type="text"
+              [(ngModel)]="newLeadTitle"
+              placeholder="Position title"
+              [disabled]="isSavingSubteam()"
+            />
+            <select 
+              [(ngModel)]="newLeadRole"
+              [disabled]="isSavingSubteam()">
+              <option value="">Select required role</option>
+              @for (role of teamRoles(); track role) {
+                <option [value]="role">{{ role }}</option>
+              }
+            </select>
+            <button 
+              class="add-button"
+              (click)="addLeadPosition()"
+              [disabled]="!newLeadTitle().trim() || !newLeadRole() || isSavingSubteam()">
+              Add Position
+            </button>
+          </div>
+        </div>
+
+        @if (subteamError()) {
+          <div class="alert-error">
+            {{ subteamError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeEditSubteamDialog()"
+            [disabled]="isSavingSubteam()">
+            Cancel
+          </button>
+          <button 
+            class="save-button"
+            (click)="updateSubteam()"
+            [disabled]="isSavingSubteam()">
+            {{ isSavingSubteam() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Manage Members Dialog -->
+@if (showManageMembersDialog() && selectedSubteam()) {
+  <div class="dialog-overlay" (click)="closeManageMembersDialog()">
+    <div class="dialog-content manage-members-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Manage Members: {{ selectedSubteam()?.name }}</h2>
+        <button class="close-button" (click)="closeManageMembersDialog()">×</button>
+      </div>
+
+      <div class="manage-members-content">
+        <!-- Current Members -->
+        <div class="current-members-section">
+          <h3>Current Members ({{ selectedSubteam()!.members.length }})</h3>
+          @if (selectedSubteam()!.members.length === 0) {
+            <p class="no-members">No members in this subteam yet</p>
+          } @else {
+            <div class="members-list">
+              @for (member of selectedSubteam()?.members; track member.id) {
+                <div class="member-item">
+                  <div class="member-info">
+                    <span class="member-name">{{ member.userName }}</span>
+                    <span class="member-email">{{ member.userEmail }}</span>
+                  </div>
+                  <button 
+                    class="remove-member-button"
+                    (click)="removeMember(selectedSubteam()!, member.userId)"
+                    [disabled]="isUpdatingMembers()">
+                    Remove
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Add Members -->
+        <div class="add-members-section">
+          <h3>Add Members</h3>
+          <p class="section-help">Select members from your team to add to this subteam</p>
+          
+          <!-- Role Filter Dropdown -->
+          <div class="role-filter">
+            <label for="roleFilter">Filter by Role:</label>
+            <select 
+              id="roleFilter"
+              [(ngModel)]="memberRoleFilter"
+              [disabled]="isUpdatingMembers()">
+              <option value="">All Roles</option>
+              @for (role of teamRoles(); track role) {
+                <option [value]="role">{{ role }}</option>
+              }
+            </select>
+          </div>
+          
+          @if (availableTeamMembers().length === 0) {
+            <p class="no-available">
+              @if (memberRoleFilter()) {
+                No members with role "{{ memberRoleFilter() }}" available to add
+              } @else {
+                All team members are already in this subteam
+              }
+            </p>
+          } @else {
+            <div class="available-members-list">
+              @for (member of availableTeamMembers(); track member.userId) {
+                <label class="member-checkbox">
+                  <input 
+                    type="checkbox"
+                    [checked]="selectedMemberIds().has(member.userId)"
+                    (change)="toggleMemberSelection(member.userId)"
+                    [disabled]="isUpdatingMembers()"
+                  />
+                  <div class="member-info">
+                    <span class="member-name">{{ member.user?.fullName || member.user?.firstName }}</span>
+                    <span class="member-email">{{ member.user?.primaryEmail }}</span>
+                    <span class="member-roles">{{ member.roles.join(', ') }}</span>
+                  </div>
+                </label>
+              }
+            </div>
+
+            <button 
+              class="add-selected-button"
+              (click)="addSelectedMembers()"
+              [disabled]="selectedMemberIds().size === 0 || isUpdatingMembers()">
+              {{ isUpdatingMembers() ? 'Adding...' : `Add Selected (${selectedMemberIds().size})` }}
+            </button>
+          }
+        </div>
+
+        <div class="dialog-actions">
+          <button 
+            class="close-button-action"
+            (click)="closeManageMembersDialog()"
+            [disabled]="isUpdatingMembers()">
+            Close
+          </button>
         </div>
       </div>
     </div>

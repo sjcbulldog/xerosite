@@ -1,5 +1,6 @@
 import { Component, inject, ChangeDetectionStrategy, signal, OnInit, computed } from '@angular/core';
 import { TeamsService, Team, TeamMember, TeamInvitation } from './teams.service';
+import { Subteam, CreateSubteamRequest } from './subteam.types';
 import { TitleCasePipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -67,6 +68,46 @@ export class TeamDetailComponent implements OnInit {
   protected readonly importError = signal<string | null>(null);
   protected readonly importResult = signal<any | null>(null);
   protected readonly isDragging = signal(false);
+  
+  // Subteam signals
+  protected readonly subteams = signal<Subteam[]>([]);
+  protected readonly isLoadingSubteams = signal(false);
+  protected readonly showSubteamsSection = signal(false);
+  protected readonly showCreateSubteamDialog = signal(false);
+  protected readonly showEditSubteamDialog = signal(false);
+  protected readonly showManageMembersDialog = signal(false);
+  protected readonly selectedSubteam = signal<Subteam | null>(null);
+  
+  // Create/Edit Subteam form
+  protected readonly subteamName = signal('');
+  protected readonly subteamDescription = signal('');
+  protected readonly subteamValidRoles = signal<string[]>([]);
+  protected readonly subteamLeadPositions = signal<Array<{title: string, requiredRole: string}>>([]);
+  protected readonly newLeadTitle = signal('');
+  protected readonly newLeadRole = signal('');
+  protected readonly isSavingSubteam = signal(false);
+  protected readonly subteamError = signal<string | null>(null);
+  
+  // Member management
+  protected readonly memberRoleFilter = signal<string>(''); // Empty string means "All Roles"
+  protected readonly availableTeamMembers = computed(() => {
+    const subteam = this.selectedSubteam();
+    if (!subteam) return [];
+    
+    const subteamMemberIds = new Set(subteam.members.map(m => m.userId));
+    const roleFilter = this.memberRoleFilter();
+    
+    let availableMembers = this.activeMembers().filter(m => !subteamMemberIds.has(m.userId));
+    
+    // Apply role filter if one is selected
+    if (roleFilter) {
+      availableMembers = availableMembers.filter(m => m.roles.includes(roleFilter));
+    }
+    
+    return availableMembers;
+  });
+  protected readonly selectedMemberIds = signal<Set<string>>(new Set());
+  protected readonly isUpdatingMembers = signal(false);
   
   // Computed signal to check if current user is admin of this team
   protected readonly isTeamAdmin = computed(() => {
@@ -708,5 +749,267 @@ export class TeamDetailComponent implements OnInit {
     } finally {
       this.isImporting.set(false);
     }
+  }
+
+  // Subteam management methods
+  protected async toggleSubteamsSection(): Promise<void> {
+    const newState = !this.showSubteamsSection();
+    this.showSubteamsSection.set(newState);
+    
+    if (newState && this.subteams().length === 0) {
+      await this.loadSubteams();
+    }
+  }
+
+  private async loadSubteams(): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    this.isLoadingSubteams.set(true);
+    try {
+      const subteams = await this.teamsService.getTeamSubteams(teamId);
+      this.subteams.set(subteams);
+    } catch (error: any) {
+      console.error('Error loading subteams:', error);
+    } finally {
+      this.isLoadingSubteams.set(false);
+    }
+  }
+
+  protected openCreateSubteamDialog(): void {
+    this.subteamName.set('');
+    this.subteamDescription.set('');
+    this.subteamValidRoles.set([]);
+    this.subteamLeadPositions.set([]);
+    this.subteamError.set(null);
+    this.showCreateSubteamDialog.set(true);
+  }
+
+  protected closeCreateSubteamDialog(): void {
+    this.showCreateSubteamDialog.set(false);
+  }
+
+  protected openEditSubteamDialog(subteam: Subteam): void {
+    this.selectedSubteam.set(subteam);
+    this.subteamName.set(subteam.name);
+    this.subteamDescription.set(subteam.description || '');
+    this.subteamValidRoles.set([...subteam.validRoles]);
+    this.subteamLeadPositions.set(subteam.leadPositions.map(p => ({
+      title: p.title,
+      requiredRole: p.requiredRole
+    })));
+    this.subteamError.set(null);
+    this.showEditSubteamDialog.set(true);
+  }
+
+  protected closeEditSubteamDialog(): void {
+    this.showEditSubteamDialog.set(false);
+    this.selectedSubteam.set(null);
+  }
+
+  protected toggleValidRole(role: string): void {
+    const currentRoles = this.subteamValidRoles();
+    if (currentRoles.includes(role)) {
+      this.subteamValidRoles.set(currentRoles.filter(r => r !== role));
+    } else {
+      this.subteamValidRoles.set([...currentRoles, role]);
+    }
+  }
+
+  protected addLeadPosition(): void {
+    const title = this.newLeadTitle().trim();
+    const role = this.newLeadRole();
+    
+    if (title && role) {
+      this.subteamLeadPositions.set([...this.subteamLeadPositions(), { title, requiredRole: role }]);
+      this.newLeadTitle.set('');
+      this.newLeadRole.set('');
+    }
+  }
+
+  protected removeLeadPosition(index: number): void {
+    const positions = this.subteamLeadPositions();
+    this.subteamLeadPositions.set(positions.filter((_, i) => i !== index));
+  }
+
+  protected async createSubteam(): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    if (!this.subteamName().trim()) {
+      this.subteamError.set('Subteam name is required');
+      return;
+    }
+
+    if (this.subteamValidRoles().length === 0) {
+      this.subteamError.set('At least one valid role must be selected');
+      return;
+    }
+
+    this.isSavingSubteam.set(true);
+    this.subteamError.set(null);
+
+    try {
+      const request: CreateSubteamRequest = {
+        name: this.subteamName().trim(),
+        description: this.subteamDescription().trim() || undefined,
+        validRoles: this.subteamValidRoles(),
+        leadPositions: this.subteamLeadPositions().length > 0 ? this.subteamLeadPositions() : undefined
+      };
+
+      await this.teamsService.createSubteam(teamId, request);
+      await this.loadSubteams();
+      this.closeCreateSubteamDialog();
+    } catch (error: any) {
+      this.subteamError.set(error.message || 'Failed to create subteam');
+    } finally {
+      this.isSavingSubteam.set(false);
+    }
+  }
+
+  protected async updateSubteam(): Promise<void> {
+    const teamId = this.team()?.id;
+    const subteam = this.selectedSubteam();
+    if (!teamId || !subteam) return;
+
+    if (!this.subteamName().trim()) {
+      this.subteamError.set('Subteam name is required');
+      return;
+    }
+
+    if (this.subteamValidRoles().length === 0) {
+      this.subteamError.set('At least one valid role must be selected');
+      return;
+    }
+
+    this.isSavingSubteam.set(true);
+    this.subteamError.set(null);
+
+    try {
+      await this.teamsService.updateSubteam(teamId, subteam.id, {
+        name: this.subteamName().trim(),
+        description: this.subteamDescription().trim() || undefined,
+        validRoles: this.subteamValidRoles(),
+        leadPositions: this.subteamLeadPositions()
+      });
+
+      await this.loadSubteams();
+      this.closeEditSubteamDialog();
+    } catch (error: any) {
+      this.subteamError.set(error.message || 'Failed to update subteam');
+    } finally {
+      this.isSavingSubteam.set(false);
+    }
+  }
+
+  protected async deleteSubteam(subteam: Subteam): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    if (!confirm(`Are you sure you want to delete the subteam "${subteam.name}"? This will remove all members and lead assignments.`)) {
+      return;
+    }
+
+    try {
+      await this.teamsService.deleteSubteam(teamId, subteam.id);
+      await this.loadSubteams();
+    } catch (error: any) {
+      alert(error.message || 'Failed to delete subteam');
+    }
+  }
+
+  protected openManageMembersDialog(subteam: Subteam): void {
+    this.selectedSubteam.set(subteam);
+    this.selectedMemberIds.set(new Set());
+    this.memberRoleFilter.set(''); // Reset role filter
+    this.showManageMembersDialog.set(true);
+  }
+
+  protected closeManageMembersDialog(): void {
+    this.showManageMembersDialog.set(false);
+    this.selectedSubteam.set(null);
+    this.selectedMemberIds.set(new Set());
+    this.memberRoleFilter.set(''); // Reset role filter
+  }
+
+  protected toggleMemberSelection(userId: string): void {
+    const selected = this.selectedMemberIds();
+    const newSelected = new Set(selected);
+    
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    
+    this.selectedMemberIds.set(newSelected);
+  }
+
+  protected async addSelectedMembers(): Promise<void> {
+    const teamId = this.team()?.id;
+    const subteam = this.selectedSubteam();
+    if (!teamId || !subteam) return;
+
+    const userIds = Array.from(this.selectedMemberIds());
+    if (userIds.length === 0) return;
+
+    this.isUpdatingMembers.set(true);
+    try {
+      await this.teamsService.addSubteamMembers(teamId, subteam.id, userIds);
+      await this.loadSubteams();
+      this.selectedMemberIds.set(new Set());
+      
+      // Update selected subteam
+      const updatedSubteams = this.subteams();
+      const updated = updatedSubteams.find(s => s.id === subteam.id);
+      if (updated) {
+        this.selectedSubteam.set(updated);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to add members');
+    } finally {
+      this.isUpdatingMembers.set(false);
+    }
+  }
+
+  protected async removeMember(subteam: Subteam, userId: string): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    if (!confirm('Are you sure you want to remove this member from the subteam?')) {
+      return;
+    }
+
+    try {
+      await this.teamsService.removeSubteamMember(teamId, subteam.id, userId);
+      await this.loadSubteams();
+      
+      // Update selected subteam if in manage dialog
+      if (this.showManageMembersDialog()) {
+        const updatedSubteams = this.subteams();
+        const updated = updatedSubteams.find(s => s.id === subteam.id);
+        if (updated) {
+          this.selectedSubteam.set(updated);
+        }
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to remove member');
+    }
+  }
+
+  protected async assignLeadPosition(subteam: Subteam, positionId: string, userId: string | null): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    try {
+      await this.teamsService.updateLeadPosition(teamId, subteam.id, positionId, userId || undefined);
+      await this.loadSubteams();
+    } catch (error: any) {
+      alert(error.message || 'Failed to update lead position');
+    }
+  }
+
+  protected getEligibleLeads(subteam: Subteam, requiredRole: string): TeamMember[] {
+    return this.activeMembers().filter(m => m.roles.includes(requiredRole));
   }
 }

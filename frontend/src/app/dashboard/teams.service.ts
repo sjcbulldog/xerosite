@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { Subteam, CreateSubteamRequest, UpdateSubteamRequest } from './subteam.types';
 
 export interface Team {
   id: string;
@@ -375,6 +376,100 @@ export class TeamsService {
     } catch (error: any) {
       console.error('Error importing roster:', error);
       throw new Error(error.error?.message || 'Failed to import roster');
+    }
+  }
+
+  // Subteam management methods
+  async getTeamSubteams(teamId: string): Promise<Subteam[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<Subteam[]>(`${this.apiUrl}/${teamId}/subteams`)
+      );
+    } catch (error: any) {
+      console.error('Error fetching subteams:', error);
+      throw new Error(error.error?.message || 'Failed to fetch subteams');
+    }
+  }
+
+  async getSubteam(teamId: string, subteamId: string): Promise<Subteam> {
+    try {
+      return await firstValueFrom(
+        this.http.get<Subteam>(`${this.apiUrl}/${teamId}/subteams/${subteamId}`)
+      );
+    } catch (error: any) {
+      console.error('Error fetching subteam:', error);
+      throw new Error(error.error?.message || 'Failed to fetch subteam');
+    }
+  }
+
+  async createSubteam(teamId: string, data: CreateSubteamRequest): Promise<Subteam> {
+    try {
+      return await firstValueFrom(
+        this.http.post<Subteam>(`${this.apiUrl}/${teamId}/subteams`, data)
+      );
+    } catch (error: any) {
+      console.error('Error creating subteam:', error);
+      throw new Error(error.error?.message || 'Failed to create subteam');
+    }
+  }
+
+  async updateSubteam(teamId: string, subteamId: string, data: UpdateSubteamRequest): Promise<Subteam> {
+    try {
+      return await firstValueFrom(
+        this.http.patch<Subteam>(`${this.apiUrl}/${teamId}/subteams/${subteamId}`, data)
+      );
+    } catch (error: any) {
+      console.error('Error updating subteam:', error);
+      throw new Error(error.error?.message || 'Failed to update subteam');
+    }
+  }
+
+  async deleteSubteam(teamId: string, subteamId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/${teamId}/subteams/${subteamId}`)
+      );
+    } catch (error: any) {
+      console.error('Error deleting subteam:', error);
+      throw new Error(error.error?.message || 'Failed to delete subteam');
+    }
+  }
+
+  async addSubteamMembers(teamId: string, subteamId: string, userIds: string[]): Promise<Subteam> {
+    try {
+      return await firstValueFrom(
+        this.http.post<Subteam>(`${this.apiUrl}/${teamId}/subteams/${subteamId}/members`, { userIds })
+      );
+    } catch (error: any) {
+      console.error('Error adding subteam members:', error);
+      throw new Error(error.error?.message || 'Failed to add members');
+    }
+  }
+
+  async removeSubteamMember(teamId: string, subteamId: string, userId: string): Promise<Subteam> {
+    try {
+      return await firstValueFrom(
+        this.http.request<Subteam>('DELETE', `${this.apiUrl}/${teamId}/subteams/${subteamId}/members`, {
+          body: { userId }
+        })
+      );
+    } catch (error: any) {
+      console.error('Error removing subteam member:', error);
+      throw new Error(error.error?.message || 'Failed to remove member');
+    }
+  }
+
+  async updateLeadPosition(teamId: string, subteamId: string, positionId: string, userId?: string): Promise<Subteam> {
+    try {
+      return await firstValueFrom(
+        this.http.patch<Subteam>(`${this.apiUrl}/${teamId}/subteams/${subteamId}/lead-positions`, {
+          positionId,
+          userId: userId || null
+        })
+      );
+    } catch (error: any) {
+      console.error('Error updating lead position:', error);
+      throw new Error(error.error?.message || 'Failed to update lead position');
     }
   }
 }
