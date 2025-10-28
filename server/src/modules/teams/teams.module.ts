@@ -6,11 +6,13 @@ import { Team } from './entities/team.entity';
 import { UserTeam } from './entities/user-team.entity';
 import { TeamInvitation } from './entities/team-invitation.entity';
 import { EmailModule } from '../email/email.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Team, UserTeam, TeamInvitation]),
     EmailModule,
+    UsersModule,
   ],
   controllers: [TeamsController],
   providers: [TeamsService],

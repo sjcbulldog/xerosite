@@ -11,4 +11,5 @@ export default registerAs('email', () => ({
   from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
   apiUrl: process.env.API_URL || 'http://localhost:3000',
   frontendUrl: process.env.API_URL || 'http://localhost:3000',
+  dontSend: process.env.EMAIL_DONT_SEND === 'true',
 }));

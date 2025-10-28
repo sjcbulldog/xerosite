@@ -8,8 +8,12 @@ import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateMemberStatusDto } from './dto/team-response.dto';
 import { SendInvitationDto, TeamInvitationResponseDto, UpdateInvitationStatusDto } from './dto/team-invitation.dto';
+import { ImportRosterDto, ImportRosterResultDto, RosterMemberDto } from './dto/import-roster.dto';
 import { MembershipStatus } from './enums/membership-status.enum';
 import { EmailService } from '../email/email.service';
+import { UsersService } from '../users/users.service';
+import { User } from '../users/entities/user.entity';
+import { UserState } from '../users/enums/user-state.enum';
 
 @Injectable()
 export class TeamsService {
@@ -21,6 +25,7 @@ export class TeamsService {
     @InjectRepository(TeamInvitation)
     private readonly invitationRepository: Repository<TeamInvitation>,
     private readonly emailService: EmailService,
+    private readonly usersService: UsersService,
   ) {}
 
   async create(createTeamDto: CreateTeamDto): Promise<TeamResponseDto> {
@@ -212,6 +217,27 @@ export class TeamsService {
             `Cannot assign both "${roles[i]}" and "${roles[j]}" roles. They are mutually exclusive.`,
           );
         }
+      }
+    }
+
+    // Check if removing Administrator role from the last admin
+    const currentRoles = userTeam.getRolesArray();
+    const isRemovingAdmin = currentRoles.includes('Administrator') && !roles.includes('Administrator');
+    
+    if (isRemovingAdmin) {
+      // Count how many active members have the Administrator role
+      const allMembers = await this.userTeamRepository.find({
+        where: { teamId, status: MembershipStatus.ACTIVE },
+      });
+      
+      const adminCount = allMembers.filter(member => 
+        member.getRolesArray().includes('Administrator')
+      ).length;
+      
+      if (adminCount <= 1) {
+        throw new BadRequestException(
+          'Cannot remove Administrator role. At least one team member must have the Administrator role.'
+        );
       }
     }
 
@@ -470,6 +496,238 @@ export class TeamsService {
       createdAt: invitation.createdAt,
       updatedAt: invitation.updatedAt,
     };
+  }
+
+  async getRoleConstraints(teamId: string): Promise<Array<[string, string]>> {
+    const team = await this.teamRepository.findOne({
+      where: { id: teamId },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    return team.getRoleConstraintsArray();
+  }
+
+  async updateRoleConstraints(
+    teamId: string,
+    constraints: Array<[string, string]>,
+  ): Promise<Array<[string, string]>> {
+    const team = await this.teamRepository.findOne({
+      where: { id: teamId },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    // Validate that all constraint roles exist in team roles
+    const teamRoles = team.getRolesArray();
+    for (const [role1, role2] of constraints) {
+      if (!teamRoles.includes(role1)) {
+        throw new BadRequestException(`Role "${role1}" does not exist in team roles`);
+      }
+      if (!teamRoles.includes(role2)) {
+        throw new BadRequestException(`Role "${role2}" does not exist in team roles`);
+      }
+      if (role1 === role2) {
+        throw new BadRequestException(`Cannot create constraint with same role: "${role1}"`);
+      }
+    }
+
+    team.setRoleConstraintsArray(constraints);
+    await this.teamRepository.save(team);
+
+    return team.getRoleConstraintsArray();
+  }
+
+  async importRoster(teamId: string, importData: ImportRosterDto): Promise<ImportRosterResultDto> {
+    const team = await this.teamRepository.findOne({
+      where: { id: teamId },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    const result: ImportRosterResultDto = {
+      successful: 0,
+      failed: 0,
+      errors: [],
+      created: [],
+      existing: [],
+    };
+
+    const defaultRoles = ['Student']; // Default role for imported members
+
+    for (let i = 0; i < importData.members.length; i++) {
+      const member = importData.members[i];
+      const rowNumber = i + 2; // +2 because row 1 is headers and arrays are 0-indexed
+
+      try {
+        // Validate required fields
+        if (!member.email || !member.email.trim()) {
+          result.failed++;
+          result.errors.push({
+            row: rowNumber,
+            email: member.email,
+            error: 'Email is required',
+          });
+          continue;
+        }
+
+        if (!member.first || !member.first.trim()) {
+          result.failed++;
+          result.errors.push({
+            row: rowNumber,
+            email: member.email,
+            error: 'First name is required',
+          });
+          continue;
+        }
+
+        if (!member.last || !member.last.trim()) {
+          result.failed++;
+          result.errors.push({
+            row: rowNumber,
+            email: member.email,
+            error: 'Last name is required',
+          });
+          continue;
+        }
+
+        // Handle multiple email addresses separated by semicolons
+        const emailAddresses = member.email.split(';')
+          .map(e => e.trim().toLowerCase())
+          .filter(e => e.length > 0);
+        
+        if (emailAddresses.length === 0) {
+          result.failed++;
+          result.errors.push({
+            row: rowNumber,
+            email: member.email,
+            error: 'No valid email addresses found',
+          });
+          continue;
+        }
+
+        const primaryEmail = emailAddresses[0];
+        const firstName = member.first.trim();
+        const lastName = member.last.trim();
+
+        // Check if user already exists (using primary email)
+        let user = await this.usersService.findByEmail(primaryEmail);
+        let isNewUser = false;
+
+        if (!user) {
+          // Create new user with default password or a temporary one
+          const password = importData.defaultPassword || Math.random().toString(36).slice(-12);
+          
+          // Handle multiple phone numbers separated by semicolons
+          let phones: any[] | undefined = undefined;
+          if (member.phoneNumber?.trim()) {
+            const phoneNumbers = member.phoneNumber.split(';')
+              .map(p => p.trim())
+              .filter(p => p.length > 0);
+            
+            phones = phoneNumbers.map((phoneNumber, index) => ({
+              phoneNumber: phoneNumber,
+              phoneType: 'mobile',
+              isPrimary: index === 0, // First phone is primary
+            }));
+          }
+
+          // Build emails array from semicolon-separated list
+          const emails = emailAddresses.map((email, index) => ({
+            email: email,
+            emailType: index === 0 ? 'personal' : 'work',
+            isPrimary: index === 0, // First email is primary
+          }));
+
+          const registerDto: any = {
+            firstName,
+            lastName,
+            password: password,
+            emails: emails,
+            phones: phones,
+            addresses:
+              member.address?.trim() &&
+              member.city?.trim() &&
+              member.state?.trim() &&
+              member.zip?.trim()
+                ? [
+                    {
+                      streetLine1: member.address.trim(),
+                      city: member.city.trim(),
+                      stateProvince: member.state.trim(),
+                      postalCode: member.zip.trim(),
+                      country: 'USA',
+                      addressType: 'home',
+                      isPrimary: true,
+                    },
+                  ]
+                : undefined,
+            // Set user state and isActive based on defaultStatus
+            state: importData.defaultStatus === MembershipStatus.ACTIVE ? UserState.ACTIVE : UserState.PENDING,
+            isActive: importData.defaultStatus === MembershipStatus.ACTIVE,
+          };
+
+          user = await this.usersService.register(registerDto);
+          isNewUser = true;
+
+          result.created.push({
+            email: primaryEmail,
+            name: `${firstName} ${lastName}`,
+          });
+
+          // TODO: Send verification email for new user
+          // This would require access to AuthService or EmailService
+          // For now, the user will be in pending state
+        } else {
+          result.existing.push({
+            email: primaryEmail,
+            name: user.fullName,
+          });
+        }
+
+        // Check if user is already a member of this team
+        const existingMembership = await this.userTeamRepository.findOne({
+          where: { userId: user.id, teamId },
+        });
+
+        if (existingMembership) {
+          // Skip if already a member
+          result.successful++;
+          continue;
+        }
+
+        // Directly add all users to the team with active membership status
+        // The user's isActive field (set during user creation) determines if they can log in
+        const userTeam = this.userTeamRepository.create({
+          userId: user.id,
+          teamId,
+          roles: defaultRoles.join(','),
+          status: MembershipStatus.ACTIVE, // Team membership is always active
+        });
+
+        await this.userTeamRepository.save(userTeam);
+
+        // Send notification email to primary email address
+        await this.emailService.sendTeamInvitationEmail(primaryEmail, team.name, team.teamNumber);
+
+        result.successful++;
+      } catch (error: any) {
+        result.failed++;
+        result.errors.push({
+          row: rowNumber,
+          email: member.email,
+          error: error.message || 'Failed to process member',
+        });
+      }
+    }
+
+    return result;
   }
 }
 

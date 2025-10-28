@@ -14,6 +14,8 @@ import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateTeamMemberRolesDto, UpdateMemberStatusDto } from './dto/team-response.dto';
 import { SendInvitationDto, TeamInvitationResponseDto } from './dto/team-invitation.dto';
+import { UpdateRoleConstraintsDto } from './dto/role-constraints.dto';
+import { ImportRosterDto, ImportRosterResultDto } from './dto/import-roster.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -139,5 +141,29 @@ export class TeamsController {
     @Body() updateStatusDto: UpdateMemberStatusDto,
   ): Promise<TeamMemberDto> {
     return this.teamsService.updateMemberStatus(teamId, userId, updateStatusDto);
+  }
+
+  @Get(':id/constraints')
+  async getRoleConstraints(@Param('id') id: string): Promise<{ constraints: Array<[string, string]> }> {
+    const constraints = await this.teamsService.getRoleConstraints(id);
+    return { constraints };
+  }
+
+  @Patch(':id/constraints')
+  async updateRoleConstraints(
+    @Param('id') id: string,
+    @Body() updateConstraintsDto: UpdateRoleConstraintsDto,
+  ): Promise<{ constraints: Array<[string, string]> }> {
+    const pairs = updateConstraintsDto.constraints.map(c => [c.role1, c.role2] as [string, string]);
+    const constraints = await this.teamsService.updateRoleConstraints(id, pairs);
+    return { constraints };
+  }
+
+  @Post(':id/import-roster')
+  async importRoster(
+    @Param('id') id: string,
+    @Body() importRosterDto: ImportRosterDto,
+  ): Promise<ImportRosterResultDto> {
+    return this.teamsService.importRoster(id, importRosterDto);
   }
 }

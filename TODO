@@ -1,12 +1,26 @@
+Open Questions
+--------------
+- How to tie students to their parents
+
 Login
 =====
 - Basic login screen                                                                            X
 - Account can have multiple emails, any can be used to login                                    X
+- Forgot password link                                                                          X
 
 Registrations
 =============
 - Basic registration screen                                                                     X
 - Email verification before added to site                                                       X
+- Password strength indicator                                                                   X
+
+Users
+=====
+- Birthday
+- Grade: 8, 9, 10, 11, 12
+- Gender: Male, Female, Other
+- Dietary Concerns: 
+
 
 Dashboard
 =========
@@ -14,22 +28,27 @@ Dashboard
 - Provide ability for admin to make other users admin, active, or disabled.                     X
 - Create new teams (public or private)                                                          X
 
-Profile Editor
+Profile
 ==============
 - Add/remove email addresses                                                                    X
 - Add/remove phone numbers                                                                      X
 - Add/remove physical addresses                                                                 X
+- Change password
 
 Team roles
 ==========
 - Team admin can add and remove roles                                                           X
 - Team admin can assign member to specific roles                                                X
-- Provide an interface to specify role exclusions
+- Provide an interface to specify role exclusions                                               X
 
 Teams
 =====
 - For private teams, have the ability for the team admin to sent out invites via email          X
-- Import CSV rosters
+- Import CSV rosters                                                                            X
+  o Split phone numbers at semicolons and add as different phone numbers                        X
+  o Progress bar timed to 30 seconds                                                            X
+  o Active vs Pending user create                                                               X
+  o Split email addresses at semicolons and add as different emails                             O
 
 Add subteams
 ============
@@ -52,7 +71,7 @@ Add calendar
 Send Email
 ==========
 - Select based on entire team, roles, subteams, or individuals
-
+- Detect bounced email an alert team administrators
 
 IOS App
 =======

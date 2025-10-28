@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AuthService } from '../auth.service';
@@ -27,11 +27,18 @@ export class RegisterComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
+  // Password requirement signals - must be defined before form
+  protected readonly passwordValue = signal('');
+  
+  protected readonly isLoading = signal(false);
+  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly successMessage = signal<string | null>(null);
+
   protected readonly registerForm = new FormGroup<RegisterForm>({
     firstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2)] }),
     lastName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2)] }),
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)] }),
-    password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }),
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required, (control) => this.passwordValidator(control)] }),
     confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     phone: new FormControl('', { nonNullable: true }),
     address: new FormControl('', { nonNullable: true }),
@@ -39,12 +46,45 @@ export class RegisterComponent {
     state: new FormControl('', { nonNullable: true }),
     zipCode: new FormControl('', { nonNullable: true })
   }, {
-    validators: [this.passwordMatchValidator]
+    validators: [(control) => this.passwordMatchValidator(control)]
   });
   
-  protected readonly isLoading = signal(false);
-  protected readonly errorMessage = signal<string | null>(null);
-  protected readonly successMessage = signal<string | null>(null);
+  protected readonly hasMinLength = computed(() => this.passwordValue().length >= 8);
+  protected readonly hasUpperCase = computed(() => /[A-Z]/.test(this.passwordValue()));
+  protected readonly hasLowerCase = computed(() => /[a-z]/.test(this.passwordValue()));
+  protected readonly hasNumber = computed(() => /[0-9]/.test(this.passwordValue()));
+  protected readonly hasSymbol = computed(() => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(this.passwordValue()));
+
+  private passwordValidator(control: AbstractControl): ValidationErrors | null {
+    const value = control.value as string;
+    
+    // Update the signal for reactive UI
+    this.passwordValue.set(value);
+    
+    if (!value) {
+      return null; // Let required validator handle empty
+    }
+
+    const errors: ValidationErrors = {};
+
+    if (value.length < 8) {
+      errors['minLength'] = true;
+    }
+    if (!/[A-Z]/.test(value)) {
+      errors['uppercase'] = true;
+    }
+    if (!/[a-z]/.test(value)) {
+      errors['lowercase'] = true;
+    }
+    if (!/[0-9]/.test(value)) {
+      errors['number'] = true;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+      errors['symbol'] = true;
+    }
+
+    return Object.keys(errors).length > 0 ? errors : null;
+  }
 
   private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const formGroup = control as FormGroup;

@@ -1,10 +1,19 @@
-import { Component, inject, ChangeDetectionStrategy, signal, OnInit } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, computed, OnInit } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
 import { TitleCasePipe, DatePipe } from '@angular/common';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { TeamsService, TeamInvitation } from './teams.service';
 import { UsersService, UserProfile } from '../profile/users.service';
+
+type SortField = 'firstName' | 'lastName' | 'email';
+type SortDirection = 'asc' | 'desc';
+
+interface ChangePasswordForm {
+  currentPassword: FormControl<string>;
+  newPassword: FormControl<string>;
+  confirmPassword: FormControl<string>;
+}
 
 interface CreateTeamForm {
   name: FormControl<string>;
@@ -41,6 +50,62 @@ export class DashboardComponent implements OnInit {
   protected readonly showUserMenu = signal(false);
   protected readonly adminTeamIds = signal<Set<string>>(new Set());
   protected readonly allUsers = signal<UserProfile[]>([]);
+  
+  // Change password dialog signals
+  protected readonly showChangePasswordDialog = signal(false);
+  protected readonly isChangingPassword = signal(false);
+  protected readonly changePasswordError = signal<string | null>(null);
+  protected readonly changePasswordSuccess = signal<string | null>(null);
+  
+  // Password requirement signals - must be defined before form
+  protected readonly newPasswordValue = signal('');
+  
+  protected readonly hasMinLength = computed(() => this.newPasswordValue().length >= 8);
+  protected readonly hasUpperCase = computed(() => /[A-Z]/.test(this.newPasswordValue()));
+  protected readonly hasLowerCase = computed(() => /[a-z]/.test(this.newPasswordValue()));
+  protected readonly hasNumber = computed(() => /[0-9]/.test(this.newPasswordValue()));
+  protected readonly hasSymbol = computed(() => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(this.newPasswordValue()));
+  
+  protected readonly changePasswordForm = new FormGroup<ChangePasswordForm>({
+    currentPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    newPassword: new FormControl('', { nonNullable: true, validators: [Validators.required, (control) => this.passwordValidator(control)] }),
+    confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] })
+  }, {
+    validators: [(control) => this.passwordMatchValidator(control)]
+  });
+  
+  // User sorting signals
+  protected readonly userSortField = signal<SortField>('firstName');
+  protected readonly userSortDirection = signal<SortDirection>('asc');
+  
+  // Computed signal for sorted users
+  protected readonly sortedUsers = computed(() => {
+    const users = [...this.allUsers()];
+    const field = this.userSortField();
+    const direction = this.userSortDirection();
+    
+    users.sort((a, b) => {
+      let aValue: string;
+      let bValue: string;
+      
+      if (field === 'firstName') {
+        aValue = a.firstName.toLowerCase();
+        bValue = b.firstName.toLowerCase();
+      } else if (field === 'lastName') {
+        aValue = a.lastName.toLowerCase();
+        bValue = b.lastName.toLowerCase();
+      } else { // email
+        aValue = a.primaryEmail.toLowerCase();
+        bValue = b.primaryEmail.toLowerCase();
+      }
+      
+      if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return users;
+  });
   
   // Invitation signals
   protected readonly showInvitationNotification = signal(false);
@@ -323,5 +388,140 @@ export class DashboardComponent implements OnInit {
     } catch (error: any) {
       alert(error.message || 'Failed to decline invitation');
     }
+  }
+
+  protected sortUsers(field: SortField): void {
+    if (this.userSortField() === field) {
+      // Toggle direction if clicking the same field
+      this.userSortDirection.set(this.userSortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to ascending
+      this.userSortField.set(field);
+      this.userSortDirection.set('asc');
+    }
+  }
+
+  protected getSortIcon(field: SortField): string {
+    if (this.userSortField() !== field) {
+      return '⇅'; // Both arrows when not sorted by this field
+    }
+    return this.userSortDirection() === 'asc' ? '↑' : '↓';
+  }
+
+  // Password validation methods
+  private passwordValidator(control: AbstractControl): ValidationErrors | null {
+    const value = control.value as string;
+    
+    // Update the signal for reactive UI
+    this.newPasswordValue.set(value);
+    
+    if (!value) {
+      return null; // Let required validator handle empty
+    }
+
+    const errors: ValidationErrors = {};
+
+    if (value.length < 8) {
+      errors['minLength'] = true;
+    }
+    if (!/[A-Z]/.test(value)) {
+      errors['uppercase'] = true;
+    }
+    if (!/[a-z]/.test(value)) {
+      errors['lowercase'] = true;
+    }
+    if (!/[0-9]/.test(value)) {
+      errors['number'] = true;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+      errors['symbol'] = true;
+    }
+
+    return Object.keys(errors).length > 0 ? errors : null;
+  }
+
+  private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const formGroup = control as FormGroup;
+    const newPassword = formGroup.get('newPassword');
+    const confirmPassword = formGroup.get('confirmPassword');
+    
+    if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
+      confirmPassword.setErrors({ passwordMismatch: true });
+    } else {
+      const errors = confirmPassword?.errors;
+      if (errors) {
+        delete errors['passwordMismatch'];
+        confirmPassword.setErrors(Object.keys(errors).length > 0 ? errors : null);
+      }
+    }
+    
+    return null;
+  }
+
+  // Change password dialog methods
+  protected openChangePasswordDialog(): void {
+    this.showUserMenu.set(false);
+    this.showChangePasswordDialog.set(true);
+    this.changePasswordForm.reset();
+    this.changePasswordError.set(null);
+    this.changePasswordSuccess.set(null);
+    this.newPasswordValue.set('');
+  }
+
+  protected closeChangePasswordDialog(): void {
+    this.showChangePasswordDialog.set(false);
+    this.changePasswordForm.reset();
+    this.changePasswordError.set(null);
+    this.changePasswordSuccess.set(null);
+    this.newPasswordValue.set('');
+  }
+
+  protected async onChangePassword(): Promise<void> {
+    if (this.changePasswordForm.invalid) return;
+
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) {
+      this.changePasswordError.set('User not authenticated');
+      return;
+    }
+
+    this.isChangingPassword.set(true);
+    this.changePasswordError.set(null);
+    this.changePasswordSuccess.set(null);
+
+    try {
+      const formValue = this.changePasswordForm.getRawValue();
+      const result = await this.usersService.changePassword(
+        userId,
+        formValue.currentPassword,
+        formValue.newPassword
+      );
+
+      this.changePasswordSuccess.set(result.message);
+      this.changePasswordForm.reset();
+      this.newPasswordValue.set('');
+
+      // Auto-close after 2 seconds
+      setTimeout(() => {
+        this.closeChangePasswordDialog();
+      }, 2000);
+    } catch (error: any) {
+      this.changePasswordError.set(error.error?.message || error.message || 'Failed to change password');
+    } finally {
+      this.isChangingPassword.set(false);
+    }
+  }
+
+  protected getPasswordFieldError(fieldName: string): string | null {
+    const field = this.changePasswordForm.get(fieldName);
+    if (field?.errors && field.touched) {
+      if (field.errors['required']) {
+        return 'This field is required';
+      }
+      if (field.errors['passwordMismatch']) {
+        return 'Passwords do not match';
+      }
+    }
+    return null;
   }
 }

@@ -122,6 +122,44 @@
   margin-top: 0.25rem;
 }
 
+.password-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+
+.requirement {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  transition: color 0.2s ease;
+
+  .icon {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #ef4444;
+    transition: color 0.2s ease;
+  }
+
+  .text {
+    line-height: 1.2;
+  }
+
+  &.met {
+    color: #059669;
+
+    .icon {
+      color: #059669;
+    }
+  }
+}
+
 .alert-error {
   background-color: #fef2f2;
   border: 1px solid #fecaca;

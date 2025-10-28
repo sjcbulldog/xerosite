@@ -442,6 +442,29 @@
       font-size: 0.875rem;
       text-transform: uppercase;
       letter-spacing: 0.025em;
+
+      &.sortable {
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+
+        &:hover {
+          background: #f3f4f6;
+          color: #667eea;
+        }
+
+        .sort-icon {
+          display: inline-block;
+          margin-left: 0.25rem;
+          font-size: 0.75rem;
+          color: #9ca3af;
+          transition: color 0.2s ease;
+        }
+
+        &:hover .sort-icon {
+          color: #667eea;
+        }
+      }
     }
   }
 
@@ -598,6 +621,53 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   font-size: 0.875rem;
+}
+
+.alert-success {
+  background: #d1fae5;
+  border: 1px solid #10b981;
+  color: #065f46;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.password-requirements {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+
+  .requirements-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .requirement {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #dc2626;
+    margin: 0.25rem 0;
+
+    .requirement-icon {
+      font-weight: bold;
+      width: 1rem;
+    }
+
+    &.met {
+      color: #16a34a;
+    }
+  }
+}
+
+.change-password-form {
+  padding: 1.5rem;
 }
 
 .dialog-actions {

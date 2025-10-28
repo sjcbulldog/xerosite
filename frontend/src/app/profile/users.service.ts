@@ -100,4 +100,13 @@ export class UsersService {
       this.http.patch<UserProfile>(`${this.apiUrl}/${userId}/state`, { state })
     );
   }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    return firstValueFrom(
+      this.http.patch<{ message: string }>(`${this.apiUrl}/${userId}/password`, {
+        currentPassword,
+        newPassword
+      })
+    );
+  }
 }

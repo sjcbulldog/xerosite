@@ -10,6 +10,7 @@ import { UserResponseDto } from '../users/dto/user-response.dto';
 import { User } from '../users/entities/user.entity';
 import { UserState } from '../users/enums/user-state.enum';
 import { EmailVerificationToken } from './entities/email-verification-token.entity';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -20,6 +21,8 @@ export class AuthService {
     private readonly emailService: EmailService,
     @InjectRepository(EmailVerificationToken)
     private readonly verificationTokenRepository: Repository<EmailVerificationToken>,
+    @InjectRepository(PasswordResetToken)
+    private readonly passwordResetTokenRepository: Repository<PasswordResetToken>,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -230,5 +233,82 @@ export class AuthService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmail(email);
+
+    // Always return success message even if user doesn't exist (security best practice)
+    if (!user) {
+      return {
+        message: 'If an account with that email exists, a password reset link has been sent.',
+      };
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
+
+    // Delete any existing reset tokens for this user
+    await this.passwordResetTokenRepository.delete({ userId: user.id });
+
+    // Create new reset token
+    const passwordResetToken = this.passwordResetTokenRepository.create({
+      userId: user.id,
+      token: resetToken,
+      expiresAt,
+      used: false,
+    });
+
+    await this.passwordResetTokenRepository.save(passwordResetToken);
+
+    // Send reset email
+    await this.emailService.sendPasswordResetEmail(
+      user.primaryEmail,
+      user.firstName,
+      resetToken,
+    );
+
+    return {
+      message: 'If an account with that email exists, a password reset link has been sent.',
+    };
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    // Find the reset token
+    const resetToken = await this.passwordResetTokenRepository.findOne({
+      where: { token },
+      relations: ['user'],
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    if (resetToken.used) {
+      throw new BadRequestException('This reset token has already been used');
+    }
+
+    if (new Date() > resetToken.expiresAt) {
+      throw new BadRequestException('This reset token has expired');
+    }
+
+    // Update the user's password
+    await this.usersService.updatePassword(resetToken.userId, newPassword);
+
+    // Mark token as used
+    resetToken.used = true;
+    await this.passwordResetTokenRepository.save(resetToken);
+
+    return {
+      message: 'Your password has been successfully reset. You can now log in with your new password.',
+    };
+  }
+
+  async cleanupExpiredResetTokens(): Promise<void> {
+    await this.passwordResetTokenRepository.delete({
+      expiresAt: LessThan(new Date()),
+    });
   }
 }

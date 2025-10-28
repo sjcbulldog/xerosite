@@ -16,6 +16,10 @@
             <span class="menu-icon">👤</span>
             Edit Profile
           </button>
+          <button (click)="openChangePasswordDialog()" class="menu-item">
+            <span class="menu-icon">🔒</span>
+            Change Password
+          </button>
           <button (click)="logout()" class="menu-item">
             <span class="menu-icon">🚪</span>
             Sign Out
@@ -116,16 +120,24 @@
                 <table class="users-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
+                      <th class="sortable" (click)="sortUsers('firstName')">
+                        First Name <span class="sort-icon">{{ getSortIcon('firstName') }}</span>
+                      </th>
+                      <th class="sortable" (click)="sortUsers('lastName')">
+                        Last Name <span class="sort-icon">{{ getSortIcon('lastName') }}</span>
+                      </th>
+                      <th class="sortable" (click)="sortUsers('email')">
+                        Email <span class="sort-icon">{{ getSortIcon('email') }}</span>
+                      </th>
                       <th>State</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    @for (user of allUsers(); track user.id) {
+                    @for (user of sortedUsers(); track user.id) {
                       <tr>
-                        <td>{{ user.fullName }}</td>
+                        <td>{{ user.firstName }}</td>
+                        <td>{{ user.lastName }}</td>
                         <td>{{ user.primaryEmail }}</td>
                         <td>
                           @if (user.state === 'admin') {
@@ -369,6 +381,110 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+}
+
+@if (showChangePasswordDialog()) {
+  <div class="dialog-overlay" (click)="closeChangePasswordDialog()">
+    <div class="dialog-content" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Change Password</h2>
+        <button class="close-button" (click)="closeChangePasswordDialog()">×</button>
+      </div>
+
+      <form [formGroup]="changePasswordForm" (ngSubmit)="onChangePassword()" class="change-password-form">
+        <div class="form-group">
+          <label for="currentPassword">Current Password *</label>
+          <input 
+            id="currentPassword"
+            type="password" 
+            formControlName="currentPassword"
+            [class.error]="getPasswordFieldError('currentPassword')"
+            placeholder="Enter your current password"
+          />
+          @if (getPasswordFieldError('currentPassword')) {
+            <span class="error-message">{{ getPasswordFieldError('currentPassword') }}</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="newPassword">New Password *</label>
+          <input 
+            id="newPassword"
+            type="password" 
+            formControlName="newPassword"
+            [class.error]="getPasswordFieldError('newPassword')"
+            placeholder="Enter your new password"
+          />
+          
+          <div class="password-requirements">
+            <p class="requirements-title">Password must contain:</p>
+            <div class="requirement" [class.met]="hasMinLength()">
+              <span class="requirement-icon">{{ hasMinLength() ? '✓' : '✗' }}</span>
+              At least 8 characters
+            </div>
+            <div class="requirement" [class.met]="hasUpperCase()">
+              <span class="requirement-icon">{{ hasUpperCase() ? '✓' : '✗' }}</span>
+              At least one uppercase letter
+            </div>
+            <div class="requirement" [class.met]="hasLowerCase()">
+              <span class="requirement-icon">{{ hasLowerCase() ? '✓' : '✗' }}</span>
+              At least one lowercase letter
+            </div>
+            <div class="requirement" [class.met]="hasNumber()">
+              <span class="requirement-icon">{{ hasNumber() ? '✓' : '✗' }}</span>
+              At least one number
+            </div>
+            <div class="requirement" [class.met]="hasSymbol()">
+              <span class="requirement-icon">{{ hasSymbol() ? '✓' : '✗' }}</span>
+              At least one special character
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Confirm New Password *</label>
+          <input 
+            id="confirmPassword"
+            type="password" 
+            formControlName="confirmPassword"
+            [class.error]="getPasswordFieldError('confirmPassword')"
+            placeholder="Confirm your new password"
+          />
+          @if (getPasswordFieldError('confirmPassword')) {
+            <span class="error-message">{{ getPasswordFieldError('confirmPassword') }}</span>
+          }
+        </div>
+
+        @if (changePasswordError()) {
+          <div class="alert-error">
+            {{ changePasswordError() }}
+          </div>
+        }
+
+        @if (changePasswordSuccess()) {
+          <div class="alert-success">
+            {{ changePasswordSuccess() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            type="button" 
+            class="cancel-button"
+            (click)="closeChangePasswordDialog()"
+            [disabled]="isChangingPassword()">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="submit-button"
+            [disabled]="changePasswordForm.invalid || isChangingPassword()">
+            {{ isChangingPassword() ? 'Changing...' : 'Change Password' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 }

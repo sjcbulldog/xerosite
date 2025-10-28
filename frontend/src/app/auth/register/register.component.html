@@ -101,9 +101,29 @@
           placeholder="Enter your password"
           autocomplete="new-password"
         />
-        @if (getFieldError('password')) {
-          <span class="error-message">{{ getFieldError('password') }}</span>
-        }
+        
+        <div class="password-requirements">
+          <div class="requirement" [class.met]="hasMinLength()">
+            <span class="icon">{{ hasMinLength() ? '✓' : '✗' }}</span>
+            <span class="text">At least 8 characters</span>
+          </div>
+          <div class="requirement" [class.met]="hasUpperCase()">
+            <span class="icon">{{ hasUpperCase() ? '✓' : '✗' }}</span>
+            <span class="text">One uppercase letter</span>
+          </div>
+          <div class="requirement" [class.met]="hasLowerCase()">
+            <span class="icon">{{ hasLowerCase() ? '✓' : '✗' }}</span>
+            <span class="text">One lowercase letter</span>
+          </div>
+          <div class="requirement" [class.met]="hasNumber()">
+            <span class="icon">{{ hasNumber() ? '✓' : '✗' }}</span>
+            <span class="text">One number</span>
+          </div>
+          <div class="requirement" [class.met]="hasSymbol()">
+            <span class="icon">{{ hasSymbol() ? '✓' : '✗' }}</span>
+            <span class="text">One symbol (!@#$%^&*...)</span>
+          </div>
+        </div>
       </div>
 
       <div class="form-group">

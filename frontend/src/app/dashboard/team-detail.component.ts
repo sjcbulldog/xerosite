@@ -48,6 +48,26 @@ export class TeamDetailComponent implements OnInit {
   protected readonly invitationError = signal<string | null>(null);
   protected readonly teamInvitations = signal<TeamInvitation[]>([]);
   
+  // Constraints editor signals
+  protected readonly showConstraintsEditor = signal(false);
+  protected readonly editingConstraints = signal<Array<[string, string]>>([]);
+  protected readonly constraintRole1 = signal('');
+  protected readonly constraintRole2 = signal('');
+  protected readonly isSavingConstraints = signal(false);
+  protected readonly constraintsEditorError = signal<string | null>(null);
+  
+  // Import roster signals
+  protected readonly showImportDialog = signal(false);
+  protected readonly importFile = signal<File | null>(null);
+  protected readonly importStatus = signal<'pending' | 'active'>('pending');
+  protected readonly importDefaultPassword = signal('');
+  protected readonly isImporting = signal(false);
+  protected readonly importProgress = signal(0);
+  protected readonly importTotal = signal(0);
+  protected readonly importError = signal<string | null>(null);
+  protected readonly importResult = signal<any | null>(null);
+  protected readonly isDragging = signal(false);
+  
   // Computed signal to check if current user is admin of this team
   protected readonly isTeamAdmin = computed(() => {
     const currentUserId = this.authService.currentUser()?.id;
@@ -433,6 +453,260 @@ export class TeamDetailComponent implements OnInit {
       this.invitationError.set(error.message || 'Failed to send invitation');
     } finally {
       this.isSendingInvitation.set(false);
+    }
+  }
+
+  // Constraints Editor Methods
+  protected async openConstraintsEditor(): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    try {
+      const constraints = await this.teamsService.getRoleConstraints(teamId);
+      this.editingConstraints.set(constraints);
+      this.constraintRole1.set('');
+      this.constraintRole2.set('');
+      this.constraintsEditorError.set(null);
+      this.showConstraintsEditor.set(true);
+    } catch (error: any) {
+      console.error('Failed to load constraints:', error);
+      this.constraintsEditorError.set('Failed to load constraints');
+    }
+  }
+
+  protected closeConstraintsEditor(): void {
+    this.showConstraintsEditor.set(false);
+    this.constraintRole1.set('');
+    this.constraintRole2.set('');
+    this.constraintsEditorError.set(null);
+  }
+
+  protected addConstraint(): void {
+    const role1 = this.constraintRole1().trim();
+    const role2 = this.constraintRole2().trim();
+
+    if (!role1 || !role2) {
+      this.constraintsEditorError.set('Both roles must be selected');
+      return;
+    }
+
+    if (role1 === role2) {
+      this.constraintsEditorError.set('Cannot create constraint with the same role');
+      return;
+    }
+
+    // Check if constraint already exists (in either direction)
+    const constraints = this.editingConstraints();
+    const exists = constraints.some(
+      ([r1, r2]) => (r1 === role1 && r2 === role2) || (r1 === role2 && r2 === role1)
+    );
+
+    if (exists) {
+      this.constraintsEditorError.set('This constraint already exists');
+      return;
+    }
+
+    // Add the new constraint
+    this.editingConstraints.set([...constraints, [role1, role2]]);
+    this.constraintRole1.set('');
+    this.constraintRole2.set('');
+    this.constraintsEditorError.set(null);
+  }
+
+  protected removeConstraint(index: number): void {
+    const constraints = [...this.editingConstraints()];
+    constraints.splice(index, 1);
+    this.editingConstraints.set(constraints);
+  }
+
+  protected async saveConstraints(): Promise<void> {
+    const teamId = this.team()?.id;
+    if (!teamId) return;
+
+    this.isSavingConstraints.set(true);
+    this.constraintsEditorError.set(null);
+
+    try {
+      await this.teamsService.updateRoleConstraints(teamId, this.editingConstraints());
+      this.closeConstraintsEditor();
+    } catch (error: any) {
+      this.constraintsEditorError.set(error.message || 'Failed to save constraints');
+    } finally {
+      this.isSavingConstraints.set(false);
+    }
+  }
+
+  // Import Roster Methods
+  protected openImportDialog(): void {
+    this.importFile.set(null);
+    this.importStatus.set('pending');
+    this.importDefaultPassword.set('');
+    this.importProgress.set(0);
+    this.importTotal.set(0);
+    this.importError.set(null);
+    this.importResult.set(null);
+    this.showImportDialog.set(true);
+  }
+
+  protected closeImportDialog(): void {
+    this.showImportDialog.set(false);
+    this.importFile.set(null);
+    this.importDefaultPassword.set('');
+    this.importProgress.set(0);
+    this.importTotal.set(0);
+    this.importError.set(null);
+    this.importResult.set(null);
+  }
+
+  protected onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        this.importFile.set(file);
+        this.importError.set(null);
+      } else {
+        this.importError.set('Please select a CSV file');
+      }
+    }
+  }
+
+  protected onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  protected onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  protected onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        this.importFile.set(file);
+        this.importError.set(null);
+      } else {
+        this.importError.set('Please select a CSV file');
+      }
+    }
+  }
+
+  protected async importRoster(): Promise<void> {
+    const file = this.importFile();
+    const teamId = this.team()?.id;
+
+    if (!file || !teamId) return;
+
+    this.isImporting.set(true);
+    this.importError.set(null);
+    this.importResult.set(null);
+    this.importProgress.set(0);
+
+    try {
+      // Parse CSV file
+      this.importProgress.set(10);
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+
+      if (lines.length < 2) {
+        throw new Error('CSV file must contain at least a header row and one data row');
+      }
+
+      this.importProgress.set(20);
+
+      // Parse header
+      const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+      
+      // Map column names to indices
+      const columnMap: any = {};
+      const requiredColumns = ['first', 'last', 'email'];
+      const optionalColumns = ['address', 'city', 'state', 'zip', 'phone number'];
+
+      header.forEach((col, index) => {
+        const normalizedCol = col.replace(/['"]/g, '').toLowerCase();
+        if (requiredColumns.includes(normalizedCol) || optionalColumns.includes(normalizedCol)) {
+          if (normalizedCol === 'phone number') {
+            columnMap['phoneNumber'] = index;
+          } else {
+            columnMap[normalizedCol] = index;
+          }
+        }
+      });
+
+      // Validate required columns
+      for (const required of requiredColumns) {
+        if (columnMap[required] === undefined) {
+          throw new Error(`Missing required column: ${required}`);
+        }
+      }
+
+      this.importProgress.set(30);
+
+      // Parse data rows
+      const members = [];
+      const totalRows = lines.length - 1; // Exclude header
+      this.importTotal.set(totalRows);
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+        
+        const member: any = {
+          first: values[columnMap['first']],
+          last: values[columnMap['last']],
+          email: values[columnMap['email']],
+        };
+
+        if (columnMap['address'] !== undefined) member.address = values[columnMap['address']];
+        if (columnMap['city'] !== undefined) member.city = values[columnMap['city']];
+        if (columnMap['state'] !== undefined) member.state = values[columnMap['state']];
+        if (columnMap['zip'] !== undefined) member.zip = values[columnMap['zip']];
+        if (columnMap['phoneNumber'] !== undefined) member.phoneNumber = values[columnMap['phoneNumber']];
+
+        members.push(member);
+
+        // Update progress for parsing (30-50%)
+        const parseProgress = 30 + Math.floor((i / lines.length) * 20);
+        this.importProgress.set(parseProgress);
+      }
+
+      // Send to server
+      this.importProgress.set(50);
+      const defaultPassword = this.importDefaultPassword().trim() || undefined;
+      const defaultStatus = this.importStatus();
+      
+      // Simulate incremental progress while server processes
+      // Target: ~25 seconds from 50% to 95% (allowing ~5 seconds for initial parsing and final completion)
+      // 45% progress over 25 seconds = ~1.8% per second
+      const progressInterval = setInterval(() => {
+        const current = this.importProgress();
+        if (current < 95) {
+          this.importProgress.set(Math.min(current + 0.9, 95));
+        }
+      }, 500); // Update every 500ms
+
+      const result = await this.teamsService.importRoster(teamId, members, defaultPassword, defaultStatus);
+      
+      clearInterval(progressInterval);
+      this.importProgress.set(100);
+      this.importResult.set(result);
+
+      // Reload team members
+      await this.loadTeamDetails(teamId);
+    } catch (error: any) {
+      this.importError.set(error.message || 'Failed to import roster');
+    } finally {
+      this.isImporting.set(false);
     }
   }
 }

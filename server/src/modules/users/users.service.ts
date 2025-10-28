@@ -98,14 +98,20 @@ export class UsersService {
       });
     }
 
+    let state = UserState.PENDING;
+    if (isFirstUser) {
+      state = UserState.ADMIN;
+    } else if (registerDto.state && registerDto.state === UserState.ACTIVE) {
+      state = UserState.ACTIVE;
+    }
+
     // Create user with relations
     const user = this.userRepository.create({
       firstName: registerDto.firstName,
       middleName: registerDto.middleName,
       lastName: registerDto.lastName,
       password: registerDto.password,
-      // First user is admin, others are pending
-      state: isFirstUser ? UserState.ADMIN : UserState.PENDING,
+      state: state,
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -384,5 +390,16 @@ export class UsersService {
     await this.userRepository.save(user);
 
     return this.findById(userId);
+  }
+
+  async updatePassword(userId: string, newPassword: string): Promise<void> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.password = newPassword;
+    // Password will be hashed automatically by the @BeforeInsert/@BeforeUpdate hook
+    await this.userRepository.save(user);
   }
 }

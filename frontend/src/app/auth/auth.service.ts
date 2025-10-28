@@ -146,4 +146,31 @@ export class AuthService {
   getToken(): string | null {
     return localStorage.getItem('auth_token');
   }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<{ message: string }>(`${this.apiUrl}/forgot-password`, { email })
+      );
+      return response;
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      throw new Error(error.error?.message || 'Failed to send reset email');
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<{ message: string }>(`${this.apiUrl}/reset-password`, {
+          token,
+          newPassword
+        })
+      );
+      return response;
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      throw new Error(error.error?.message || 'Failed to reset password');
+    }
+  }
 }

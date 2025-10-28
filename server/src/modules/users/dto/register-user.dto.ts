@@ -7,8 +7,11 @@ import {
   IsArray,
   ValidateNested,
   ArrayMaxSize,
+  IsEnum,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { UserState } from '../enums/user-state.enum';
 
 export class CreateEmailDto {
   @IsEmail()
@@ -117,4 +120,12 @@ export class RegisterUserDto {
   @Type(() => CreateAddressDto)
   @ArrayMaxSize(3)
   addresses?: CreateAddressDto[];
+
+  @IsOptional()
+  @IsEnum(UserState)
+  state?: UserState;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

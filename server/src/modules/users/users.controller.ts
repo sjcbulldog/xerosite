@@ -1,7 +1,8 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, UseGuards, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserResponseDto } from './dto/user-response.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { IsString, IsEmail, IsBoolean, IsOptional, IsArray, ValidateNested, MaxLength, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -237,6 +238,33 @@ export class UsersController {
       };
     } catch (error) {
       console.error('Error updating user state:', error);
+      throw error;
+    }
+  }
+
+  @Patch(':id/password')
+  async changePassword(
+    @Param('id') id: string,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    try {
+      const user = await this.usersService.findById(id);
+      if (!user) {
+        throw new NotFoundException(`User with id ${id} not found`);
+      }
+
+      // Verify current password
+      const isValidPassword = await user.validatePassword(changePasswordDto.currentPassword);
+      if (!isValidPassword) {
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+
+      // Update password
+      await this.usersService.updatePassword(id, changePasswordDto.newPassword);
+
+      return { message: 'Password changed successfully' };
+    } catch (error) {
+      console.error('Error changing password:', error);
       throw error;
     }
   }

@@ -16,6 +16,12 @@
               <button (click)="openRoleEditor()" class="edit-roles-button">
                 Edit Team Roles
               </button>
+              <button (click)="openConstraintsEditor()" class="edit-constraints-button">
+                Edit Constraints
+              </button>
+              <button (click)="openImportDialog()" class="import-roster-button">
+                Import Roster
+              </button>
               <button (click)="openInviteDialog()" class="invite-button">
                 Invite Member
               </button>
@@ -184,7 +190,7 @@
   <div class="dialog-overlay" (click)="closeRoleEditor()">
     <div class="dialog-content role-editor" (click)="$event.stopPropagation()">
       <div class="dialog-header">
-        <h2>Edit Team Roles</h2>
+        <h2>Edit Roles</h2>
         <button class="close-button" (click)="closeRoleEditor()">×</button>
       </div>
 
@@ -319,6 +325,301 @@
             (click)="closeInviteDialog()">
             Close
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showConstraintsEditor()) {
+  <div class="dialog-overlay" (click)="closeConstraintsEditor()">
+    <div class="dialog-content constraints-editor" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>
+          Edit Role Constraints
+          <span class="help-icon" title="This establishes pairs of team roles that a member cannot have at the same time.">ℹ️</span>
+        </h2>
+        <button class="close-button" (click)="closeConstraintsEditor()">×</button>
+      </div>
+
+      <div class="constraints-editor-content">
+        <p class="editor-description">
+          Role constraints define pairs of roles that cannot be assigned to the same member simultaneously.
+          For example, if you create a constraint between "Mentor" and "Student", a member cannot be both a Mentor and a Student at the same time.
+        </p>
+
+        <div class="current-constraints">
+          <h3>Current Constraints</h3>
+          @if (editingConstraints().length === 0) {
+            <p class="no-constraints">No constraints defined. Members can have any combination of roles.</p>
+          } @else {
+            <div class="constraints-list">
+              @for (constraint of editingConstraints(); track $index) {
+                <div class="constraint-item">
+                  <span class="constraint-pair">
+                    <span class="role-name">{{ constraint[0] }}</span>
+                    <span class="constraint-separator">↔</span>
+                    <span class="role-name">{{ constraint[1] }}</span>
+                  </span>
+                  <button 
+                    class="remove-constraint-button"
+                    (click)="removeConstraint($index)"
+                    [disabled]="isSavingConstraints()">
+                    Remove
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="add-constraint-section">
+          <h3>Add New Constraint</h3>
+          <div class="add-constraint-form">
+            <div class="form-group">
+              <label for="constraintRole1">First Role</label>
+              <select 
+                id="constraintRole1"
+                [(ngModel)]="constraintRole1"
+                [disabled]="isSavingConstraints()">
+                <option value="">Select a role</option>
+                @for (role of availableRoles(); track role) {
+                  <option [value]="role">{{ role }}</option>
+                }
+              </select>
+            </div>
+            <div class="constraint-arrow">↔</div>
+            <div class="form-group">
+              <label for="constraintRole2">Second Role</label>
+              <select 
+                id="constraintRole2"
+                [(ngModel)]="constraintRole2"
+                [disabled]="isSavingConstraints()">
+                <option value="">Select a role</option>
+                @for (role of availableRoles(); track role) {
+                  <option [value]="role">{{ role }}</option>
+                }
+              </select>
+            </div>
+            <button 
+              class="add-constraint-button"
+              (click)="addConstraint()"
+              [disabled]="!constraintRole1() || !constraintRole2() || isSavingConstraints()">
+              Add Constraint
+            </button>
+          </div>
+        </div>
+
+        @if (constraintsEditorError()) {
+          <div class="alert-error">
+            {{ constraintsEditorError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeConstraintsEditor()"
+            [disabled]="isSavingConstraints()">
+            Cancel
+          </button>
+          <button 
+            class="save-button"
+            (click)="saveConstraints()"
+            [disabled]="isSavingConstraints()">
+            {{ isSavingConstraints() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showImportDialog()) {
+  <div class="dialog-overlay" (click)="closeImportDialog()">
+    <div class="dialog-content import-roster-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Import Team Roster</h2>
+        <button class="close-button" (click)="closeImportDialog()">×</button>
+      </div>
+
+      <div class="import-content">
+        <p class="dialog-description">
+          Upload a CSV file with team members. Required columns: <strong>First</strong>, <strong>Last</strong>, <strong>Email</strong>.<br>
+          Optional columns: Address, City, State, Zip, Phone Number<br>
+          <small>For multiple phone numbers, separate them with semicolons (e.g., "555-1234;555-5678")</small>
+        </p>
+
+        <div class="member-status-selector">
+          <label>New user account status:</label>
+          <div class="status-options">
+            <label class="radio-option">
+              <input 
+                type="radio" 
+                name="importStatus" 
+                value="pending"
+                [checked]="importStatus() === 'pending'"
+                (change)="importStatus.set('pending')"
+                [disabled]="isImporting()"
+              />
+              <span>Pending (requires email verification to login)</span>
+            </label>
+            <label class="radio-option">
+              <input 
+                type="radio" 
+                name="importStatus" 
+                value="active"
+                [checked]="importStatus() === 'active'"
+                (change)="importStatus.set('active')"
+                [disabled]="isImporting()"
+              />
+              <span>Active (can login immediately)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="default-password-field">
+          <label for="defaultPassword">Default Password (optional):</label>
+          <input 
+            type="text" 
+            id="defaultPassword" 
+            [value]="importDefaultPassword()"
+            (input)="importDefaultPassword.set($any($event.target).value)"
+            [disabled]="isImporting()"
+            placeholder="Leave empty for random passwords"
+            class="password-input"
+          />
+          <p class="field-hint">If provided, all new users will be created with this password. Leave empty to generate random passwords.</p>
+        </div>
+
+        <div 
+          class="file-upload-area"
+          [class.dragging]="isDragging()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)">
+          <div class="upload-icon">📁</div>
+          <p class="upload-text">Drag and drop CSV file here</p>
+          <p class="upload-or">or</p>
+          <input 
+            type="file" 
+            id="rosterFile" 
+            accept=".csv"
+            (change)="onFileSelected($event)"
+            [disabled]="isImporting()"
+            hidden
+          />
+          <label for="rosterFile" class="browse-button">
+            Browse Files
+          </label>
+          @if (importFile()) {
+            <div class="selected-file">
+              <span class="file-name">📄 {{ importFile()?.name }}</span>
+              <button 
+                class="remove-file-button"
+                (click)="importFile.set(null); $event.stopPropagation()"
+                [disabled]="isImporting()">
+                ×
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (isImporting()) {
+          <div class="progress-container">
+            <div class="progress-header">
+              <span class="progress-label">Importing roster...</span>
+              <span class="progress-percentage">{{ importProgress().toFixed(0) }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="importProgress()">
+              </div>
+            </div>
+            @if (importTotal() > 0) {
+              <div class="progress-details">
+                Processing {{ importTotal() }} members
+              </div>
+            }
+          </div>
+        }
+
+        @if (importError()) {
+          <div class="alert-error">
+            {{ importError() }}
+          </div>
+        }
+
+        @if (importResult()) {
+          <div class="import-results">
+            <h3>Import Results</h3>
+            <div class="results-summary">
+              <div class="result-stat success">
+                <span class="stat-label">Successful:</span>
+                <span class="stat-value">{{ importResult().successful }}</span>
+              </div>
+              <div class="result-stat error">
+                <span class="stat-label">Failed:</span>
+                <span class="stat-value">{{ importResult().failed }}</span>
+              </div>
+            </div>
+
+            @if (importResult().created.length > 0) {
+              <div class="result-section">
+                <h4>New Users Created ({{ importResult().created.length }})</h4>
+                <div class="result-list">
+                  @for (user of importResult().created; track user.email) {
+                    <div class="result-item">{{ user.name }} ({{ user.email }})</div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (importResult().existing.length > 0) {
+              <div class="result-section">
+                <h4>Existing Users Added to Team ({{ importResult().existing.length }})</h4>
+                <div class="result-list">
+                  @for (user of importResult().existing; track user.email) {
+                    <div class="result-item">{{ user.name }} ({{ user.email }})</div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (importResult().errors.length > 0) {
+              <div class="result-section errors">
+                <h4>Errors ({{ importResult().errors.length }})</h4>
+                <div class="result-list">
+                  @for (error of importResult().errors; track error.row) {
+                    <div class="result-item error">
+                      Row {{ error.row }}: {{ error.error }}
+                      @if (error.email) {
+                        <span class="error-email">({{ error.email }})</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeImportDialog()"
+            [disabled]="isImporting()">
+            {{ importResult() ? 'Close' : 'Cancel' }}
+          </button>
+          @if (!importResult()) {
+            <button 
+              class="import-button"
+              (click)="importRoster()"
+              [disabled]="!importFile() || isImporting()">
+              {{ isImporting() ? 'Importing...' : 'Import Roster' }}
+            </button>
+          }
         </div>
       </div>
     </div>

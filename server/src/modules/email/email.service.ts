@@ -18,6 +18,14 @@ export class EmailService {
   ): Promise<void> {
     const apiUrl = this.configService.get('email.apiUrl');
     const verificationUrl = `${apiUrl}/api/auth/verify-email?token=${token}`;
+    const dontSend = this.configService.get('email.dontSend');
+
+    if (dontSend) {
+      this.logger.log(
+        `[EMAIL NOT SENT] Would have sent verification email to ${email} with subject "Verify Your Email Address"`,
+      );
+      return;
+    }
 
     try {
       await this.mailerService.sendMail({
@@ -38,6 +46,15 @@ export class EmailService {
   }
 
   async sendWelcomeEmail(email: string, firstName: string): Promise<void> {
+    const dontSend = this.configService.get('email.dontSend');
+
+    if (dontSend) {
+      this.logger.log(
+        `[EMAIL NOT SENT] Would have sent welcome email to ${email} with subject "Welcome to Xerosite!"`,
+      );
+      return;
+    }
+
     try {
       await this.mailerService.sendMail({
         to: email,
@@ -62,6 +79,14 @@ export class EmailService {
   ): Promise<void> {
     const apiUrl = this.configService.get('email.apiUrl');
     const loginUrl = `${apiUrl}/login`;
+    const dontSend = this.configService.get('email.dontSend');
+
+    if (dontSend) {
+      this.logger.log(
+        `[EMAIL NOT SENT] Would have sent team invitation email to ${email} with subject "Invitation to join team: ${teamName}"`,
+      );
+      return;
+    }
 
     try {
       await this.mailerService.sendMail({
@@ -77,6 +102,41 @@ export class EmailService {
       this.logger.log(`Team invitation email sent to ${email} for team ${teamName}`);
     } catch (error) {
       this.logger.error(`Failed to send team invitation email to ${email}`, error);
+      throw error;
+    }
+  }
+
+  async sendPasswordResetEmail(
+    email: string,
+    firstName: string,
+    resetToken: string,
+  ): Promise<void> {
+    const apiUrl = this.configService.get('email.apiUrl');
+    const resetUrl = `${apiUrl}/reset-password/${resetToken}`;
+    const dontSend = this.configService.get('email.dontSend');
+
+    if (dontSend) {
+      this.logger.log(
+        `[EMAIL NOT SENT] Would have sent password reset email to ${email} with subject "Reset Your Password"`,
+      );
+      this.logger.log(`Reset URL: ${resetUrl}`);
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Reset Your Password',
+        template: './password-reset',
+        context: {
+          firstName,
+          resetUrl,
+        },
+      });
+
+      this.logger.log(`Password reset email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email to ${email}`, error);
       throw error;
     }
   }

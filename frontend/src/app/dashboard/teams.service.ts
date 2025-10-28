@@ -331,4 +331,50 @@ export class TeamsService {
       throw new Error(error.error?.message || 'Failed to decline invitation');
     }
   }
+
+  async getRoleConstraints(teamId: string): Promise<Array<[string, string]>> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ constraints: Array<[string, string]> }>(`${this.apiUrl}/${teamId}/constraints`)
+      );
+      return response.constraints;
+    } catch (error: any) {
+      console.error('Error getting role constraints:', error);
+      throw new Error(error.error?.message || 'Failed to get role constraints');
+    }
+  }
+
+  async updateRoleConstraints(teamId: string, constraints: Array<[string, string]>): Promise<Array<[string, string]>> {
+    try {
+      const body = {
+        constraints: constraints.map(([role1, role2]) => ({ role1, role2 }))
+      };
+      const response = await firstValueFrom(
+        this.http.patch<{ constraints: Array<[string, string]> }>(`${this.apiUrl}/${teamId}/constraints`, body)
+      );
+      return response.constraints;
+    } catch (error: any) {
+      console.error('Error updating role constraints:', error);
+      throw new Error(error.error?.message || 'Failed to update role constraints');
+    }
+  }
+
+  async importRoster(teamId: string, members: any[], defaultPassword?: string, defaultStatus?: 'pending' | 'active'): Promise<any> {
+    try {
+      const body: any = { members };
+      if (defaultPassword) {
+        body.defaultPassword = defaultPassword;
+      }
+      if (defaultStatus) {
+        body.defaultStatus = defaultStatus;
+      }
+      const response = await firstValueFrom(
+        this.http.post<any>(`${this.apiUrl}/${teamId}/import-roster`, body)
+      );
+      return response;
+    } catch (error: any) {
+      console.error('Error importing roster:', error);
+      throw new Error(error.error?.message || 'Failed to import roster');
+    }
+  }
 }
