@@ -1272,6 +1272,12 @@ export class TeamDetailComponent implements OnInit {
   }
 
   protected getEligibleLeads(subteam: Subteam, requiredRole: string): TeamMember[] {
-    return this.activeMembers().filter(m => m.roles.includes(requiredRole));
+    // Get the set of user IDs who are members of this subteam
+    const subteamMemberIds = new Set(subteam.members.map(m => m.userId));
+    
+    // Filter to users who have the required role AND are members of the subteam
+    return this.activeMembers().filter(m => 
+      m.roles.includes(requiredRole) && subteamMemberIds.has(m.userId)
+    );
   }
 }
