@@ -10,6 +10,7 @@ import { TeamInvitation } from './entities/team-invitation.entity';
 import { Subteam } from './entities/subteam.entity';
 import { SubteamMember } from './entities/subteam-member.entity';
 import { SubteamLeadPosition } from './entities/subteam-lead-position.entity';
+import { UserPermission } from './entities/user-permission.entity';
 import { EmailModule } from '../email/email.module';
 import { UsersModule } from '../users/users.module';
 
@@ -22,6 +23,7 @@ import { UsersModule } from '../users/users.module';
       Subteam,
       SubteamMember,
       SubteamLeadPosition,
+      UserPermission,
     ]),
     EmailModule,
     UsersModule,

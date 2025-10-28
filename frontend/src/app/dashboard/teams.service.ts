@@ -17,6 +17,11 @@ export interface Team {
   updatedAt: Date;
 }
 
+export interface UserPermission {
+  permission: 'SEND_MESSAGES' | 'SCHEDULE_EVENTS';
+  enabled: boolean;
+}
+
 export interface TeamMember {
   userId: string;
   teamId: string;
@@ -24,6 +29,7 @@ export interface TeamMember {
   status: 'pending' | 'active' | 'disabled';
   subteams?: string[]; // Names of subteams this member belongs to
   leadPositions?: Array<{ subteamName: string; positionTitle: string }>; // Lead positions this member holds
+  permissions?: UserPermission[]; // User's permissions for this team
   user?: {
     id: string;
     firstName: string;
@@ -276,6 +282,25 @@ export class TeamsService {
     } catch (error: any) {
       console.error('Error updating member roles:', error);
       throw new Error(error.error?.message || 'Failed to update member roles');
+    }
+  }
+
+  async updateMemberAttributes(
+    teamId: string, 
+    userId: string, 
+    updateData: {
+      roles?: string[];
+      isActive?: boolean;
+      permissions?: UserPermission[];
+    }
+  ): Promise<TeamMember> {
+    try {
+      return await firstValueFrom(
+        this.http.patch<TeamMember>(`${this.apiUrl}/${teamId}/members/${userId}/attributes`, updateData)
+      );
+    } catch (error: any) {
+      console.error('Error updating member attributes:', error);
+      throw new Error(error.error?.message || 'Failed to update member attributes');
     }
   }
 

@@ -12,7 +12,7 @@ import {
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
-import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateTeamMemberRolesDto, UpdateMemberStatusDto } from './dto/team-response.dto';
+import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateTeamMemberRolesDto, UpdateMemberStatusDto, UpdateMemberAttributesDto } from './dto/team-response.dto';
 import { SendInvitationDto, TeamInvitationResponseDto } from './dto/team-invitation.dto';
 import { UpdateRoleConstraintsDto } from './dto/role-constraints.dto';
 import { ImportRosterDto, ImportRosterResultDto } from './dto/import-roster.dto';
@@ -146,6 +146,16 @@ export class TeamsController {
     @Body() updateStatusDto: UpdateMemberStatusDto,
   ): Promise<TeamMemberDto> {
     return this.teamsService.updateMemberStatus(teamId, userId, updateStatusDto);
+  }
+
+  @Patch(':teamId/members/:userId/attributes')
+  async updateMemberAttributes(
+    @Param('teamId') teamId: string,
+    @Param('userId') userId: string,
+    @CurrentUser() user: any,
+    @Body() updateDto: UpdateMemberAttributesDto,
+  ): Promise<TeamMemberDto> {
+    return this.teamsService.updateMemberAttributes(teamId, userId, user.id, updateDto);
   }
 
   @Get(':id/constraints')

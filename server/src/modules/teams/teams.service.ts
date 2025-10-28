@@ -7,13 +7,15 @@ import { TeamInvitation } from './entities/team-invitation.entity';
 import { Subteam } from './entities/subteam.entity';
 import { SubteamMember } from './entities/subteam-member.entity';
 import { SubteamLeadPosition } from './entities/subteam-lead-position.entity';
+import { UserPermission } from './entities/user-permission.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
-import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateMemberStatusDto } from './dto/team-response.dto';
+import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateMemberStatusDto, UpdateMemberAttributesDto, UserPermissionDto } from './dto/team-response.dto';
 import { SendInvitationDto, TeamInvitationResponseDto, UpdateInvitationStatusDto } from './dto/team-invitation.dto';
 import { ImportRosterDto, ImportRosterResultDto, RosterMemberDto } from './dto/import-roster.dto';
 import { MembershipStatus } from './enums/membership-status.enum';
 import { TeamVisibility } from './enums/team-visibility.enum';
+import { TeamPermission } from './enums/team-permission.enum';
 import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
@@ -36,6 +38,8 @@ export class TeamsService {
     private readonly subteamMemberRepository: Repository<SubteamMember>,
     @InjectRepository(SubteamLeadPosition)
     private readonly subteamLeadPositionRepository: Repository<SubteamLeadPosition>,
+    @InjectRepository(UserPermission)
+    private readonly userPermissionRepository: Repository<UserPermission>,
     private readonly emailService: EmailService,
     private readonly usersService: UsersService,
   ) {}
@@ -241,11 +245,29 @@ export class TeamsService {
       }
     }
 
+    // Get all permissions for this team
+    const allPermissions = await this.userPermissionRepository.find({
+      where: { teamId },
+    });
+
+    // Create a map of userId to permissions
+    const userPermissionsMap = new Map<string, UserPermissionDto[]>();
+    for (const perm of allPermissions) {
+      if (!userPermissionsMap.has(perm.userId)) {
+        userPermissionsMap.set(perm.userId, []);
+      }
+      userPermissionsMap.get(perm.userId)!.push({
+        permission: perm.permission,
+        enabled: perm.enabled,
+      });
+    }
+
     return userTeams.map((userTeam) => 
       this.transformToMemberDto(
         userTeam, 
         userSubteamsMap.get(userTeam.userId),
-        userLeadPositionsMap.get(userTeam.userId)
+        userLeadPositionsMap.get(userTeam.userId),
+        userPermissionsMap.get(userTeam.userId)
       )
     );
   }
@@ -387,7 +409,8 @@ export class TeamsService {
   private transformToMemberDto(
     userTeam: UserTeam, 
     subteams?: string[],
-    leadPositions?: Array<{ subteamName: string; positionTitle: string }>
+    leadPositions?: Array<{ subteamName: string; positionTitle: string }>,
+    permissions?: UserPermissionDto[]
   ): TeamMemberDto {
     const primaryPhone = userTeam.user?.phones?.find(phone => phone.isPrimary);
     
@@ -398,6 +421,7 @@ export class TeamsService {
       status: userTeam.status,
       subteams: subteams && subteams.length > 0 ? subteams : undefined,
       leadPositions: leadPositions && leadPositions.length > 0 ? leadPositions : undefined,
+      permissions: permissions && permissions.length > 0 ? permissions : undefined,
       user: userTeam.user ? {
         id: userTeam.user.id,
         firstName: userTeam.user.firstName,
@@ -820,6 +844,106 @@ export class TeamsService {
       privateTeamsCount,
       totalUsersCount,
     };
+  }
+
+  // Permission Management Methods
+  async updateMemberAttributes(
+    teamId: string,
+    userId: string,
+    adminUserId: string,
+    updateDto: UpdateMemberAttributesDto,
+  ): Promise<TeamMemberDto> {
+    // Verify admin permissions
+    await this.verifyTeamAdmin(teamId, adminUserId);
+
+    // Get the user team relationship
+    const userTeam = await this.userTeamRepository.findOne({
+      where: { userId, teamId },
+      relations: ['user', 'user.phones'],
+    });
+
+    if (!userTeam) {
+      throw new NotFoundException('User is not a member of this team');
+    }
+
+    // Update roles if provided
+    if (updateDto.roles !== undefined) {
+      userTeam.setRolesArray(updateDto.roles);
+      await this.userTeamRepository.save(userTeam);
+    }
+
+    // Update user active status if provided
+    if (updateDto.isActive !== undefined) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (user) {
+        user.isActive = updateDto.isActive;
+        await this.userRepository.save(user);
+      }
+    }
+
+    // Update permissions if provided
+    if (updateDto.permissions !== undefined) {
+      // Delete existing permissions for this user/team
+      await this.userPermissionRepository.delete({ userId, teamId });
+
+      // Create new permissions
+      const permissionsToSave = updateDto.permissions.map((perm) =>
+        this.userPermissionRepository.create({
+          userId,
+          teamId,
+          permission: perm.permission,
+          enabled: perm.enabled,
+        }),
+      );
+
+      if (permissionsToSave.length > 0) {
+        await this.userPermissionRepository.save(permissionsToSave);
+      }
+    }
+
+    // Reload and return updated member
+    const updatedUserTeam = await this.userTeamRepository.findOne({
+      where: { userId, teamId },
+      relations: ['user', 'user.phones'],
+    });
+
+    // Get permissions for this user/team
+    const permissions = await this.getUserPermissions(userId, teamId);
+
+    return this.transformToMemberDto(updatedUserTeam, undefined, undefined, permissions);
+  }
+
+  async getUserPermissions(userId: string, teamId: string): Promise<UserPermissionDto[]> {
+    const permissions = await this.userPermissionRepository.find({
+      where: { userId, teamId },
+    });
+
+    return permissions.map((p) => ({
+      permission: p.permission,
+      enabled: p.enabled,
+    }));
+  }
+
+  async hasPermission(
+    userId: string,
+    teamId: string,
+    permission: TeamPermission,
+  ): Promise<boolean> {
+    const userPermission = await this.userPermissionRepository.findOne({
+      where: { userId, teamId, permission },
+    });
+
+    return userPermission?.enabled ?? false;
+  }
+
+  private async verifyTeamAdmin(teamId: string, userId: string): Promise<void> {
+    const userTeam = await this.userTeamRepository.findOne({
+      where: { userId, teamId },
+    });
+
+    if (!userTeam || !userTeam.getRolesArray().includes('Administrator')) {
+      throw new BadRequestException('User must be a team administrator');
+    }
   }
 }
 

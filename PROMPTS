@@ -202,17 +202,23 @@ When creating a new subteam, the display of valid roles should be a scrollable l
 
 In the team members view on the team dashboard, below the Team Members label there should be an input field that can be used to filter the displayed members based on first name, last name, or email.
 
+Add the concept of per user per team per user permissions allowing the permissions for certain operations to be controlled per user per team. These permissions should be editable only by users with the adminstrator role for a team.  Initially there will be permissions for 'Send Messages' and for 'Schedule Events'. Only users with the 'Schedule Events' permissions should be able to add events to the calendar. The system should be created to be extensible to future permissions.  Invoking the permissions selection should be per user in the Team Members display of the Team dashboard.  There should be a button to edit the users attributes for the team.  This should include the role selection which should be moved from the check boxes at the bottom to this new popup as a multiselect list.  The disable button should be moved to this popup as a check box, and finally there should be a permissions section for each type of permission that is available, with a toggle control to turn it on of off.
+
+Replace the robot on the sign in page with a picture of an FRC style robot, preferrebly a cartoonized version of a robot from the robotics team Error Code Xero, team 1425.
+
 In Progress
 ===========
 
-Add the concept of per user per team per user permissions allowing the permissions for certain operations to be controlled per user per team. These permissions should be editable only by users with the adminstrator role for a team.  Initially there will be permissions for 'Send Messages' and for 'Schedule Events'. Only users with the 'Schedule Events' permissions should be able to add events to the calendar. The system should be created to be extensible to future permissions.  Invoking the permissions selection should be per user in the Team Members display of the Team dashboard.  There should be a button to edit the users attributes for the team.  This should include the role selection which should be moved from the check boxes at the bottom to this new popup as a multiselect list.  The disable button should be moved to this popup as a check box, and finally there should be a permissions section for each type of permission that is available, with a toggle control to turn it on of off.
 
 Pending
 =======
+
 
 Create a messaging system where members of a team can send messages to other members of the team via email or text.  The target users should be selectable as all users on a team, only users with a specific team role, only users that belong to a given subteam, only users that are leads of a subteam.  These should be able to be combined.  For instance, a message should be able to be sent to users with a specific team role and users on a specific subteam.  The initiation of the send message should be on the team dashboard in the menu and should popup a window that enables the recipents to be selected as well as typing the message.  The message, with the sender and its recipents should be stored in the database for later use.
 
 Add the concept of per user per team per user permissions allowing the permissions for certain operations to be controlled per user per team. These permissions should be editable only by users with the adminstrator role for a team.  Initially there will be permissions for 'Send Messages' and for 'Schedule Events'. Only users with the 'Schedule Events' permissions should be able to add events to the calendar. The system should be created to be extensible to future permissions.
 
 Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
+
+Add the ability to export all users that belong to a given team to a CSV file that is saved to the user's disk.  This should be only be available to a user with the administrator role on a given team.  It should be accessible through the menu on the team dashboard.
 

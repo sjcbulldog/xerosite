@@ -1,0 +1,106 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define gradients and patterns -->
+  <defs>
+    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="armGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b91c1c;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="wheelGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#374151;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Wheels (back layer) -->
+  <g class="wheels">
+    <!-- Left wheel -->
+    <ellipse cx="65" cy="155" rx="18" ry="20" fill="url(#wheelGradient)"/>
+    <ellipse cx="65" cy="155" rx="12" ry="14" fill="#4b5563"/>
+    <circle cx="65" cy="155" r="5" fill="#9ca3af"/>
+    
+    <!-- Right wheel -->
+    <ellipse cx="135" cy="155" rx="18" ry="20" fill="url(#wheelGradient)"/>
+    <ellipse cx="135" cy="155" rx="12" ry="14" fill="#4b5563"/>
+    <circle cx="135" cy="155" r="5" fill="#9ca3af"/>
+  </g>
+  
+  <!-- Robot main body -->
+  <g class="body">
+    <!-- Main chassis -->
+    <rect x="50" y="85" width="100" height="70" rx="8" fill="url(#bodyGradient)" stroke="#1e3a8a" stroke-width="2"/>
+    
+    <!-- Bumper -->
+    <rect x="45" y="145" width="110" height="15" rx="4" fill="#dc2626" stroke="#b91c1c" stroke-width="2"/>
+    <text x="100" y="156" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">1425</text>
+    
+    <!-- Electronics panel -->
+    <rect x="60" y="95" width="80" height="30" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <rect x="65" y="100" width="15" height="8" rx="2" fill="#10b981"/>
+    <rect x="85" y="100" width="15" height="8" rx="2" fill="#10b981"/>
+    <rect x="105" y="100" width="15" height="8" rx="2" fill="#fbbf24"/>
+    <rect x="125" y="100" width="10" height="8" rx="2" fill="#ef4444"/>
+    
+    <!-- Battery indicator -->
+    <rect x="65" y="112" width="25" height="10" rx="2" fill="#475569"/>
+    <rect x="67" y="114" width="20" height="6" rx="1" fill="#10b981"/>
+    <text x="77" y="120" font-family="Arial, sans-serif" font-size="6" fill="white" text-anchor="middle">PWR</text>
+  </g>
+  
+  <!-- Intake/Manipulator mechanism -->
+  <g class="mechanism">
+    <!-- Arm base -->
+    <rect x="85" y="65" width="30" height="20" rx="4" fill="url(#armGradient)" stroke="#b91c1c" stroke-width="2"/>
+    
+    <!-- Arm extension -->
+    <rect x="92" y="30" width="16" height="40" rx="3" fill="#dc2626" stroke="#b91c1c" stroke-width="1.5"/>
+    <rect x="95" y="35" width="10" height="5" rx="1" fill="#fbbf24"/>
+    <rect x="95" y="45" width="10" height="5" rx="1" fill="#fbbf24"/>
+    <rect x="95" y="55" width="10" height="5" rx="1" fill="#fbbf24"/>
+    
+    <!-- Gripper/End effector -->
+    <ellipse cx="100" cy="25" rx="12" ry="8" fill="#9333ea" stroke="#7e22ce" stroke-width="2"/>
+    <path d="M 88 25 L 82 22 L 82 28 Z" fill="#9333ea" stroke="#7e22ce" stroke-width="1"/>
+    <path d="M 112 25 L 118 22 L 118 28 Z" fill="#9333ea" stroke="#7e22ce" stroke-width="1"/>
+  </g>
+  
+  <!-- Robot "face" / camera housing -->
+  <g class="face">
+    <!-- Camera housing -->
+    <rect x="75" y="72" width="50" height="18" rx="9" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+    
+    <!-- "Eyes" (cameras/sensors) -->
+    <circle cx="88" cy="81" r="5" fill="#3b82f6" stroke="#2563eb" stroke-width="1"/>
+    <circle cx="88" cy="81" r="3" fill="#60a5fa"/>
+    <circle cx="88" cy="80" r="1.5" fill="white"/>
+    
+    <circle cx="112" cy="81" r="5" fill="#3b82f6" stroke="#2563eb" stroke-width="1"/>
+    <circle cx="112" cy="81" r="3" fill="#60a5fa"/>
+    <circle cx="112" cy="80" r="1.5" fill="white"/>
+    
+    <!-- LED indicator -->
+    <circle cx="100" cy="81" r="2" fill="#10b981"/>
+  </g>
+  
+  <!-- Antenna (for radio/wireless) -->
+  <g class="antenna">
+    <line x1="100" y1="65" x2="100" y2="45" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="100" cy="42" r="4" fill="#fbbf24" stroke="#f59e0b" stroke-width="1"/>
+    <circle cx="100" cy="42" r="2" fill="#fef3c7"/>
+  </g>
+  
+  <!-- Team logo accent (stylized X for Xero) -->
+  <g class="logo">
+    <path d="M 130 105 L 135 110 L 130 115 L 125 110 Z" fill="#fbbf24" opacity="0.8"/>
+    <path d="M 125 105 L 130 110 L 125 115 L 120 110 Z" fill="#fbbf24" opacity="0.8"/>
+  </g>
+  
+  <!-- Decorative bolts/rivets -->
+  <circle cx="55" cy="90" r="2" fill="#6b7280"/>
+  <circle cx="145" cy="90" r="2" fill="#6b7280"/>
+  <circle cx="55" cy="150" r="2" fill="#6b7280"/>
+  <circle cx="145" cy="150" r="2" fill="#6b7280"/>
+</svg>

@@ -106,6 +106,15 @@ export class TeamDetailComponent implements OnInit {
   protected readonly importResult = signal<any | null>(null);
   protected readonly isDragging = signal(false);
   
+  // Edit Member dialog signals
+  protected readonly showEditMemberDialog = signal(false);
+  protected readonly editingMember = signal<TeamMember | null>(null);
+  protected readonly memberEditRoles = signal<string[]>([]);
+  protected readonly memberEditIsActive = signal(true);
+  protected readonly memberEditPermissions = signal<Map<string, boolean>>(new Map());
+  protected readonly isSavingMemberAttributes = signal(false);
+  protected readonly memberEditError = signal<string | null>(null);
+  
   // Subteam signals
   protected readonly subteams = signal<Subteam[]>([]);
   protected readonly isLoadingSubteams = signal(false);
@@ -582,6 +591,82 @@ export class TeamDetailComponent implements OnInit {
       this.invitationError.set(error.message || 'Failed to send invitation');
     } finally {
       this.isSendingInvitation.set(false);
+    }
+  }
+
+  // Edit Member Dialog Methods
+  protected openEditMemberDialog(member: TeamMember): void {
+    this.editingMember.set(member);
+    this.memberEditRoles.set([...member.roles]);
+    this.memberEditIsActive.set(member.user?.isActive ?? true);
+    
+    // Initialize permissions map
+    const permsMap = new Map<string, boolean>();
+    permsMap.set('SEND_MESSAGES', false);
+    permsMap.set('SCHEDULE_EVENTS', false);
+    
+    if (member.permissions) {
+      member.permissions.forEach(p => {
+        permsMap.set(p.permission, p.enabled);
+      });
+    }
+    
+    this.memberEditPermissions.set(permsMap);
+    this.memberEditError.set(null);
+    this.showEditMemberDialog.set(true);
+  }
+
+  protected closeEditMemberDialog(): void {
+    this.showEditMemberDialog.set(false);
+    this.editingMember.set(null);
+    this.memberEditRoles.set([]);
+    this.memberEditIsActive.set(true);
+    this.memberEditPermissions.set(new Map());
+    this.memberEditError.set(null);
+  }
+
+  protected togglePermission(permission: string): void {
+    const currentPerms = this.memberEditPermissions();
+    const newPerms = new Map(currentPerms);
+    newPerms.set(permission, !currentPerms.get(permission));
+    this.memberEditPermissions.set(newPerms);
+  }
+
+  protected toggleEditDialogRole(role: string): void {
+    const currentRoles = this.memberEditRoles();
+    if (currentRoles.includes(role)) {
+      this.memberEditRoles.set(currentRoles.filter(r => r !== role));
+    } else {
+      this.memberEditRoles.set([...currentRoles, role]);
+    }
+  }
+
+  protected async saveMemberAttributes(): Promise<void> {
+    const member = this.editingMember();
+    const teamId = this.team()?.id;
+    if (!member || !teamId) return;
+
+    this.isSavingMemberAttributes.set(true);
+    this.memberEditError.set(null);
+
+    try {
+      const permissions = Array.from(this.memberEditPermissions().entries()).map(
+        ([permission, enabled]) => ({ permission: permission as 'SEND_MESSAGES' | 'SCHEDULE_EVENTS', enabled })
+      );
+
+      const updateData = {
+        roles: this.memberEditRoles(),
+        isActive: this.memberEditIsActive(),
+        permissions,
+      };
+
+      await this.teamsService.updateMemberAttributes(teamId, member.userId, updateData);
+      await this.loadTeamDetails(teamId);
+      this.closeEditMemberDialog();
+    } catch (error: any) {
+      this.memberEditError.set(error.message || 'Failed to update member');
+    } finally {
+      this.isSavingMemberAttributes.set(false);
     }
   }
 

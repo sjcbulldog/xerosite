@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CalendarService } from './calendar.service';
 import { TeamEvent, CreateEventRequest, UpdateEventRequest, RecurrenceType, VisibilityType, RecurrencePattern, VisibilityRules } from './calendar.types';
 import { AuthService } from '../auth/auth.service';
+import { TeamMember } from './teams.service';
 
 type CalendarView = 'day' | 'week' | 'month' | 'year';
 
@@ -28,11 +29,25 @@ export class CalendarComponent implements OnInit {
   readonly teamId = input.required<string>();
   readonly teamRoles = input.required<string[]>();
   readonly isAdmin = input.required<boolean>();
+  readonly members = input.required<TeamMember[]>();
   
   protected readonly currentView = signal<CalendarView>('month');
   protected readonly currentDate = signal(new Date());
   protected readonly events = signal<TeamEvent[]>([]);
   protected readonly isLoadingEvents = signal(false);
+  
+  // Computed permission check
+  protected readonly canScheduleEvents = computed(() => {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) return false;
+
+    const member = this.members().find(m => m.userId === currentUser.id);
+    if (!member) return false;
+
+    // Check if user has SCHEDULE_EVENTS permission
+    const permission = member.permissions?.find(p => p.permission === 'SCHEDULE_EVENTS');
+    return permission?.enabled ?? false;
+  });
   
   // Dialog signals
   protected readonly showEventDialog = signal(false);

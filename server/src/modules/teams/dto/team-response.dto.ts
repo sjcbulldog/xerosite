@@ -1,6 +1,7 @@
 import { TeamVisibility } from '../enums/team-visibility.enum';
 import { MembershipStatus } from '../enums/membership-status.enum';
-import { IsString, IsArray, IsUUID, Matches, IsEnum, IsOptional } from 'class-validator';
+import { TeamPermission } from '../enums/team-permission.enum';
+import { IsString, IsArray, IsUUID, Matches, IsEnum, IsOptional, IsBoolean } from 'class-validator';
 
 export class TeamResponseDto {
   id: string;
@@ -16,6 +17,11 @@ export class TeamResponseDto {
   updatedAt: Date;
 }
 
+export class UserPermissionDto {
+  permission: TeamPermission;
+  enabled: boolean;
+}
+
 export class TeamMemberDto {
   userId: string;
   teamId: string;
@@ -23,6 +29,7 @@ export class TeamMemberDto {
   status: MembershipStatus;
   subteams?: string[]; // Names of subteams this member belongs to
   leadPositions?: Array<{ subteamName: string; positionTitle: string }>; // Lead positions in subteams
+  permissions?: UserPermissionDto[]; // User permissions for this team
   user?: {
     id: string;
     firstName: string;
@@ -66,4 +73,26 @@ export class UpdateTeamMemberRolesDto {
 export class UpdateMemberStatusDto {
   @IsEnum(MembershipStatus)
   status: MembershipStatus;
+}
+
+export class UpdateMemberAttributesDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
+    each: true,
+    message: 'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
+  })
+  roles?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  permissions?: Array<{
+    permission: TeamPermission;
+    enabled: boolean;
+  }>;
 }
