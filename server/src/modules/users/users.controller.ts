@@ -1,9 +1,9 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, UseGuards, NotFoundException, UnauthorizedException, Request, ForbiddenException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserResponseDto } from './dto/user-response.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { IsString, IsEmail, IsBoolean, IsOptional, IsArray, ValidateNested, MaxLength, IsNumber } from 'class-validator';
+import { IsString, IsEmail, IsBoolean, IsOptional, IsArray, ValidateNested, MaxLength, IsNumber, MinLength, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class EmailDto {
@@ -104,6 +104,11 @@ export class UpdateProfileDto {
   @ValidateNested({ each: true })
   @Type(() => AddressDto)
   addresses?: AddressDto[];
+}
+
+class AdminChangePasswordDto {
+  @IsString()
+  newPassword: string;
 }
 
 @Controller('users')
@@ -265,6 +270,34 @@ export class UsersController {
       return { message: 'Password changed successfully' };
     } catch (error) {
       console.error('Error changing password:', error);
+      throw error;
+    }
+  }
+
+  @Patch(':id/admin-password')
+  async adminChangePassword(
+    @Param('id') id: string,
+    @Body() adminChangePasswordDto: AdminChangePasswordDto,
+    @Request() req: any,
+  ): Promise<{ message: string }> {
+    try {
+      // Verify the requesting user is an admin
+      const requestingUser = await this.usersService.findById(req.user.id);
+      if (!requestingUser || requestingUser.state !== 'admin') {
+        throw new UnauthorizedException('Only administrators can change other users passwords');
+      }
+
+      const user = await this.usersService.findById(id);
+      if (!user) {
+        throw new NotFoundException(`User with id ${id} not found`);
+      }
+
+      // Update password without requiring current password
+      await this.usersService.updatePassword(id, adminChangePasswordDto.newPassword);
+
+      return { message: 'Password changed successfully' };
+    } catch (error) {
+      console.error('Error changing user password:', error);
       throw error;
     }
   }

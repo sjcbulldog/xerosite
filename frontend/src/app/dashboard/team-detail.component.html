@@ -205,34 +205,33 @@
       </div>
 
       <!-- Subteams Section -->
-      <div class="members-section">
+      <div class="members-card">
         <div class="subteams-header-wrapper">
-          <button class="section-header" (click)="toggleSubteamsSection()">
+          <button class="collapsible-header" (click)="toggleSubteamsSection()" [class.active]="showSubteamsSection()">
             <span class="chevron">{{ showSubteamsSection() ? '▼' : '▶' }}</span>
-            <h2>Subteams</h2>
+            <h2>Subteams ({{ subteams().length }})</h2>
           </button>
           @if (isTeamAdmin()) {
             <button (click)="openCreateSubteamDialog()" class="create-subteam-button">
               <span class="plus-icon">+</span> Create Subteam
             </button>
           }
-          @if (isLoadingSubteams()) {
-            <span class="loading-indicator">Loading...</span>
-          }
         </div>
 
         @if (showSubteamsSection()) {
-          <div class="members-list">
-            @if (subteams().length === 0) {
-              <p class="no-subteams">No subteams created yet.@if (isTeamAdmin()) { Click "Create Subteam" to get started.}</p>
+          <div class="collapsible-content">
+            @if (isLoadingSubteams()) {
+              <p class="loading-message">Loading subteams...</p>
+            } @else if (subteams().length === 0) {
+              <p class="empty-message">No subteams created yet.@if (isTeamAdmin()) { Click "Create Subteam" to get started.}</p>
             } @else {
               <div class="subteams-grid">
                 @for (subteam of subteams(); track subteam.id) {
-                  <div class="subteam-card">
+                  <div class="subteam-card" (click)="openSubteamDetailDialog(subteam)">
                     <div class="subteam-header">
                       <h3>{{ subteam.name }}</h3>
                       @if (isTeamAdmin()) {
-                        <div class="subteam-actions">
+                        <div class="subteam-actions" (click)="$event.stopPropagation()">
                           <button 
                             class="action-button edit"
                             (click)="openEditSubteamDialog(subteam)"
@@ -256,50 +255,50 @@
                     </div>
 
                     @if (subteam.description) {
-                        <p class="subteam-description">{{ subteam.description }}</p>
-                      }
+                      <p class="subteam-description">{{ subteam.description }}</p>
+                    }
 
-                      <div class="subteam-info">
-                        <div class="info-item">
-                          <strong>Valid Roles:</strong>
-                          <span class="valid-roles">
-                            @if (subteam.validRoles.length === 0) {
-                              <em>All roles</em>
-                            } @else {
-                              {{ subteam.validRoles.join(', ') }}
-                            }
-                          </span>
-                        </div>
-
-                        <div class="info-item">
-                          <strong>Members:</strong>
-                          <span class="member-count">{{ subteam.members.length }}</span>
-                        </div>
+                    <div class="subteam-info">
+                      <div class="info-item">
+                        <strong>Valid Roles:</strong>
+                        <span class="valid-roles">
+                          @if (subteam.validRoles.length === 0) {
+                            <em>All roles</em>
+                          } @else {
+                            {{ subteam.validRoles.join(', ') }}
+                          }
+                        </span>
                       </div>
 
-                      @if (subteam.leadPositions.length > 0) {
-                        <div class="lead-positions">
-                          <strong>Lead Positions:</strong>
-                          @for (position of subteam.leadPositions; track position.id) {
-                            <div class="lead-position">
-                              <span class="position-title">{{ position.title }}</span>
-                              <span class="position-role">({{ position.requiredRole }})</span>:
-                              @if (position.userId) {
-                                <span class="assigned-user">{{ position.userName }}</span>
-                              } @else {
-                                <em class="unassigned">Unassigned</em>
-                              }
-                            </div>
-                          }
-                        </div>
-                      }
+                      <div class="info-item">
+                        <strong>Members:</strong>
+                        <span class="member-count">{{ subteam.members.length }}</span>
+                      </div>
                     </div>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </div>
+
+                    @if (subteam.leadPositions.length > 0) {
+                      <div class="lead-positions">
+                        <strong>Lead Positions:</strong>
+                        @for (position of subteam.leadPositions; track position.id) {
+                          <div class="lead-position">
+                            <span class="position-title">{{ position.title }}</span>
+                            <span class="position-role">({{ position.requiredRole }})</span>:
+                            @if (position.userId) {
+                              <span class="assigned-user">{{ position.userName }}</span>
+                            } @else {
+                              <em class="unassigned">Unassigned</em>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
     </main>
   } @else {
     <div class="loading-container">
@@ -1171,6 +1170,84 @@
             Close
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Subteam Detail Dialog -->
+@if (showSubteamDetailDialog() && selectedSubteamForDetail()) {
+  <div class="dialog-overlay" (click)="closeSubteamDetailDialog()">
+    <div class="dialog-content subteam-detail-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>{{ selectedSubteamForDetail()!.name }}</h2>
+        <button class="close-button" (click)="closeSubteamDetailDialog()">×</button>
+      </div>
+
+      <div class="dialog-body">
+        <!-- Description -->
+        @if (selectedSubteamForDetail()!.description) {
+          <div class="detail-section">
+            <h3>Description</h3>
+            <p class="subteam-description-text">{{ selectedSubteamForDetail()!.description }}</p>
+          </div>
+        }
+
+        <!-- Valid Roles -->
+        <div class="detail-section">
+          <h3>Valid Roles</h3>
+          <div class="roles-list">
+            @for (role of selectedSubteamForDetail()!.validRoles; track role) {
+              <span class="role-badge">{{ role }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Lead Positions -->
+        @if (selectedSubteamForDetail()!.leadPositions.length > 0) {
+          <div class="detail-section">
+            <h3>Lead Positions</h3>
+            <div class="leads-list">
+              @for (position of selectedSubteamForDetail()!.leadPositions; track position.id) {
+                <div class="lead-item">
+                  <span class="lead-title">{{ position.title }}</span>
+                  <span class="lead-name">
+                    {{ position.userName || 'Unassigned' }}
+                  </span>
+                  <span class="lead-role">{{ position.requiredRole }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Members Grouped by Role -->
+        <div class="detail-section">
+          <h3>Members ({{ selectedSubteamForDetail()!.members.length }})</h3>
+          @if (selectedSubteamForDetail()!.members.length === 0) {
+            <p class="no-members">No members in this subteam</p>
+          } @else {
+            <div class="members-by-role">
+              @for (roleGroup of Object.keys(subteamMembersGroupedByRole()); track roleGroup) {
+                <div class="role-group">
+                  <h4 class="role-group-title">{{ roleGroup }}</h4>
+                  <div class="role-members-list">
+                    @for (member of subteamMembersGroupedByRole()[roleGroup]; track member.userId) {
+                      <div class="member-item-detail">
+                        <span class="member-name">{{ member.userName }}</span>
+                        <span class="member-email">{{ member.userEmail }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <button class="close-button-action" (click)="closeSubteamDetailDialog()">Close</button>
       </div>
     </div>
   </div>

@@ -21,6 +21,9 @@ export class TeamDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
+  // Expose Object for template use
+  protected readonly Object = Object;
+
   protected readonly team = signal<Team | null>(null);
   protected readonly members = signal<TeamMember[]>([]);
   protected readonly pendingMembers = signal<TeamMember[]>([]);
@@ -87,6 +90,8 @@ export class TeamDetailComponent implements OnInit {
   protected readonly showEditSubteamDialog = signal(false);
   protected readonly showManageMembersDialog = signal(false);
   protected readonly selectedSubteam = signal<Subteam | null>(null);
+  protected readonly showSubteamDetailDialog = signal(false);
+  protected readonly selectedSubteamForDetail = signal<Subteam | null>(null);
   
   // Create/Edit Subteam form
   protected readonly subteamName = signal('');
@@ -128,6 +133,39 @@ export class TeamDetailComponent implements OnInit {
     const userMembership = allMembers.find(m => m.userId === currentUserId);
     
     return userMembership?.roles.includes('Administrator') || false;
+  });
+
+  // Computed signal to group subteam members by role for detail view
+  protected readonly subteamMembersGroupedByRole = computed(() => {
+    const subteam = this.selectedSubteamForDetail();
+    if (!subteam) return {};
+    
+    const teamMembers = this.activeMembers();
+    const grouped: { [role: string]: Array<{ userId: string; userName: string; userEmail: string; roles: string[] }> } = {};
+    
+    // Group subteam members by their roles from the parent team
+    subteam.members.forEach(subteamMember => {
+      // Find the corresponding team member to get their roles
+      const teamMember = teamMembers.find(tm => tm.userId === subteamMember.userId);
+      if (!teamMember) return;
+      
+      teamMember.roles.forEach((role: string) => {
+        if (!grouped[role]) {
+          grouped[role] = [];
+        }
+        // Add member to this role group if not already there
+        if (!grouped[role].some(m => m.userId === subteamMember.userId)) {
+          grouped[role].push({
+            userId: subteamMember.userId,
+            userName: subteamMember.userName,
+            userEmail: subteamMember.userEmail,
+            roles: teamMember.roles
+          });
+        }
+      });
+    });
+    
+    return grouped;
   });
   
   // Computed signal for available roles
@@ -177,6 +215,9 @@ export class TeamDetailComponent implements OnInit {
       if (isAdmin) {
         await this.loadTeamRoles();
       }
+      
+      // Load subteams for count display
+      await this.loadSubteams();
     } catch (error) {
       console.error('Error loading team details:', error);
     } finally {
@@ -997,6 +1038,16 @@ export class TeamDetailComponent implements OnInit {
     this.selectedSubteam.set(null);
     this.selectedMemberIds.set(new Set());
     this.memberRoleFilter.set(''); // Reset role filter
+  }
+
+  protected openSubteamDetailDialog(subteam: Subteam): void {
+    this.selectedSubteamForDetail.set(subteam);
+    this.showSubteamDetailDialog.set(true);
+  }
+
+  protected closeSubteamDetailDialog(): void {
+    this.showSubteamDetailDialog.set(false);
+    this.selectedSubteamForDetail.set(null);
   }
 
   protected toggleMemberSelection(userId: string): void {

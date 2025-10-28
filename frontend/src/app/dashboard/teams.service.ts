@@ -472,4 +472,15 @@ export class TeamsService {
       throw new Error(error.error?.message || 'Failed to update lead position');
     }
   }
+
+  async getSiteStatistics(): Promise<{ publicTeamsCount: number; privateTeamsCount: number; totalUsersCount: number }> {
+    try {
+      return await firstValueFrom(
+        this.http.get<{ publicTeamsCount: number; privateTeamsCount: number; totalUsersCount: number }>(`${this.apiUrl}/statistics`)
+      );
+    } catch (error: any) {
+      console.error('Error loading site statistics:', error);
+      throw new Error(error.error?.message || 'Failed to load site statistics');
+    }
+  }
 }

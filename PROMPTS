@@ -162,21 +162,32 @@ On the main dashboard, the Available Teams, the team number should be displayed.
 
 On the main dashboard, the Available Public Teams count is zero until the collaspable is opened.  It should reflect the right count all the time.
 
+On the team dashboard, the Subteams display differs from the Team Members display.  I would like the Subteams display to be like the Team Members in that it should be its own card, with individual subteams as smaller cards within the 
+subteam card.
+
+The subteam section is still not in a card like the Team Member section just above it.  Put the Subteams in an encolosing card (including the Create Subteam button) and have each subteam display within the encolosing card in its own card.
+
+When displaying the team dashboard, the subteam count is zero until it is opened.  The subteam count should be correct at all times.
+
+On the All Users section on the main dashboard, chagne the View Profile button to the hamburger button for a menu.  The menu items should be the existing View Profile and a new item that is Change Password, that allows a user with user state administrator to change any user's password.
+
+The new Change Password dialog is not styled well and needs to be udpated to be more visually appealing.  Also, the password checks and crosses are black and not green/red as expected.
+
+When a subteam card is clicked, it should popup a subteam display page that shows the subteam name and description, the leads, and all of the members in different sections based on roles.
+
+On the main dashboard, instead of the message 'You have sucessfully logged into the application', display a message that states, how many public teams, private teams, and total users are registered on the site.
+
 In Progress
 ===========
 
 
 Pending
 =======
-On the team dashboard, the Subteams display differs from the Team Members display.  I would like the Subteams display to be like the Team Members in that it should be its own card, with individual subteams as smaller cards within the 
-subteam card.
 
-When a subteam card is clicked, it should popup a subteam display page that shows the subteam name and description, the leads, and all of the members in different sections based on roles.
 
-On the All Users section on the main dashboard, chagne the View Profile button to the hamburger button for a menu.  The menu items should be the existing View Profile and a new item that is Change Password, that allows a user with user state administrator to change any user's password.
 
 Create a calendar where events are per team.  Each event should have a time, date, location, short name, and description.  Each event can be a one time event, or can be recurring with a recurrance pattern.  The recurrance should enable daily, weekly with multiple days in a week, monthly, with specific days of the month, or patterns like the first tuesday or last thursday.  Each event should have a visibility field that can be tied to user role on a team, or subteam membership, or subteam lead users.  On the team dashboard form, there should be a collapsable section that contains the calendar that is viewable at a daily, weekly, monthly, or yearly granularity. Within this UI for the calendar, there should be a control to select the view (Day, Month, Week, Year) and a button to add a new event.
 
---- ADD MESSAGE SENDING PROMPT HERE
+Create a messaging system where members of a team can send messages to other members of the team via email or text.  The target users should be selectable as all users on a team, only users with a specific team role, only users that belong to a given subteam, only users that are leads of a subteam.  These should be able to be combined.  For instance, a message should be able to be sent to users with a specific team role and users on a specific subteam.  The initiation of the send message should be on the team dashboard in the menu and should popup a window that enables the recipents to be selected as well as typing the message.  The message, with the sender and its recipents should be stored in the database for later use.
 
-Add the concept of per user per team permissions allowing the permissions for certain operations to be controlled per user per team.  Initially there will be permissions for sending message (messages) or for scheduling calendar events (events).  Both the sending message and the calendar events features are not in place yet, so this should just be general permissions infrastructure.  There should be a 
+Add the concept of per user per team permissions allowing the permissions for certain operations to be controlled per user per team.  Initially there will be permissions for sending message (messages) or for scheduling calendar events (events).  The availability of these features for a given user should be governed by these permissions.

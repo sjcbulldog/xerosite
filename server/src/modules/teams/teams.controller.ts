@@ -34,6 +34,11 @@ export class TeamsController {
     return this.teamsService.findAll();
   }
 
+  @Get('statistics')
+  async getSiteStatistics(): Promise<{ publicTeamsCount: number; privateTeamsCount: number; totalUsersCount: number }> {
+    return this.teamsService.getSiteStatistics();
+  }
+
   @Get('public/available')
   async findPublicTeams(@CurrentUser() user: any): Promise<TeamResponseDto[]> {
     return this.teamsService.findPublicTeamsForUser(user.id);

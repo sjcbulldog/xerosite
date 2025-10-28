@@ -109,4 +109,12 @@ export class UsersService {
       })
     );
   }
+
+  async adminChangePassword(userId: string, newPassword: string): Promise<{ message: string }> {
+    return firstValueFrom(
+      this.http.patch<{ message: string }>(`${this.apiUrl}/${userId}/admin-password`, {
+        newPassword
+      })
+    );
+  }
 }

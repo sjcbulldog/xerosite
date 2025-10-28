@@ -1990,6 +1990,7 @@
   border-radius: 8px;
   padding: 1.5rem;
   transition: all 0.2s ease;
+  cursor: pointer;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -2972,6 +2973,233 @@
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+  }
+}
+
+// Subteam Detail Dialog Styles
+.subteam-detail-dialog {
+  min-width: 700px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  .dialog-header {
+    flex-shrink: 0;
+    padding: 1.5rem 2rem;
+    border-bottom: 2px solid #e5e7eb;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h2 {
+      color: white;
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      opacity: 0.9;
+      transition: all 0.2s ease;
+
+      &:hover {
+        opacity: 1;
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  .dialog-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+
+    .detail-section {
+      margin-bottom: 2rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      h3 {
+        color: #1f2937;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+      }
+
+      h4 {
+        color: #374151;
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 1rem 0 0.75rem 0;
+      }
+
+      .subteam-description-text {
+        color: #6b7280;
+        line-height: 1.6;
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      .roles-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+
+        .role-badge {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 0.4rem 0.8rem;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+      }
+
+      .leads-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+
+        .lead-item {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 1rem;
+          display: grid;
+          grid-template-columns: 1fr 1fr auto;
+          gap: 1rem;
+          align-items: center;
+
+          .lead-title {
+            font-weight: 600;
+            color: #1f2937;
+          }
+
+          .lead-name {
+            color: #667eea;
+            font-weight: 500;
+          }
+
+          .lead-role {
+            background: white;
+            color: #6b7280;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            border: 1px solid #e5e7eb;
+          }
+        }
+      }
+
+      .no-members {
+        color: #9ca3af;
+        font-style: italic;
+        text-align: center;
+        padding: 2rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        margin: 0;
+      }
+
+      .members-by-role {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+
+        .role-group {
+          .role-group-title {
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            padding: 0.5rem 0.75rem;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 3px solid #667eea;
+            border-radius: 4px;
+          }
+
+          .role-members-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding-left: 1rem;
+
+            .member-item-detail {
+              background: white;
+              border: 1px solid #e5e7eb;
+              border-radius: 6px;
+              padding: 0.75rem 1rem;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              transition: all 0.2s ease;
+
+              &:hover {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                transform: translateX(4px);
+              }
+
+              .member-name {
+                font-weight: 600;
+                color: #1f2937;
+                font-size: 0.95rem;
+              }
+
+              .member-email {
+                color: #6b7280;
+                font-size: 0.85rem;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .dialog-actions {
+    flex-shrink: 0;
+    padding: 1.5rem 2rem;
+    border-top: 2px solid #e5e7eb;
+    background: #f9fafb;
+
+    .close-button-action {
+      width: 100%;
+      background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+      color: white;
+      border: none;
+      padding: 0.9rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+      &:hover {
+        background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
     }
   }
 }

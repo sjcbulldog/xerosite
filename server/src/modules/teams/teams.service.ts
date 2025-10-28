@@ -10,6 +10,7 @@ import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateMemberStatusDto
 import { SendInvitationDto, TeamInvitationResponseDto, UpdateInvitationStatusDto } from './dto/team-invitation.dto';
 import { ImportRosterDto, ImportRosterResultDto, RosterMemberDto } from './dto/import-roster.dto';
 import { MembershipStatus } from './enums/membership-status.enum';
+import { TeamVisibility } from './enums/team-visibility.enum';
 import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
@@ -24,6 +25,8 @@ export class TeamsService {
     private readonly userTeamRepository: Repository<UserTeam>,
     @InjectRepository(TeamInvitation)
     private readonly invitationRepository: Repository<TeamInvitation>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly emailService: EmailService,
     private readonly usersService: UsersService,
   ) {}
@@ -728,6 +731,27 @@ export class TeamsService {
     }
 
     return result;
+  }
+
+  async getSiteStatistics(): Promise<{ publicTeamsCount: number; privateTeamsCount: number; totalUsersCount: number }> {
+    // Count public teams
+    const publicTeamsCount = await this.teamRepository.count({
+      where: { visibility: TeamVisibility.PUBLIC },
+    });
+
+    // Count private teams
+    const privateTeamsCount = await this.teamRepository.count({
+      where: { visibility: TeamVisibility.PRIVATE },
+    });
+
+    // Count total users
+    const totalUsersCount = await this.userRepository.count();
+
+    return {
+      publicTeamsCount,
+      privateTeamsCount,
+      totalUsersCount,
+    };
   }
 }
 

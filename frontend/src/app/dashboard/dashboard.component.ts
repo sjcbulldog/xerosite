@@ -52,6 +52,12 @@ export class DashboardComponent implements OnInit {
   protected readonly adminTeamIds = signal<Set<string>>(new Set());
   protected readonly allUsers = signal<UserProfile[]>([]);
   
+  // Site statistics signals
+  protected readonly publicTeamsCount = signal<number>(0);
+  protected readonly privateTeamsCount = signal<number>(0);
+  protected readonly totalUsersCount = signal<number>(0);
+  protected readonly isLoadingStatistics = signal(false);
+  
   // Change password dialog signals
   protected readonly showChangePasswordDialog = signal(false);
   protected readonly isChangingPassword = signal(false);
@@ -82,6 +88,24 @@ export class DashboardComponent implements OnInit {
   
   // Public teams filter signal
   protected readonly publicTeamsSearchFilter = signal<string>('');
+  
+  // User actions menu signal
+  protected readonly openUserActionsMenuId = signal<string | null>(null);
+  
+  // Change user password dialog signals
+  protected readonly showChangeUserPasswordDialog = signal(false);
+  protected readonly selectedUser = signal<UserProfile | null>(null);
+  protected readonly newUserPassword = signal('');
+  protected readonly confirmUserPassword = signal('');
+  protected readonly isChangingUserPassword = signal(false);
+  protected readonly changeUserPasswordError = signal<string | null>(null);
+  
+  // Password requirements for user password change
+  protected readonly userPasswordHasMinLength = computed(() => this.newUserPassword().length >= 8);
+  protected readonly userPasswordHasUpperCase = computed(() => /[A-Z]/.test(this.newUserPassword()));
+  protected readonly userPasswordHasLowerCase = computed(() => /[a-z]/.test(this.newUserPassword()));
+  protected readonly userPasswordHasNumber = computed(() => /[0-9]/.test(this.newUserPassword()));
+  protected readonly userPasswordHasSymbol = computed(() => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(this.newUserPassword()));
   
   // Computed signal for sorted users
   protected readonly sortedUsers = computed(() => {
@@ -164,6 +188,7 @@ export class DashboardComponent implements OnInit {
     }
     await this.checkPendingInvitations();
     await this.loadPublicTeamsInitial();
+    await this.loadSiteStatistics();
   }
 
   protected isAdmin(): boolean {
@@ -178,6 +203,20 @@ export class DashboardComponent implements OnInit {
     } catch (error: any) {
     } finally {
       this.isLoadingUsers.set(false);
+    }
+  }
+
+  private async loadSiteStatistics(): Promise<void> {
+    this.isLoadingStatistics.set(true);
+    try {
+      const stats = await this.teamsService.getSiteStatistics();
+      this.publicTeamsCount.set(stats.publicTeamsCount);
+      this.privateTeamsCount.set(stats.privateTeamsCount);
+      this.totalUsersCount.set(stats.totalUsersCount);
+    } catch (error: any) {
+      console.error('Error loading site statistics:', error);
+    } finally {
+      this.isLoadingStatistics.set(false);
     }
   }
 
@@ -364,7 +403,67 @@ export class DashboardComponent implements OnInit {
   }
 
   protected viewUserProfile(userId: string): void {
+    this.openUserActionsMenuId.set(null);
     this.router.navigate(['/profile', userId]);
+  }
+
+  protected toggleUserActionsMenu(userId: string): void {
+    if (this.openUserActionsMenuId() === userId) {
+      this.openUserActionsMenuId.set(null);
+    } else {
+      this.openUserActionsMenuId.set(userId);
+    }
+  }
+
+  protected openChangeUserPasswordDialog(user: UserProfile): void {
+    this.openUserActionsMenuId.set(null);
+    this.selectedUser.set(user);
+    this.newUserPassword.set('');
+    this.confirmUserPassword.set('');
+    this.changeUserPasswordError.set(null);
+    this.showChangeUserPasswordDialog.set(true);
+  }
+
+  protected closeChangeUserPasswordDialog(): void {
+    this.showChangeUserPasswordDialog.set(false);
+    this.selectedUser.set(null);
+    this.newUserPassword.set('');
+    this.confirmUserPassword.set('');
+    this.changeUserPasswordError.set(null);
+  }
+
+  protected async changeUserPassword(): Promise<void> {
+    const user = this.selectedUser();
+    if (!user) return;
+
+    const newPassword = this.newUserPassword();
+    const confirmPassword = this.confirmUserPassword();
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      this.changeUserPasswordError.set('Passwords do not match');
+      return;
+    }
+
+    // Validate password requirements
+    if (!this.userPasswordHasMinLength() || !this.userPasswordHasUpperCase() || 
+        !this.userPasswordHasLowerCase() || !this.userPasswordHasNumber() || 
+        !this.userPasswordHasSymbol()) {
+      this.changeUserPasswordError.set('Password does not meet all requirements');
+      return;
+    }
+
+    this.isChangingUserPassword.set(true);
+    this.changeUserPasswordError.set(null);
+
+    try {
+      await this.usersService.adminChangePassword(user.id, newPassword);
+      this.closeChangeUserPasswordDialog();
+    } catch (error: any) {
+      this.changeUserPasswordError.set(error.message || 'Failed to change password');
+    } finally {
+      this.isChangingUserPassword.set(false);
+    }
   }
 
   protected isTeamAdmin(teamId: string): boolean {

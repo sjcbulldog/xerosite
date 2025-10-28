@@ -32,7 +32,24 @@
   <main class="dashboard-content">
     <div class="dashboard-card">
       <h2>Dashboard</h2>
-      <p>You have successfully logged in to the application.</p>
+      @if (isLoadingStatistics()) {
+        <p>Loading statistics...</p>
+      } @else {
+        <div class="site-statistics">
+          <div class="stat-item">
+            <span class="stat-label">Public Teams:</span>
+            <span class="stat-value">{{ publicTeamsCount() }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Private Teams:</span>
+            <span class="stat-value">{{ privateTeamsCount() }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Total Users:</span>
+            <span class="stat-value">{{ totalUsersCount() }}</span>
+          </div>
+        </div>
+      }
       <div class="user-info">
         <h3>User Information</h3>
         <p><strong>Name:</strong> {{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</p>
@@ -160,9 +177,28 @@
                           }
                         </td>
                         <td>
-                          <button (click)="viewUserProfile(user.id)" class="view-profile-button">
-                            View Profile
-                          </button>
+                          <div class="user-actions-menu-container">
+                            <button 
+                              (click)="toggleUserActionsMenu(user.id)" 
+                              class="user-actions-button"
+                              [class.active]="openUserActionsMenuId() === user.id">
+                              ⋮
+                            </button>
+                            @if (openUserActionsMenuId() === user.id) {
+                              <div class="user-actions-dropdown">
+                                <button 
+                                  class="menu-item"
+                                  (click)="viewUserProfile(user.id)">
+                                  View Profile
+                                </button>
+                                <button 
+                                  class="menu-item"
+                                  (click)="openChangeUserPasswordDialog(user)">
+                                  Change Password
+                                </button>
+                              </div>
+                            }
+                          </div>
                         </td>
                       </tr>
                     }
@@ -503,6 +539,86 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+}
+
+<!-- Admin Change User Password Dialog -->
+@if (showChangeUserPasswordDialog()) {
+  <div class="dialog-overlay" (click)="closeChangeUserPasswordDialog()">
+    <div class="dialog-content" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Change Password for {{ selectedUser()?.fullName }}</h2>
+        <button class="close-button" (click)="closeChangeUserPasswordDialog()">×</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="form-group">
+          <label for="newUserPassword">New Password</label>
+          <input 
+            id="newUserPassword"
+            type="password" 
+            [(ngModel)]="newUserPassword"
+            placeholder="Enter new password"
+            [disabled]="isChangingUserPassword()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="confirmUserPassword">Confirm Password</label>
+          <input 
+            id="confirmUserPassword"
+            type="password" 
+            [(ngModel)]="confirmUserPassword"
+            placeholder="Confirm new password"
+            [disabled]="isChangingUserPassword()"
+          />
+        </div>
+
+        <div class="password-requirements">
+          <h4>Password Requirements:</h4>
+          <ul>
+            <li [class.met]="userPasswordHasMinLength()">
+              {{ userPasswordHasMinLength() ? '✓' : '✗' }} At least 8 characters
+            </li>
+            <li [class.met]="userPasswordHasUpperCase()">
+              {{ userPasswordHasUpperCase() ? '✓' : '✗' }} Contains uppercase letter
+            </li>
+            <li [class.met]="userPasswordHasLowerCase()">
+              {{ userPasswordHasLowerCase() ? '✓' : '✗' }} Contains lowercase letter
+            </li>
+            <li [class.met]="userPasswordHasNumber()">
+              {{ userPasswordHasNumber() ? '✓' : '✗' }} Contains number
+            </li>
+            <li [class.met]="userPasswordHasSymbol()">
+              {{ userPasswordHasSymbol() ? '✓' : '✗' }} Contains special character
+            </li>
+          </ul>
+        </div>
+
+        @if (changeUserPasswordError()) {
+          <div class="alert-error">
+            {{ changeUserPasswordError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            type="button" 
+            class="cancel-button"
+            (click)="closeChangeUserPasswordDialog()"
+            [disabled]="isChangingUserPassword()">
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="submit-button"
+            (click)="changeUserPassword()"
+            [disabled]="isChangingUserPassword()">
+            {{ isChangingUserPassword() ? 'Changing...' : 'Change Password' }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 }
