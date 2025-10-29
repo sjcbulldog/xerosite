@@ -45,4 +45,9 @@ export class UserResponseDto {
   get fullName(): string {
     return [this.firstName, this.middleName, this.lastName].filter(Boolean).join(' ');
   }
+
+  @Expose()
+  get isSiteAdmin(): boolean {
+    return this.state === UserState.ADMIN;
+  }
 }

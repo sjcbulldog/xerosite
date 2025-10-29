@@ -94,6 +94,10 @@ export class User {
     return [this.firstName, this.middleName, this.lastName].filter(Boolean).join(' ');
   }
 
+  get isSiteAdmin(): boolean {
+    return this.state === UserState.ADMIN;
+  }
+
   get primaryEmail(): string | undefined {
     return this.emails?.find((email) => email.isPrimary)?.email;
   }

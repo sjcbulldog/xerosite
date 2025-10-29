@@ -55,13 +55,20 @@ export class LoginComponent implements OnInit {
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    this.successMessage.set(null);
 
     try {
       const formValue = this.loginForm.getRawValue();
       await this.authService.login(formValue.email, formValue.password);
       this.router.navigate(['/dashboard']);
-    } catch (error) {
-      this.errorMessage.set('Invalid email or password. Please try again.');
+    } catch (error: any) {
+      // Check if this is a pending verification error
+      const message = error.message || '';
+      if (message.includes('pending email verification') || message.includes('verification email has been sent')) {
+        this.successMessage.set('Your account is still pending email verification. A new verification email has been sent.');
+      } else {
+        this.errorMessage.set('Invalid email or password. Please try again.');
+      }
     } finally {
       this.isLoading.set(false);
     }

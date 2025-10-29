@@ -1,0 +1,137 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Manage User Groups</h2>
+      <button class="close-button" (click)="onClose()">×</button>
+    </div>
+
+    <div class="modal-body">
+      @if (error()) {
+        <div class="error-message">{{ error() }}</div>
+      }
+
+      @if (isLoading()) {
+        <div class="loading-message">Loading user groups...</div>
+      } @else {
+        <div class="groups-list">
+          @if (userGroups().length === 0) {
+            <div class="empty-state">
+              <p>No user groups created yet.</p>
+              <p class="help-text">Create a user group to define visibility rules that can be reused across calendar events.</p>
+            </div>
+          } @else {
+            @for (group of userGroups(); track group.id) {
+              <div class="group-item">
+                <div class="group-info">
+                  <div class="group-name">
+                    {{ group.name }}
+                    <span class="group-badge" [class.public]="group.isPublic" [class.private]="!group.isPublic">
+                      {{ group.isPublic ? 'Public' : 'Private' }}
+                    </span>
+                  </div>
+                  <div class="group-details">
+                    {{ getVisibilitySummary(group) }}
+                  </div>
+                </div>
+                <div class="group-actions">
+                  @if (canEditGroup(group)) {
+                    <button class="edit-button" (click)="openEditDialog(group)" title="Edit">
+                      ✏️
+                    </button>
+                    <button class="delete-button" (click)="deleteGroup(group)" title="Delete">
+                      🗑️
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button class="create-button" (click)="openCreateDialog()" [disabled]="isLoading()">
+        Create New Group
+      </button>
+      <button class="cancel-button" (click)="onClose()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Group Editor Dialog -->
+@if (showEditor()) {
+  <div class="modal-overlay" (click)="closeEditor()">
+    <div class="modal-container editor-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingGroup() ? 'Edit User Group' : 'Create User Group' }}</h2>
+        <button class="close-button" (click)="closeEditor()">×</button>
+      </div>
+
+      <div class="modal-body">
+        @if (editorError()) {
+          <div class="error-message">{{ editorError() }}</div>
+        }
+
+        <div class="form-group">
+          <label for="groupName">Group Name</label>
+          <input
+            id="groupName"
+            type="text"
+            class="form-control"
+            [(ngModel)]="groupName"
+            placeholder="Enter group name"
+            maxlength="100">
+        </div>
+
+        @if (canCreatePublic()) {
+          <div class="form-group checkbox-group">
+            <label>
+              <input
+                type="checkbox"
+                [(ngModel)]="groupIsPublic">
+              <span>Public Group (accessible to all team members)</span>
+            </label>
+          </div>
+        }
+
+        <div class="form-group">
+          <label>Included Users</label>
+          <button class="configure-button" (click)="openVisibilitySelector()">
+            @if (groupRuleSet() && groupRuleSet()!.rows.length > 0) {
+              Edit Included Users Rules
+            } @else {
+              Configure Included Users Rules
+            }
+          </button>
+          @if (groupRuleSet() && groupRuleSet()!.rows.length > 0) {
+            <div class="rules-summary">
+              {{ groupRuleSet()!.rows.length }} rule(s) configured
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="cancel-button" (click)="closeEditor()" [disabled]="isSaving()">
+          Cancel
+        </button>
+        <button class="save-button" (click)="saveGroup()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Saving...' : 'Save Group' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Visibility Selector -->
+@if (showVisibilitySelector()) {
+  <app-visibility-selector
+    [teamMembers]="teamMembers()"
+    [teamRoles]="teamRoles()"
+    [subteams]="subteams()"
+    [initialRuleSet]="groupRuleSet()"
+    (ruleSetChanged)="handleVisibilityChanged($event)"
+    (cancel)="closeVisibilitySelector()">
+  </app-visibility-selector>
+}

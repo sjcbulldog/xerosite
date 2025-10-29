@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, OnInit, computed, ViewChild } from '@angular/core';
 import { TeamsService, Team, TeamMember, TeamInvitation } from './teams.service';
 import { Subteam, CreateSubteamRequest } from './subteam.types';
 import { TitleCasePipe, DatePipe } from '@angular/common';
@@ -7,10 +7,12 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../profile/users.service';
 import { CalendarComponent } from './calendar.component';
+import { UserGroupsManagerComponent } from './user-groups-manager.component';
+import { ExportUsersDialogComponent } from './export-users-dialog.component';
 
 @Component({
   selector: 'app-team-detail',
-  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent],
+  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, UserGroupsManagerComponent, ExportUsersDialogComponent],
   templateUrl: './team-detail.component.html',
   styleUrl: './team-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -115,6 +117,12 @@ export class TeamDetailComponent implements OnInit {
   protected readonly isSavingMemberAttributes = signal(false);
   protected readonly memberEditError = signal<string | null>(null);
   
+  // Computed to check if the editing member is an administrator
+  protected readonly isEditingMemberAdmin = computed(() => {
+    const roles = this.memberEditRoles();
+    return roles.includes('Administrator');
+  });
+  
   // Subteam signals
   protected readonly subteams = signal<Subteam[]>([]);
   protected readonly isLoadingSubteams = signal(false);
@@ -128,6 +136,12 @@ export class TeamDetailComponent implements OnInit {
   
   // Calendar signals
   protected readonly showCalendarSection = signal(false);
+  
+  // User Groups signals
+  protected readonly showUserGroupsManager = signal(false);
+  
+  // Export Users dialog signal
+  protected readonly showExportDialog = signal(false);
   
   // Create/Edit Subteam form
   protected readonly subteamName = signal('');
@@ -167,8 +181,12 @@ export class TeamDetailComponent implements OnInit {
     
     const allMembers = this.members();
     const userMembership = allMembers.find(m => m.userId === currentUserId);
-    
-    return userMembership?.roles.includes('Administrator') || false;
+
+    // Allow either a team-level Administrator role OR a site-wide administrator
+    const isTeamAdministrator = userMembership?.roles.includes('Administrator') || false;
+    const isSiteAdministrator = this.authService.currentUser()?.isSiteAdmin || false;
+
+    return isTeamAdministrator || isSiteAdministrator;
   });
 
   // Computed signal to group subteam members by role for detail view
@@ -214,6 +232,16 @@ export class TeamDetailComponent implements OnInit {
     if (teamId) {
       await this.loadTeamDetails(teamId);
     }
+
+    // Listen for export dialog close event
+    window.addEventListener('closeExportUsersDialog', () => {
+      this.closeExportDialog();
+    });
+
+    // Listen for set team ID event from parent
+    window.addEventListener('setExportTeamId', ((event: CustomEvent) => {
+      // This will be handled by the export dialog component directly
+    }) as EventListener);
   }
 
   private async loadTeamDetails(teamId: string): Promise<void> {
@@ -604,13 +632,23 @@ export class TeamDetailComponent implements OnInit {
     
     // Initialize permissions map
     const permsMap = new Map<string, boolean>();
-    permsMap.set('SEND_MESSAGES', false);
-    permsMap.set('SCHEDULE_EVENTS', false);
     
-    if (member.permissions) {
-      member.permissions.forEach(p => {
-        permsMap.set(p.permission, p.enabled);
-      });
+    // If user is an administrator, set all permissions to true
+    if (member.roles.includes('Administrator')) {
+      permsMap.set('SEND_MESSAGES', true);
+      permsMap.set('SCHEDULE_EVENTS', true);
+      permsMap.set('CREATE_PUBLIC_USER_GROUPS', true);
+    } else {
+      // For non-admins, initialize from database
+      permsMap.set('SEND_MESSAGES', false);
+      permsMap.set('SCHEDULE_EVENTS', false);
+      permsMap.set('CREATE_PUBLIC_USER_GROUPS', false);
+      
+      if (member.permissions) {
+        member.permissions.forEach(p => {
+          permsMap.set(p.permission, p.enabled);
+        });
+      }
     }
     
     this.memberEditPermissions.set(permsMap);
@@ -628,6 +666,12 @@ export class TeamDetailComponent implements OnInit {
   }
 
   protected togglePermission(permission: string): void {
+    // Don't allow toggling if the edited member is an administrator
+    const roles = this.memberEditRoles();
+    if (roles.includes('Administrator')) {
+      return; // Administrators always have all permissions
+    }
+
     const currentPerms = this.memberEditPermissions();
     const newPerms = new Map(currentPerms);
     newPerms.set(permission, !currentPerms.get(permission));
@@ -653,6 +697,17 @@ export class TeamDetailComponent implements OnInit {
       // Update the signal with the new roles array
       this.memberEditRoles.set(newRoles);
     }
+
+    // If Administrator role is being added or removed, update permissions accordingly
+    const updatedRoles = this.memberEditRoles();
+    if (updatedRoles.includes('Administrator')) {
+      // Set all permissions to enabled for administrators
+      const permsMap = new Map<string, boolean>();
+      permsMap.set('SEND_MESSAGES', true);
+      permsMap.set('SCHEDULE_EVENTS', true);
+      permsMap.set('CREATE_PUBLIC_USER_GROUPS', true);
+      this.memberEditPermissions.set(permsMap);
+    }
   }
 
   protected async saveMemberAttributes(): Promise<void> {
@@ -664,9 +719,18 @@ export class TeamDetailComponent implements OnInit {
     this.memberEditError.set(null);
 
     try {
-      const permissions = Array.from(this.memberEditPermissions().entries()).map(
+      // Build permissions array
+      let permissions = Array.from(this.memberEditPermissions().entries()).map(
         ([permission, enabled]) => ({ permission: permission as 'SEND_MESSAGES' | 'SCHEDULE_EVENTS', enabled })
       );
+
+      // If user is an administrator, ensure all permissions are enabled
+      if (this.memberEditRoles().includes('Administrator')) {
+        permissions = [
+          { permission: 'SEND_MESSAGES' as const, enabled: true },
+          { permission: 'SCHEDULE_EVENTS' as const, enabled: true }
+        ];
+      }
 
       const updateData = {
         roles: this.memberEditRoles(),
@@ -1294,4 +1358,70 @@ export class TeamDetailComponent implements OnInit {
       m.roles.includes(requiredRole) && subteamMemberIds.has(m.userId)
     );
   }
+
+  // User Groups Methods
+  protected openUserGroupsManager(): void {
+    this.closeAdminMenu();
+    this.showUserGroupsManager.set(true);
+  }
+
+  protected closeUserGroupsManager(): void {
+    this.showUserGroupsManager.set(false);
+  }
+
+  protected openExportDialog(): void {
+    this.closeAdminMenu();
+    this.showExportDialog.set(true);
+    
+    // Set the team ID on the export dialog after a brief delay to ensure component is rendered
+    setTimeout(() => {
+      const exportDialogEvent = new CustomEvent('setExportTeamId', { 
+        detail: { teamId: this.team()?.id } 
+      });
+      window.dispatchEvent(exportDialogEvent);
+    }, 0);
+  }
+
+  protected closeExportDialog(): void {
+    this.showExportDialog.set(false);
+  }
+
+  // Computed permission check for user groups
+  protected readonly canCreateUserGroups = computed(() => {
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) return false;
+
+    const allMembers = this.members();
+    const userMembership = allMembers.find(m => m.userId === currentUserId);
+
+    if (!userMembership) return false;
+
+    // Admins can always create groups
+    if (userMembership.roles.includes('Administrator')) return true;
+
+    // Check for SCHEDULE_EVENTS or SEND_MESSAGES permissions
+    const permissions = userMembership.permissions || [];
+    return permissions.some(p => 
+      (p.permission === 'SCHEDULE_EVENTS' || p.permission === 'SEND_MESSAGES') && p.enabled
+    );
+  });
+
+  protected readonly canCreatePublicGroups = computed(() => {
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) return false;
+
+    const allMembers = this.members();
+    const userMembership = allMembers.find(m => m.userId === currentUserId);
+
+    if (!userMembership) return false;
+
+    // Admins can always create public groups
+    if (userMembership.roles.includes('Administrator')) return true;
+
+    // Check for CREATE_PUBLIC_USER_GROUPS permission
+    const permissions = userMembership.permissions || [];
+    return permissions.some(p => 
+      (p.permission as string) === 'CREATE_PUBLIC_USER_GROUPS' && p.enabled
+    );
+  });
 }

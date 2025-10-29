@@ -6,6 +6,12 @@ export enum RecurrenceType {
   CUSTOM = 'custom',
 }
 
+export enum AttendanceStatus {
+  YES = 'yes',
+  NO = 'no',
+  NOT_SURE = 'not-sure',
+}
+
 export enum VisibilityType {
   ALL_MEMBERS = 'all_members',
   SPECIFIC_ROLES = 'specific_roles',
@@ -43,11 +49,25 @@ export interface TeamEvent {
   recurrenceType: RecurrenceType;
   recurrencePattern: RecurrencePattern | null;
   recurrenceEndDate: Date | null;
-  visibilityType: VisibilityType;
-  visibilityRules: VisibilityRules | null;
+  userGroupId: string | null;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface EventAttendance {
+  id: string;
+  eventId: string;
+  userId: string;
+  instanceDate: Date;
+  attendance: AttendanceStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CalendarEventInstance extends TeamEvent {
+  instanceDate: Date;
+  attendance?: AttendanceStatus;
 }
 
 export interface CreateEventRequest {
@@ -60,8 +80,7 @@ export interface CreateEventRequest {
   recurrenceType?: RecurrenceType;
   recurrencePattern?: RecurrencePattern;
   recurrenceEndDate?: string;
-  visibilityType?: VisibilityType;
-  visibilityRules?: VisibilityRules;
+  userGroupId?: string;
 }
 
 export interface UpdateEventRequest {
@@ -73,6 +92,5 @@ export interface UpdateEventRequest {
   recurrenceType?: RecurrenceType;
   recurrencePattern?: RecurrencePattern;
   recurrenceEndDate?: string;
-  visibilityType?: VisibilityType;
-  visibilityRules?: VisibilityRules;
+  userGroupId?: string;
 }

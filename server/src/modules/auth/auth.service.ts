@@ -256,6 +256,7 @@ export class AuthService {
       fullName: user.fullName,
       primaryEmail: user.primaryEmail,
       state: user.state,
+      isSiteAdmin: user.isSiteAdmin,
       emails: user.emails || [],
       phones: user.phones || [],
       addresses: user.addresses || [],

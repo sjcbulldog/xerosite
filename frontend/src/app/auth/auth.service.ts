@@ -10,6 +10,7 @@ export interface User {
   state: 'pending' | 'active' | 'admin' | 'disabled';
   primaryEmail?: string;
   fullName: string;
+  isSiteAdmin: boolean;
   emails: any[];
   phones: any[];
   addresses: any[];

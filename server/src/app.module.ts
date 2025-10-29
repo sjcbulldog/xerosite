@@ -14,6 +14,7 @@ import { TeamsModule } from './modules/teams/teams.module';
 import { EmailModule } from './modules/email/email.module';
 import { EventsModule } from './modules/events/events.module';
 import { PreferencesModule } from './modules/preferences/preferences.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { PreferencesModule } from './modules/preferences/preferences.module';
     EmailModule,
     EventsModule,
     PreferencesModule,
+    AdminModule,
   ],
   controllers: [AppController],
 })

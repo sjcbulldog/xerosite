@@ -331,6 +331,46 @@ export class EmailService implements OnModuleInit {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Send event notification email
+   */
+  async sendEventNotificationEmail(
+    to: string,
+    subject: string,
+    htmlContent: string,
+  ): Promise<void> {
+    await this.queueEmail({
+      to,
+      subject,
+      html: htmlContent,
+    });
+  }
+
+  /**
+   * Send test email (for administrators)
+   */
+  async sendTestEmail(
+    to: string,
+    subject: string,
+    message: string,
+  ): Promise<void> {
+    await this.queueEmail({
+      to,
+      subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #667eea;">Test Message</h2>
+          <p style="white-space: pre-wrap;">${message}</p>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+          <p style="color: #6b7280; font-size: 0.9em;">This is a test message sent from the admin dashboard.</p>
+        </div>
+      `,
+    });
+  }
+
+  /**
+>>>>>>> butch
    * Clean up old sent emails (older than 30 days)
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM)

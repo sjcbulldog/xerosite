@@ -9,7 +9,6 @@ import {
   MinLength,
 } from 'class-validator';
 import { RecurrenceType } from '../enums/recurrence-type.enum';
-import { VisibilityType } from '../enums/visibility-type.enum';
 
 export class CreateEventDto {
   @IsUUID()
@@ -48,13 +47,9 @@ export class CreateEventDto {
   @IsOptional()
   recurrenceEndDate?: string;
 
-  @IsEnum(VisibilityType)
+  @IsUUID()
   @IsOptional()
-  visibilityType?: VisibilityType;
-
-  @IsObject()
-  @IsOptional()
-  visibilityRules?: any;
+  userGroupId?: string;
 }
 
 export class UpdateEventDto {
@@ -93,13 +88,9 @@ export class UpdateEventDto {
   @IsOptional()
   recurrenceEndDate?: string;
 
-  @IsEnum(VisibilityType)
+  @IsUUID()
   @IsOptional()
-  visibilityType?: VisibilityType;
-
-  @IsObject()
-  @IsOptional()
-  visibilityRules?: any;
+  userGroupId?: string;
 }
 
 export class EventResponseDto {
@@ -113,8 +104,7 @@ export class EventResponseDto {
   recurrenceType: RecurrenceType;
   recurrencePattern: any;
   recurrenceEndDate: Date | null;
-  visibilityType: VisibilityType;
-  visibilityRules: any;
+  userGroupId: string | null;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;

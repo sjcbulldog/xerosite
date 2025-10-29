@@ -2,11 +2,21 @@ import { Component, inject, signal, computed, input, OnInit, ChangeDetectionStra
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CalendarService } from './calendar.service';
-import { TeamEvent, CreateEventRequest, UpdateEventRequest, RecurrenceType, VisibilityType, RecurrencePattern, VisibilityRules } from './calendar.types';
+import {
+  TeamEvent,
+  CreateEventRequest,
+  UpdateEventRequest,
+  RecurrenceType,
+  VisibilityType,
+  RecurrencePattern,
+  VisibilityRules,
+  AttendanceStatus,
+  EventAttendance,
+  CalendarEventInstance,
+} from './calendar.types';
 import { AuthService } from '../auth/auth.service';
 import { TeamMember } from './teams.service';
-import { VisibilitySelectorComponent } from './visibility-selector.component';
-import { VisibilityRuleSet } from './visibility-selector.types';
+import { UserGroupsService, UserGroup } from './user-groups.service';
 import { Subteam } from './subteam.types';
 
 type CalendarView = 'day' | 'week' | 'month' | 'year';
@@ -15,7 +25,7 @@ interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
   isToday: boolean;
-  events: TeamEvent[];
+  events: CalendarEventInstance[];
 }
 
 @Component({
@@ -27,6 +37,7 @@ interface CalendarDay {
 })
 export class CalendarComponent implements OnInit {
   private readonly calendarService = inject(CalendarService);
+  private readonly userGroupsService = inject(UserGroupsService);
   protected readonly authService = inject(AuthService);
   
   readonly teamId = input.required<string>();
@@ -38,6 +49,7 @@ export class CalendarComponent implements OnInit {
   protected readonly currentView = signal<CalendarView>('month');
   protected readonly currentDate = signal(new Date());
   protected readonly events = signal<TeamEvent[]>([]);
+  protected readonly attendance = signal<EventAttendance[]>([]);
   protected readonly isLoadingEvents = signal(false);
   
   // Computed permission check
@@ -47,6 +59,9 @@ export class CalendarComponent implements OnInit {
 
     const member = this.members().find(m => m.userId === currentUser.id);
     if (!member) return false;
+
+    // Administrators always have permission to schedule events
+    if (member.roles.includes('Administrator')) return true;
 
     // Check if user has SCHEDULE_EVENTS permission
     const permission = member.permissions?.find(p => p.permission === 'SCHEDULE_EVENTS');
@@ -64,7 +79,7 @@ export class CalendarComponent implements OnInit {
   protected readonly eventEndDate = signal('');
   protected readonly eventEndTime = signal('');
   protected readonly recurrenceType = signal<RecurrenceType>(RecurrenceType.NONE);
-  protected readonly visibilityType = signal<VisibilityType>(VisibilityType.ALL_MEMBERS);
+  protected readonly selectedUserGroupId = signal<string | null>(null);
   protected readonly isSavingEvent = signal(false);
   protected readonly eventError = signal<string | null>(null);
   
@@ -75,11 +90,8 @@ export class CalendarComponent implements OnInit {
   protected readonly monthlyPattern = signal('');
   protected readonly recurrenceEndDate = signal('');
   
-  // Visibility rule signals
-  protected readonly selectedRoles = signal<string[]>([]);
-  protected readonly selectedSubteams = signal<string[]>([]);
-  protected readonly showVisibilitySelector = signal(false);
-  protected readonly visibilityRuleSet = signal<VisibilityRuleSet | null>(null);
+  // User groups
+  protected readonly userGroups = signal<UserGroup[]>([]);
   
   // Computed properties
   protected readonly monthName = computed(() => {
@@ -143,7 +155,6 @@ export class CalendarComponent implements OnInit {
   protected readonly filteredEvents = computed(() => {
     const view = this.currentView();
     const date = this.currentDate();
-    const allEvents = this.events();
     
     if (view === 'day') {
       return this.getEventsForDate(date);
@@ -161,6 +172,16 @@ export class CalendarComponent implements OnInit {
   
   async ngOnInit(): Promise<void> {
     await this.loadEvents();
+    await this.loadUserGroups();
+  }
+
+  protected async loadUserGroups(): Promise<void> {
+    try {
+      const groups = await this.userGroupsService.getUserGroups(this.teamId());
+      this.userGroups.set(groups);
+    } catch (error) {
+      console.error('Failed to load user groups:', error);
+    }
   }
   
   protected async loadEvents(): Promise<void> {
@@ -168,15 +189,59 @@ export class CalendarComponent implements OnInit {
     try {
       const events = await this.calendarService.getEventsForTeam(this.teamId());
       this.events.set(events);
+      
+      // Load attendance for visible date range
+      await this.loadAttendance();
     } catch (error) {
       console.error('Failed to load events:', error);
     } finally {
       this.isLoadingEvents.set(false);
     }
   }
+
+  protected async loadAttendance(): Promise<void> {
+    try {
+      const view = this.currentView();
+      const date = this.currentDate();
+      let startDate: Date;
+      let endDate: Date;
+
+      if (view === 'day') {
+        startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (view === 'week') {
+        startDate = new Date(date);
+        startDate.setDate(date.getDate() - date.getDay());
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (view === 'month') {
+        startDate = new Date(date.getFullYear(), date.getMonth(), 1);
+        endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      } else {
+        // Year view
+        startDate = new Date(date.getFullYear(), 0, 1);
+        endDate = new Date(date.getFullYear(), 11, 31);
+      }
+
+      const attendance = await this.calendarService.getAttendanceForDateRange(
+        this.teamId(),
+        startDate,
+        endDate
+      );
+      this.attendance.set(attendance);
+    } catch (error) {
+      console.error('Failed to load attendance:', error);
+    }
+  }
   
   protected changeView(view: CalendarView): void {
     this.currentView.set(view);
+    // Reload attendance for new view range
+    this.loadAttendance();
   }
   
   protected previousPeriod(): void {
@@ -258,7 +323,7 @@ export class CalendarComponent implements OnInit {
     }
     
     this.recurrenceType.set(event.recurrenceType);
-    this.visibilityType.set(event.visibilityType);
+    this.selectedUserGroupId.set(event.userGroupId || null);
     
     if (event.recurrenceEndDate) {
       const recEndDate = new Date(event.recurrenceEndDate);
@@ -288,7 +353,6 @@ export class CalendarComponent implements OnInit {
         : undefined;
       
       const recurrencePattern = this.buildRecurrencePattern();
-      const visibilityRules = this.buildVisibilityRules();
       
       const selectedEvent = this.selectedEvent();
       if (selectedEvent) {
@@ -302,8 +366,7 @@ export class CalendarComponent implements OnInit {
           recurrenceType: this.recurrenceType(),
           recurrencePattern,
           recurrenceEndDate: this.recurrenceEndDate() || undefined,
-          visibilityType: this.visibilityType(),
-          visibilityRules
+          userGroupId: this.selectedUserGroupId() || undefined
         };
         await this.calendarService.updateEvent(this.teamId(), selectedEvent.id, updateRequest);
       } else {
@@ -318,8 +381,7 @@ export class CalendarComponent implements OnInit {
           recurrenceType: this.recurrenceType(),
           recurrencePattern,
           recurrenceEndDate: this.recurrenceEndDate() || undefined,
-          visibilityType: this.visibilityType(),
-          visibilityRules
+          userGroupId: this.selectedUserGroupId() || undefined
         };
         await this.calendarService.createEvent(this.teamId(), createRequest);
       }
@@ -352,17 +414,6 @@ export class CalendarComponent implements OnInit {
     this.weeklyDays.set([...days]);
   }
   
-  protected toggleRole(role: string): void {
-    const roles = this.selectedRoles();
-    const index = roles.indexOf(role);
-    if (index > -1) {
-      roles.splice(index, 1);
-    } else {
-      roles.push(role);
-    }
-    this.selectedRoles.set([...roles]);
-  }
-  
   private resetEventForm(): void {
     this.eventName.set('');
     this.eventDescription.set('');
@@ -372,15 +423,12 @@ export class CalendarComponent implements OnInit {
     this.eventEndDate.set('');
     this.eventEndTime.set('');
     this.recurrenceType.set(RecurrenceType.NONE);
-    this.visibilityType.set(VisibilityType.ALL_MEMBERS);
+    this.selectedUserGroupId.set(null);
     this.dailyInterval.set(1);
     this.weeklyDays.set([false, false, false, false, false, false, false]);
     this.monthlyDays.set([]);
     this.monthlyPattern.set('');
     this.recurrenceEndDate.set('');
-    this.selectedRoles.set([]);
-    this.selectedSubteams.set([]);
-    this.visibilityRuleSet.set(null);
     this.eventError.set(null);
   }
   
@@ -412,62 +460,34 @@ export class CalendarComponent implements OnInit {
     return undefined;
   }
   
-  private buildVisibilityRules(): VisibilityRules | undefined {
-    // If we have a rule set from the visibility selector, use that
-    const ruleSet = this.visibilityRuleSet();
-    if (ruleSet && ruleSet.rows.length > 0) {
-      return { ruleSet };
-    }
-    
-    // Otherwise fall back to legacy visibility type
-    const type = this.visibilityType();
-    
-    if (type === VisibilityType.ALL_MEMBERS) {
-      return undefined;
-    }
-    
-    if (type === VisibilityType.SPECIFIC_ROLES) {
-      return { roles: this.selectedRoles() };
-    }
-    
-    if (type === VisibilityType.SUBTEAM || type === VisibilityType.SUBTEAM_LEADS) {
-      return { subteamIds: this.selectedSubteams() };
-    }
-    
-    return undefined;
-  }
-  
-  protected openVisibilitySelector(): void {
-    this.showVisibilitySelector.set(true);
-  }
-  
-  protected handleVisibilityChanged(ruleSet: VisibilityRuleSet): void {
-    this.visibilityRuleSet.set(ruleSet);
-    this.showVisibilitySelector.set(false);
-  }
-  
-  protected closeVisibilitySelector(): void {
-    this.showVisibilitySelector.set(false);
-  }
-  
-  private getEventsForDate(date: Date): TeamEvent[] {
+  private getEventsForDate(date: Date): CalendarEventInstance[] {
     const allEvents = this.events();
+    const allAttendance = this.attendance();
     const targetDate = new Date(date);
     targetDate.setHours(0, 0, 0, 0);
     
-    const eventsForDate: TeamEvent[] = [];
+    const eventsForDate: CalendarEventInstance[] = [];
     
     for (const event of allEvents) {
       if (this.eventOccursOnDate(event, targetDate)) {
-        eventsForDate.push(event);
+        // Find attendance for this event instance
+        const attendanceRecord = allAttendance.find(
+          a => a.eventId === event.id && 
+               new Date(a.instanceDate).getTime() === targetDate.getTime()
+        );
+        
+        eventsForDate.push({
+          ...event,
+          instanceDate: targetDate,
+          attendance: attendanceRecord?.attendance
+        });
       }
     }
     
     return eventsForDate;
   }
   
-  private getEventsForWeek(date: Date): TeamEvent[] {
-    const allEvents = this.events();
+  private getEventsForWeek(date: Date): CalendarEventInstance[] {
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - date.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
@@ -476,16 +496,19 @@ export class CalendarComponent implements OnInit {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
     
-    const eventsForWeek: TeamEvent[] = [];
+    const eventsForWeek: CalendarEventInstance[] = [];
     
     // Check each day in the week
     for (let d = new Date(startOfWeek); d <= endOfWeek; d.setDate(d.getDate() + 1)) {
       const dayDate = new Date(d);
       dayDate.setHours(0, 0, 0, 0);
       
-      for (const event of allEvents) {
-        if (this.eventOccursOnDate(event, dayDate) && !eventsForWeek.includes(event)) {
-          eventsForWeek.push(event);
+      const dayEvents = this.getEventsForDate(dayDate);
+      for (const eventInstance of dayEvents) {
+        // Avoid duplicates by checking if we already have this event+instance combination
+        if (!eventsForWeek.find(e => e.id === eventInstance.id && 
+            e.instanceDate.getTime() === eventInstance.instanceDate.getTime())) {
+          eventsForWeek.push(eventInstance);
         }
       }
     }
@@ -493,21 +516,23 @@ export class CalendarComponent implements OnInit {
     return eventsForWeek;
   }
   
-  private getEventsForMonth(date: Date): TeamEvent[] {
-    const allEvents = this.events();
+  private getEventsForMonth(date: Date): CalendarEventInstance[] {
     const year = date.getFullYear();
     const month = date.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    const eventsForMonth: TeamEvent[] = [];
+    const eventsForMonth: CalendarEventInstance[] = [];
     
     // Check each day in the month
     for (let day = 1; day <= daysInMonth; day++) {
       const dayDate = new Date(year, month, day);
       
-      for (const event of allEvents) {
-        if (this.eventOccursOnDate(event, dayDate) && !eventsForMonth.includes(event)) {
-          eventsForMonth.push(event);
+      const dayEvents = this.getEventsForDate(dayDate);
+      for (const eventInstance of dayEvents) {
+        // Avoid duplicates by checking if we already have this event+instance combination
+        if (!eventsForMonth.find(e => e.id === eventInstance.id && 
+            e.instanceDate.getTime() === eventInstance.instanceDate.getTime())) {
+          eventsForMonth.push(eventInstance);
         }
       }
     }
@@ -515,11 +540,10 @@ export class CalendarComponent implements OnInit {
     return eventsForMonth;
   }
   
-  private getEventsForYear(date: Date): TeamEvent[] {
-    const allEvents = this.events();
+  private getEventsForYear(date: Date): CalendarEventInstance[] {
     const year = date.getFullYear();
     
-    const eventsForYear: TeamEvent[] = [];
+    const eventsForYear: CalendarEventInstance[] = [];
     
     // Check each month in the year
     for (let month = 0; month < 12; month++) {
@@ -528,9 +552,12 @@ export class CalendarComponent implements OnInit {
       for (let day = 1; day <= daysInMonth; day++) {
         const dayDate = new Date(year, month, day);
         
-        for (const event of allEvents) {
-          if (this.eventOccursOnDate(event, dayDate) && !eventsForYear.includes(event)) {
-            eventsForYear.push(event);
+        const dayEvents = this.getEventsForDate(dayDate);
+        for (const eventInstance of dayEvents) {
+          // Avoid duplicates by checking if we already have this event+instance combination
+          if (!eventsForYear.find(e => e.id === eventInstance.id && 
+              e.instanceDate.getTime() === eventInstance.instanceDate.getTime())) {
+            eventsForYear.push(eventInstance);
           }
         }
       }
@@ -668,4 +695,51 @@ export class CalendarComponent implements OnInit {
     
     return false;
   }
+
+  protected async updateAttendance(
+    eventInstance: CalendarEventInstance,
+    newStatus: AttendanceStatus
+  ): Promise<void> {
+    try {
+      await this.calendarService.updateAttendance(
+        this.teamId(),
+        eventInstance.id,
+        eventInstance.instanceDate,
+        newStatus
+      );
+
+      // Update local state
+      const allAttendance = this.attendance();
+      const existingIndex = allAttendance.findIndex(
+        a => a.eventId === eventInstance.id &&
+             new Date(a.instanceDate).getTime() === eventInstance.instanceDate.getTime()
+      );
+
+      if (existingIndex >= 0) {
+        allAttendance[existingIndex].attendance = newStatus;
+      } else {
+        allAttendance.push({
+          id: crypto.randomUUID(),
+          eventId: eventInstance.id,
+          userId: this.authService.currentUser()!.id,
+          instanceDate: eventInstance.instanceDate,
+          attendance: newStatus,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+
+      this.attendance.set([...allAttendance]);
+    } catch (error) {
+      console.error('Failed to update attendance:', error);
+    }
+  }
+
+  protected async cycleAttendance(eventInstance: CalendarEventInstance): Promise<void> {
+    const currentStatus = eventInstance.attendance;
+    const newStatus = this.calendarService.cycleAttendance(currentStatus);
+    await this.updateAttendance(eventInstance, newStatus);
+  }
+
+  protected readonly AttendanceStatus = AttendanceStatus;
 }

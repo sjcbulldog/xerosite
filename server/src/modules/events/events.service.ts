@@ -75,8 +75,7 @@ export class EventsService {
     if (updateEventDto.recurrenceType !== undefined) event.recurrenceType = updateEventDto.recurrenceType;
     if (updateEventDto.recurrencePattern !== undefined) event.recurrencePattern = updateEventDto.recurrencePattern;
     if (updateEventDto.recurrenceEndDate !== undefined) event.recurrenceEndDate = updateEventDto.recurrenceEndDate ? new Date(updateEventDto.recurrenceEndDate) : null;
-    if (updateEventDto.visibilityType !== undefined) event.visibilityType = updateEventDto.visibilityType;
-    if (updateEventDto.visibilityRules !== undefined) event.visibilityRules = updateEventDto.visibilityRules;
+    if (updateEventDto.userGroupId !== undefined) event.userGroupId = updateEventDto.userGroupId;
 
     const updatedEvent = await this.eventRepository.save(event);
     return this.transformToResponse(updatedEvent);
@@ -104,8 +103,7 @@ export class EventsService {
       recurrenceType: event.recurrenceType,
       recurrencePattern: event.recurrencePattern,
       recurrenceEndDate: event.recurrenceEndDate,
-      visibilityType: event.visibilityType,
-      visibilityRules: event.visibilityRules,
+      userGroupId: event.userGroupId,
       createdBy: event.createdBy,
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,

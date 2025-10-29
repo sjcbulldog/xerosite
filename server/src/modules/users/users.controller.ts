@@ -116,31 +116,7 @@ class AdminChangePasswordDto {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
-  async getAllUsers(): Promise<UserResponseDto[]> {
-    const users = await this.usersService.findAll();
-    return users.map(user => ({
-      id: user.id,
-      firstName: user.firstName,
-      middleName: user.middleName,
-      lastName: user.lastName,
-      fullName: user.fullName,
-      primaryEmail: user.primaryEmail,
-      state: user.state,
-      emails: user.emails || [],
-      phones: user.phones || [],
-      addresses: user.addresses || [],
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    }));
-  }
-
-  @Get(':id')
-  async getUser(@Param('id') id: string): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(id);
-    if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
-    }
+  private transformToUserResponse(user: any): UserResponseDto {
     return {
       id: user.id,
       firstName: user.firstName,
@@ -149,12 +125,28 @@ export class UsersController {
       fullName: user.fullName,
       primaryEmail: user.primaryEmail,
       state: user.state,
+      isSiteAdmin: user.isSiteAdmin,
       emails: user.emails || [],
       phones: user.phones || [],
       addresses: user.addresses || [],
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  @Get()
+  async getAllUsers(): Promise<UserResponseDto[]> {
+    const users = await this.usersService.findAll();
+    return users.map(user => this.transformToUserResponse(user));
+  }
+
+  @Get(':id')
+  async getUser(@Param('id') id: string): Promise<UserResponseDto> {
+    const user = await this.usersService.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    return this.transformToUserResponse(user);
   }
 
   @Patch(':id/profile')
@@ -167,20 +159,7 @@ export class UsersController {
       if (!user) {
         throw new NotFoundException(`User with id ${id} not found`);
       }
-      return {
-        id: user.id,
-        firstName: user.firstName,
-        middleName: user.middleName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-        primaryEmail: user.primaryEmail,
-        state: user.state,
-        emails: user.emails || [],
-        phones: user.phones || [],
-        addresses: user.addresses || [],
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      };
+      return this.transformToUserResponse(user);
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -197,20 +176,7 @@ export class UsersController {
       if (!user) {
         throw new NotFoundException(`User with id ${id} not found`);
       }
-      return {
-        id: user.id,
-        firstName: user.firstName,
-        middleName: user.middleName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-        primaryEmail: user.primaryEmail,
-        state: user.state,
-        emails: user.emails || [],
-        phones: user.phones || [],
-        addresses: user.addresses || [],
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      };
+      return this.transformToUserResponse(user);
     } catch (error) {
       console.error('Error updating user active status:', error);
       throw error;
@@ -227,20 +193,7 @@ export class UsersController {
       if (!user) {
         throw new NotFoundException(`User with id ${id} not found`);
       }
-      return {
-        id: user.id,
-        firstName: user.firstName,
-        middleName: user.middleName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-        primaryEmail: user.primaryEmail,
-        state: user.state,
-        emails: user.emails || [],
-        phones: user.phones || [],
-        addresses: user.addresses || [],
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      };
+      return this.transformToUserResponse(user);
     } catch (error) {
       console.error('Error updating user state:', error);
       throw error;

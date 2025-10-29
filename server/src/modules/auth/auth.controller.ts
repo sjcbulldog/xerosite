@@ -67,6 +67,7 @@ export class AuthController {
       state: user.state,
       lastLogin: user.lastLogin,
       primaryEmail: user.primaryEmail,
+      isSiteAdmin: user.isSiteAdmin,
       emails: user.emails,
       phones: user.phones,
       addresses: user.addresses,
