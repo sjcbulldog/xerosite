@@ -72,6 +72,9 @@ export class DashboardComponent implements OnInit {
   // Test message dialog signal
   protected readonly showTestMessageDialog = signal(false);
   
+  // Help dialog signal
+  protected readonly showHelpDialog = signal(false);
+  
   // Password requirement signals - must be defined before form
   protected readonly newPasswordValue = signal('');
   
@@ -700,6 +703,14 @@ export class DashboardComponent implements OnInit {
 
   protected closeTestMessageDialog(): void {
     this.showTestMessageDialog.set(false);
+  }
+
+  protected openHelpDialog(): void {
+    this.showHelpDialog.set(true);
+  }
+
+  protected closeHelpDialog(): void {
+    this.showHelpDialog.set(false);
   }
 
   protected async onChangePassword(): Promise<void> {

@@ -1,6 +1,16 @@
 <div class="dashboard-container">
   <header class="dashboard-header">
     <h1>Welcome, {{ authService.currentUser()?.firstName || 'User' }}!</h1>
+    <button 
+      (click)="openHelpDialog()" 
+      class="help-button"
+      title="User Guide">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </button>
   </header>
   
   <main class="dashboard-content">
@@ -690,4 +700,22 @@
 
 @if (showTestMessageDialog()) {
   <app-test-message-dialog />
+}
+
+@if (showHelpDialog()) {
+  <div class="dialog-overlay" (click)="closeHelpDialog()">
+    <div class="dialog-content help-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>User Guide</h2>
+        <button class="close-button" (click)="closeHelpDialog()">×</button>
+      </div>
+      <div class="dialog-body">
+        <iframe 
+          src="assets/user-guide.html" 
+          class="help-iframe"
+          title="XeroSite User Guide">
+        </iframe>
+      </div>
+    </div>
+  </div>
 }
