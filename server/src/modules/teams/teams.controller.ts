@@ -8,7 +8,10 @@ import {
   Delete,
   UseGuards,
   Query,
+  Res,
+  HttpStatus,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
@@ -16,6 +19,7 @@ import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateTeamMemberRoles
 import { SendInvitationDto, TeamInvitationResponseDto } from './dto/team-invitation.dto';
 import { UpdateRoleConstraintsDto } from './dto/role-constraints.dto';
 import { ImportRosterDto, ImportRosterResultDto } from './dto/import-roster.dto';
+import { ExportUsersDto } from './dto/export-users.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -180,5 +184,27 @@ export class TeamsController {
     @Body() importRosterDto: ImportRosterDto,
   ): Promise<ImportRosterResultDto> {
     return this.teamsService.importRoster(id, importRosterDto);
+  }
+
+  @Post(':id/export/users')
+  async exportUsers(
+    @Param('id') id: string,
+    @Body() exportDto: ExportUsersDto,
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ): Promise<void> {
+    const csv = await this.teamsService.exportUsersToCSV(
+      id,
+      user.id,
+      exportDto.fields,
+      exportDto.includeSubteams,
+    );
+
+    const team = await this.teamsService.findOne(id);
+    const filename = `team_${team.teamNumber}_users_${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(HttpStatus.OK).send(csv);
   }
 }

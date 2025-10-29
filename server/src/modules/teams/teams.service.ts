@@ -970,5 +970,128 @@ export class TeamsService {
       throw new BadRequestException('User must be a team administrator');
     }
   }
+
+  async exportUsersToCSV(
+    teamId: string,
+    userId: string,
+    fields?: string[],
+    includeSubteams = false,
+  ): Promise<string> {
+    // Verify user is team administrator
+    await this.verifyTeamAdmin(teamId, userId);
+
+    // Get all active team members with user and subteam relations
+    const members = await this.userTeamRepository.find({
+      where: { teamId, status: MembershipStatus.ACTIVE },
+      relations: ['user', 'user.emails', 'user.phones', 'user.addresses'],
+    });
+
+    // Define available fields
+    const availableFields = {
+      firstName: 'First Name',
+      middleName: 'Middle Name',
+      lastName: 'Last Name',
+      fullName: 'Full Name',
+      primaryEmail: 'Primary Email',
+      primaryPhone: 'Primary Phone',
+      roles: 'Roles',
+      state: 'State',
+      createdAt: 'Member Since',
+    };
+
+    // Default fields if none specified
+    const selectedFields = fields && fields.length > 0 
+      ? fields 
+      : ['firstName', 'lastName', 'primaryEmail', 'roles'];
+
+    // Build CSV header
+    const headers = selectedFields.map(field => availableFields[field] || field);
+    if (includeSubteams) {
+      headers.push('Subteams');
+    }
+
+    // Get subteam memberships if needed
+    let subteamMemberships: Map<string, string[]> = new Map();
+    if (includeSubteams) {
+      const subteamMembers = await this.subteamMemberRepository.find({
+        relations: ['subteam'],
+      });
+
+      // Build map of userId to subteam names
+      for (const member of subteamMembers) {
+        if (member.subteam.teamId === teamId) {
+          const existing = subteamMemberships.get(member.userId) || [];
+          existing.push(member.subteam.name);
+          subteamMemberships.set(member.userId, existing);
+        }
+      }
+    }
+
+    // Build CSV rows
+    const rows: string[][] = [headers];
+
+    for (const member of members) {
+      const row: string[] = [];
+      const user = member.user;
+
+      for (const field of selectedFields) {
+        let value = '';
+
+        switch (field) {
+          case 'firstName':
+            value = user.firstName || '';
+            break;
+          case 'middleName':
+            value = user.middleName || '';
+            break;
+          case 'lastName':
+            value = user.lastName || '';
+            break;
+          case 'fullName':
+            value = user.fullName || '';
+            break;
+          case 'primaryEmail':
+            value = user.primaryEmail || '';
+            break;
+          case 'primaryPhone':
+            value = user.primaryPhone || '';
+            break;
+          case 'roles':
+            value = member.getRolesArray().join(', ');
+            break;
+          case 'state':
+            value = user.state || '';
+            break;
+          case 'createdAt':
+            value = member.createdAt.toISOString().split('T')[0];
+            break;
+          default:
+            value = '';
+        }
+
+        // Escape CSV value
+        row.push(this.escapeCSV(value));
+      }
+
+      // Add subteams if requested
+      if (includeSubteams) {
+        const subteams = subteamMemberships.get(user.id) || [];
+        row.push(this.escapeCSV(subteams.join(', ')));
+      }
+
+      rows.push(row);
+    }
+
+    // Convert to CSV string
+    return rows.map(row => row.join(',')).join('\n');
+  }
+
+  private escapeCSV(value: string): string {
+    // If value contains comma, quote, or newline, wrap in quotes and escape quotes
+    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  }
 }
 

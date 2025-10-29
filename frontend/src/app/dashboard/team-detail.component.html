@@ -46,6 +46,10 @@
                       <span class="menu-icon">📋</span>
                       Import Roster
                     </button>
+                    <button (click)="openExportDialog()" class="menu-item">
+                      <span class="menu-icon">📊</span>
+                      Export Users to CSV
+                    </button>
                     @if (canCreateUserGroups()) {
                       <button (click)="openUserGroupsManager()" class="menu-item">
                         <span class="menu-icon">👥</span>
@@ -1523,4 +1527,9 @@
     [canCreatePublic]="canCreatePublicGroups()"
     (close)="closeUserGroupsManager()">
   </app-user-groups-manager>
+}
+
+<!-- Export Users Dialog -->
+@if (showExportDialog()) {
+  <app-export-users-dialog />
 }

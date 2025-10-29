@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, OnInit, computed, ViewChild } from '@angular/core';
 import { TeamsService, Team, TeamMember, TeamInvitation } from './teams.service';
 import { Subteam, CreateSubteamRequest } from './subteam.types';
 import { TitleCasePipe, DatePipe } from '@angular/common';
@@ -8,10 +8,11 @@ import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../profile/users.service';
 import { CalendarComponent } from './calendar.component';
 import { UserGroupsManagerComponent } from './user-groups-manager.component';
+import { ExportUsersDialogComponent } from './export-users-dialog.component';
 
 @Component({
   selector: 'app-team-detail',
-  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, UserGroupsManagerComponent],
+  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, UserGroupsManagerComponent, ExportUsersDialogComponent],
   templateUrl: './team-detail.component.html',
   styleUrl: './team-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -139,6 +140,9 @@ export class TeamDetailComponent implements OnInit {
   // User Groups signals
   protected readonly showUserGroupsManager = signal(false);
   
+  // Export Users dialog signal
+  protected readonly showExportDialog = signal(false);
+  
   // Create/Edit Subteam form
   protected readonly subteamName = signal('');
   protected readonly subteamDescription = signal('');
@@ -177,8 +181,12 @@ export class TeamDetailComponent implements OnInit {
     
     const allMembers = this.members();
     const userMembership = allMembers.find(m => m.userId === currentUserId);
-    
-    return userMembership?.roles.includes('Administrator') || false;
+
+    // Allow either a team-level Administrator role OR a site-wide administrator
+    const isTeamAdministrator = userMembership?.roles.includes('Administrator') || false;
+    const isSiteAdministrator = this.authService.currentUser()?.isSiteAdmin || false;
+
+    return isTeamAdministrator || isSiteAdministrator;
   });
 
   // Computed signal to group subteam members by role for detail view
@@ -224,6 +232,16 @@ export class TeamDetailComponent implements OnInit {
     if (teamId) {
       await this.loadTeamDetails(teamId);
     }
+
+    // Listen for export dialog close event
+    window.addEventListener('closeExportUsersDialog', () => {
+      this.closeExportDialog();
+    });
+
+    // Listen for set team ID event from parent
+    window.addEventListener('setExportTeamId', ((event: CustomEvent) => {
+      // This will be handled by the export dialog component directly
+    }) as EventListener);
   }
 
   private async loadTeamDetails(teamId: string): Promise<void> {
@@ -1349,6 +1367,23 @@ export class TeamDetailComponent implements OnInit {
 
   protected closeUserGroupsManager(): void {
     this.showUserGroupsManager.set(false);
+  }
+
+  protected openExportDialog(): void {
+    this.closeAdminMenu();
+    this.showExportDialog.set(true);
+    
+    // Set the team ID on the export dialog after a brief delay to ensure component is rendered
+    setTimeout(() => {
+      const exportDialogEvent = new CustomEvent('setExportTeamId', { 
+        detail: { teamId: this.team()?.id } 
+      });
+      window.dispatchEvent(exportDialogEvent);
+    }, 0);
+  }
+
+  protected closeExportDialog(): void {
+    this.showExportDialog.set(false);
   }
 
   // Computed permission check for user groups

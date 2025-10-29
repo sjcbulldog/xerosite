@@ -244,16 +244,10 @@ Add the ability to export all users that belong to a given team to a CSV file th
 Pending
 =======
 
-
+Delete event from calendar.
 
 Create a messaging system where members of a team can send messages to other members of the team via email or text.  The target users should be selectable as all users on a team, only users with a specific team role, only users that belong to a given subteam, only users that are leads of a subteam.  These should be able to be combined.  For instance, a message should be able to be sent to users with a specific team role and users on a specific subteam.  The initiation of the send message should be on the team dashboard in the menu and should popup a window that enables the recipents to be selected as well as typing the message.  The message, with the sender and its recipents should be stored in the database for later use.
 
 Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
 
-
-
-Delete event from calendar.
-
-Implement a site status page for site adminstrators.  Number of emails send, number of texts sent, total number of users, total number of teams, total number of calendar events, etc.
-
-
+Implement a site status page for site adminstrators.  Number of users, total number of teams, total number of calendar events, etc.  Also list the total emails and text messages sent per month.
