@@ -11,6 +11,7 @@ import { UserTeam } from '../teams/entities/user-team.entity';
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../preferences/entities/user-preference.entity';
 import { EmailModule } from '../email/email.module';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { EmailModule } from '../email/email.module';
       UserPreference,
     ]),
     EmailModule,
+    SmsModule,
   ],
   controllers: [EventsController],
   providers: [EventsService, AttendanceService, EventNotificationsService],

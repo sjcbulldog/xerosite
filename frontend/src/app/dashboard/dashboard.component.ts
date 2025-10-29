@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { TeamsService, TeamInvitation } from './teams.service';
 import { UsersService, UserProfile } from '../profile/users.service';
 import { PreferencesDialogComponent } from '../preferences/preferences-dialog.component';
+import { TestMessageDialogComponent } from './test-message-dialog.component';
 
 type SortField = 'firstName' | 'lastName' | 'email';
 type SortDirection = 'asc' | 'desc';
@@ -26,7 +27,7 @@ interface CreateTeamForm {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent],
+  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -67,6 +68,9 @@ export class DashboardComponent implements OnInit {
   
   // Preferences dialog signal
   protected readonly showPreferencesDialog = signal(false);
+  
+  // Test message dialog signal
+  protected readonly showTestMessageDialog = signal(false);
   
   // Password requirement signals - must be defined before form
   protected readonly newPasswordValue = signal('');
@@ -192,6 +196,11 @@ export class DashboardComponent implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
+    
+    // Listen for test message dialog close event
+    window.addEventListener('closeTestMessageDialog', () => {
+      this.closeTestMessageDialog();
+    });
     
     await this.loadTeams();
     if (this.isAdmin()) {
@@ -682,6 +691,15 @@ export class DashboardComponent implements OnInit {
 
   protected closePreferencesDialog(): void {
     this.showPreferencesDialog.set(false);
+  }
+
+  protected openTestMessageDialog(): void {
+    this.showUserMenu.set(false);
+    this.showTestMessageDialog.set(true);
+  }
+
+  protected closeTestMessageDialog(): void {
+    this.showTestMessageDialog.set(false);
   }
 
   protected async onChangePassword(): Promise<void> {

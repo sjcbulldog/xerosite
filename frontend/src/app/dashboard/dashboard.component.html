@@ -1,41 +1,49 @@
 <div class="dashboard-container">
   <header class="dashboard-header">
     <h1>Welcome, {{ authService.currentUser()?.firstName || 'User' }}!</h1>
-    <div class="user-menu-container">
-      <button (click)="toggleUserMenu()" class="user-menu-button">
-        <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-        <span class="chevron-down">▼</span>
-      </button>
-      @if (showUserMenu()) {
-        <div class="user-menu-dropdown">
-          <button (click)="navigateToProfile()" class="menu-item">
-            <span class="menu-icon">👤</span>
-            Edit Profile
-          </button>
-          <button (click)="openPreferencesDialog()" class="menu-item">
-            <span class="menu-icon">⚙️</span>
-            Preferences
-          </button>
-          <button (click)="openChangePasswordDialog()" class="menu-item">
-            <span class="menu-icon">🔒</span>
-            Change Password
-          </button>
-          <button (click)="logout()" class="menu-item">
-            <span class="menu-icon">🚪</span>
-            Sign Out
-          </button>
-        </div>
-      }
-    </div>
   </header>
   
   <main class="dashboard-content">
     <div class="dashboard-card">
-      <h2>Dashboard</h2>
+      <div class="dashboard-card-header-with-menu">
+        <h2>Dashboard</h2>
+        <div class="user-menu-container">
+          <button (click)="toggleUserMenu()" class="user-menu-button">
+            <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            <span class="chevron-down">▼</span>
+          </button>
+          @if (showUserMenu()) {
+            <div class="user-menu-dropdown">
+              <button (click)="navigateToProfile()" class="menu-item">
+                <span class="menu-icon">👤</span>
+                Edit Profile
+              </button>
+              <button (click)="openPreferencesDialog()" class="menu-item">
+                <span class="menu-icon">⚙️</span>
+                Preferences
+              </button>
+              <button (click)="openChangePasswordDialog()" class="menu-item">
+                <span class="menu-icon">🔒</span>
+                Change Password
+              </button>
+              @if (authService.currentUser()?.isSiteAdmin) {
+                <button (click)="openTestMessageDialog()" class="menu-item">
+                  <span class="menu-icon">📧</span>
+                  Test Message
+                </button>
+              }
+              <button (click)="logout()" class="menu-item">
+                <span class="menu-icon">🚪</span>
+                Sign Out
+              </button>
+            </div>
+          }
+        </div>
+      </div>
       @if (isLoadingStatistics()) {
         <p class="statistics-text">Loading statistics...</p>
       } @else {
@@ -678,4 +686,8 @@
       </div>
     </div>
   </div>
+}
+
+@if (showTestMessageDialog()) {
+  <app-test-message-dialog />
 }

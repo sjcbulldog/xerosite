@@ -119,6 +119,17 @@
   }
 }
 
+.dashboard-card-header-with-menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+  }
+}
+
 .user-info {
   border-top: 1px solid #e5e7eb;
   padding-top: 1.5rem;

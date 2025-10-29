@@ -12,6 +12,7 @@ import {
 } from '../preferences/entities/user-preference.entity';
 import { MembershipStatus } from '../teams/enums/membership-status.enum';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class EventNotificationsService {
@@ -29,6 +30,7 @@ export class EventNotificationsService {
     @InjectRepository(UserPreference)
     private readonly preferenceRepository: Repository<UserPreference>,
     private readonly emailService: EmailService,
+    private readonly smsService: SmsService,
   ) {}
 
   // Run every 15 minutes
@@ -62,7 +64,7 @@ export class EventNotificationsService {
     // Get all team members
     const teamMembers = await this.userTeamRepository.find({
       where: { teamId: event.teamId, status: MembershipStatus.ACTIVE },
-      relations: ['user'],
+      relations: ['user', 'user.phones'],
     });
 
     for (const member of teamMembers) {
@@ -217,19 +219,35 @@ export class EventNotificationsService {
     minutesBefore: number,
   ): Promise<void> {
     const timeDescription = this.formatTimeDescription(minutesBefore);
-    const eventDate = new Date(event.startDateTime).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
 
-    // For now, just log to console as text backend will be added later
-    const message = `Reminder: ${event.name} on ${eventDate}${event.location ? ` at ${event.location}` : ''}`;
+    // Get user's primary phone number
+    const phoneNumber = user.primaryPhone;
 
-    this.logger.log(
-      `[TEXT NOTIFICATION] Would send to ${user.primaryEmail}: ${message} (${timeDescription})`,
-    );
+    if (!phoneNumber) {
+      this.logger.warn(
+        `Cannot send SMS notification to ${user.primaryEmail}: no phone number on file`,
+      );
+      return;
+    }
+
+    try {
+      await this.smsService.sendEventNotification(
+        phoneNumber,
+        event.name,
+        new Date(event.startDateTime),
+        event.location,
+        timeDescription,
+      );
+
+      this.logger.log(
+        `✓ SMS notification sent for event: ${event.name} (user: ${user.primaryEmail}, phone: ${phoneNumber})`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `✗ Failed to send SMS for event ${event.name}:`,
+        error.message,
+      );
+    }
   }
 
   private formatTimeDescription(minutesBefore: number): string {
