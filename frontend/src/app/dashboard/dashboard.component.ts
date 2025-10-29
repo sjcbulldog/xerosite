@@ -95,6 +95,7 @@ export class DashboardComponent implements OnInit {
   
   // User actions menu signal
   protected readonly openUserActionsMenuId = signal<string | null>(null);
+  protected readonly userActionsMenuPosition = signal<{ top: number; left: number } | null>(null);
   
   // Change user password dialog signals
   protected readonly showChangeUserPasswordDialog = signal(false);
@@ -418,10 +419,20 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/profile', userId]);
   }
 
-  protected toggleUserActionsMenu(userId: string): void {
+  protected toggleUserActionsMenu(userId: string, event: MouseEvent): void {
     if (this.openUserActionsMenuId() === userId) {
       this.openUserActionsMenuId.set(null);
+      this.userActionsMenuPosition.set(null);
     } else {
+      const button = event.currentTarget as HTMLElement;
+      const rect = button.getBoundingClientRect();
+      
+      // Calculate position below the button
+      this.userActionsMenuPosition.set({
+        top: rect.bottom + 8,
+        left: rect.right - 180 // Align right edge (180px is min-width of dropdown)
+      });
+      
       this.openUserActionsMenuId.set(userId);
     }
   }
