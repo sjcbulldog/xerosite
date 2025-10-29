@@ -313,34 +313,25 @@
           </div>
         }
 
-        <!-- Visibility Type -->
+        <!-- Visibility Configuration -->
         <div class="form-group">
-          <label for="visibilityType">Visibility</label>
-          <select id="visibilityType" [(ngModel)]="visibilityType">
-            <option [value]="VisibilityType.ALL_MEMBERS">All Team Members</option>
-            <option [value]="VisibilityType.SPECIFIC_ROLES">Specific Roles</option>
-            <option [value]="VisibilityType.SUBTEAM">Specific Subteams</option>
-            <option [value]="VisibilityType.SUBTEAM_LEADS">Subteam Leads</option>
-          </select>
-        </div>
-
-        <!-- Role Selection -->
-        @if (visibilityType() === VisibilityType.SPECIFIC_ROLES) {
-          <div class="form-group">
-            <label>Select Roles</label>
-            <div class="role-selector">
-              @for (role of teamRoles(); track role) {
-                <button 
-                  type="button"
-                  class="role-button"
-                  [class.selected]="selectedRoles().includes(role)"
-                  (click)="toggleRole(role)">
-                  {{ role }}
-                </button>
-              }
+          <label>Visibility</label>
+          <button 
+            type="button"
+            class="config-visibility-button"
+            (click)="openVisibilitySelector()">
+            Configure Visibility Rules
+          </button>
+          @if (visibilityRuleSet() && visibilityRuleSet()!.rows.length > 0) {
+            <div class="visibility-summary">
+              {{ visibilityRuleSet()!.rows.length }} rule{{ visibilityRuleSet()!.rows.length > 1 ? 's' : '' }} configured
             </div>
-          </div>
-        }
+          } @else {
+            <div class="visibility-summary no-rules">
+              No visibility rules configured (all team members can see)
+            </div>
+          }
+        </div>
       </div>
 
       <div class="dialog-actions">
@@ -359,4 +350,16 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Visibility Selector -->
+@if (showVisibilitySelector()) {
+  <app-visibility-selector
+    [teamMembers]="members()"
+    [teamRoles]="teamRoles()"
+    [subteams]="subteams()"
+    [initialRuleSet]="visibilityRuleSet()"
+    (ruleSetChanged)="handleVisibilityChanged($event)"
+    (cancel)="closeVisibilitySelector()">
+  </app-visibility-selector>
 }

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
 import { DatabaseConfig } from './config/database.config';
 import emailConfig from './config/email.config';
@@ -22,6 +23,9 @@ import { PreferencesModule } from './modules/preferences/preferences.module';
       envFilePath: '.env',
       load: [emailConfig],
     }),
+
+    // Schedule module for cron jobs
+    ScheduleModule.forRoot(),
 
     // Database module
     TypeOrmModule.forRootAsync({

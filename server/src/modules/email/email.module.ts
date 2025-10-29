@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
 import { EmailService } from './email.service';
+import { EmailQueue } from './entities/email-queue.entity';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([EmailQueue]),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -18,6 +21,8 @@ import { EmailService } from './email.service';
             user: configService.get('email.auth.user'),
             pass: configService.get('email.auth.pass'),
           },
+          debug: true, // Enable debug output
+          logger: true, // Enable logger
         },
         defaults: {
           from: configService.get('email.from'),

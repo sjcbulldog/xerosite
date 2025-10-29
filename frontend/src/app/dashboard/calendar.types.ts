@@ -28,6 +28,8 @@ export interface RecurrencePattern {
 export interface VisibilityRules {
   roles?: string[];
   subteamIds?: string[];
+  // New flexible visibility rules
+  ruleSet?: import('./visibility-selector.types').VisibilityRuleSet;
 }
 
 export interface TeamEvent {
