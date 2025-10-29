@@ -119,8 +119,13 @@ export class UsersService {
   }
 
   async deleteUser(userId: string): Promise<{ message: string }> {
-    return firstValueFrom(
-      this.http.delete<{ message: string }>(`${this.apiUrl}/${userId}`)
-    );
+    try {
+      return await firstValueFrom(
+        this.http.delete<{ message: string }>(`${this.apiUrl}/${userId}`)
+      );
+    } catch (error: any) {
+      const errorMessage = error.error?.message || error.message || 'Failed to delete user';
+      throw new Error(errorMessage);
+    }
   }
 }

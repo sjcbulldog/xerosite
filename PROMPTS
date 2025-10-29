@@ -216,26 +216,30 @@ When selecting lead positions in a subteam, only show users that are members of 
 
 Any site adminstrator should have the option to remove any user from the system.  Removing a users should remove them from the users database completely and clear up any memberships in teams and subteams.
 
+Add the concept of per user per team per user permissions allowing the permissions for certain operations to be controlled per user per team. These permissions should be editable only by users with the adminstrator role for a team.  Initially there will be permissions for 'Send Messages' and for 'Schedule Events'. Only users with the 'Schedule Events' permissions should be able to add events to the calendar. The system should be created to be extensible to future permissions.
+
 In the All Users section of the Dashboard, for the last user at the bottom of the container and not necessarily the last user overall, when the menu button under Actions is pressed, the menu is clipped and not visible. The menu for the button should not be clipped by its parent window but rather by the top level window.
+
+If a user is invited to a team and they accept the invitation, their status for the team should be active and not pending.
+
+The Delete User feature should not allow you to delete the final site administrator user account.
+
+If a user tries to log in with the right email and password, but with the account in the pending state, the server sends a new email to the user to verify their email.  However, the error message on the login page is 'Invalid email or password.  Please try again' and is in red.  I would like the message to be 'Your account is still pending email verification.  A new verification email has been sent.'  And this should be in green.
+
+Email verification is not working.  When the link is clicked in the verification email, I get 'Email verification failed.  The link may be invalid or expired.'
 
 In Progress
 ===========
 
-
 Pending
 =======
-
-Email verification is not working.  When the link is clicked in the verification email, I get 'Email verification failed.  The link may be invalid or expired.'
 
 
 Move the visibility popup of the calendar event window to a feature available for anyone with event or message privileges at the team level.  This feature should be accessible from the hamburger menu on the team dashboard page.  It should be labeled 'Create User Group'.  This should popup a window that allows you to create new named user groups or delete existing named user groups.  If the user has 'Create Public User Groups' permissions, then a user should be able to create a user group accessible by everyone.  If the user does not have 'Create Public User Groups' permissions, that user should be able to create user groups just for themselves.  The User groups are edited using the existing visibility popup renamed to say user group and with a name field added at the top and with a public/private setting.  In the Calendar event editor, the visibility setting should be a select box that allows the user to select a fixed value of 'All Team Members' or any global named user group.
 
 Create a messaging system where members of a team can send messages to other members of the team via email or text.  The target users should be selectable as all users on a team, only users with a specific team role, only users that belong to a given subteam, only users that are leads of a subteam.  These should be able to be combined.  For instance, a message should be able to be sent to users with a specific team role and users on a specific subteam.  The initiation of the send message should be on the team dashboard in the menu and should popup a window that enables the recipents to be selected as well as typing the message.  The message, with the sender and its recipents should be stored in the database for later use.
 
-Add the concept of per user per team per user permissions allowing the permissions for certain operations to be controlled per user per team. These permissions should be editable only by users with the adminstrator role for a team.  Initially there will be permissions for 'Send Messages' and for 'Schedule Events'. Only users with the 'Schedule Events' permissions should be able to add events to the calendar. The system should be created to be extensible to future permissions.
-
 Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
 
 Add the ability to export all users that belong to a given team to a CSV file that is saved to the user's disk.  This should be only be available to a user with the administrator role on a given team.  It should be accessible through the menu on the team dashboard.
 
-If a user is invited to a team and they accept the invitation, their status for the team should be active and not pending.

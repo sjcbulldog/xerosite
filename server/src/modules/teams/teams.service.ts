@@ -540,7 +540,8 @@ export class TeamsService {
       throw new BadRequestException('You are already a member of this team');
     }
 
-    // Create pending membership with default Student role
+    // Create active membership with default Student role
+    // Since the user was invited by a team admin, they should be immediately active
     const teamRoles = invitation.team.getRolesArray();
     const defaultRole = teamRoles.includes('Student') ? 'Student' : teamRoles[0];
 
@@ -548,7 +549,7 @@ export class TeamsService {
       userId,
       teamId: invitation.teamId,
       roles: defaultRole,
-      status: MembershipStatus.PENDING,
+      status: MembershipStatus.ACTIVE,
     });
 
     const savedUserTeam = await this.userTeamRepository.save(userTeam);
