@@ -8,6 +8,7 @@ import { TeamsService, TeamInvitation } from './teams.service';
 import { UsersService, UserProfile } from '../profile/users.service';
 import { PreferencesDialogComponent } from '../preferences/preferences-dialog.component';
 import { TestMessageDialogComponent } from './test-message-dialog.component';
+import { HelpDialogComponent } from './help-dialog.component';
 
 type SortField = 'firstName' | 'lastName' | 'email';
 type SortDirection = 'asc' | 'desc';
@@ -27,7 +28,7 @@ interface CreateTeamForm {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent],
+  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent, HelpDialogComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

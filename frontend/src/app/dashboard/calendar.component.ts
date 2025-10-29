@@ -18,6 +18,8 @@ import { AuthService } from '../auth/auth.service';
 import { TeamMember } from './teams.service';
 import { UserGroupsService, UserGroup } from './user-groups.service';
 import { Subteam } from './subteam.types';
+import { VisibilitySelectorComponent } from './visibility-selector.component';
+import { VisibilityRuleSet } from './visibility-selector.types';
 
 type CalendarView = 'day' | 'week' | 'month' | 'year';
 
@@ -70,6 +72,7 @@ export class CalendarComponent implements OnInit {
   
   // Dialog signals
   protected readonly showEventDialog = signal(false);
+  protected readonly showVisibilitySelector = signal(false);
   protected readonly selectedEvent = signal<TeamEvent | null>(null);
   protected readonly eventName = signal('');
   protected readonly eventDescription = signal('');
@@ -82,6 +85,9 @@ export class CalendarComponent implements OnInit {
   protected readonly selectedUserGroupId = signal<string | null>(null);
   protected readonly isSavingEvent = signal(false);
   protected readonly eventError = signal<string | null>(null);
+  
+  // Visibility selector signal
+  protected readonly visibilityRuleSet = signal<VisibilityRuleSet | null>(null);
   
   // Recurrence pattern signals
   protected readonly dailyInterval = signal(1);
@@ -340,6 +346,15 @@ export class CalendarComponent implements OnInit {
   protected closeEventDialog(): void {
     this.showEventDialog.set(false);
     this.resetEventForm();
+  }
+  
+  protected closeVisibilitySelector(): void {
+    this.showVisibilitySelector.set(false);
+  }
+  
+  protected handleVisibilityChanged(ruleSet: VisibilityRuleSet): void {
+    this.visibilityRuleSet.set(ruleSet);
+    this.showVisibilitySelector.set(false);
   }
   
   protected async saveEvent(): Promise<void> {

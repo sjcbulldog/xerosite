@@ -703,19 +703,5 @@
 }
 
 @if (showHelpDialog()) {
-  <div class="dialog-overlay" (click)="closeHelpDialog()">
-    <div class="dialog-content help-dialog" (click)="$event.stopPropagation()">
-      <div class="dialog-header">
-        <h2>User Guide</h2>
-        <button class="close-button" (click)="closeHelpDialog()">×</button>
-      </div>
-      <div class="dialog-body">
-        <iframe 
-          src="assets/user-guide.html" 
-          class="help-iframe"
-          title="XeroSite User Guide">
-        </iframe>
-      </div>
-    </div>
-  </div>
+  <app-help-dialog (close)="closeHelpDialog()" />
 }
