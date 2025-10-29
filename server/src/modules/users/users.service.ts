@@ -13,6 +13,8 @@ import { UserAddress } from './entities/user-address.entity';
 import { UserState } from './enums/user-state.enum';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { SubteamLeadPosition } from '../teams/entities/subteam-lead-position.entity';
+import { SubteamMember } from '../teams/entities/subteam-member.entity';
 
 @Injectable()
 export class UsersService {
@@ -25,6 +27,10 @@ export class UsersService {
     private readonly userPhoneRepository: Repository<UserPhone>,
     @InjectRepository(UserAddress)
     private readonly userAddressRepository: Repository<UserAddress>,
+    @InjectRepository(SubteamLeadPosition)
+    private readonly subteamLeadPositionRepository: Repository<SubteamLeadPosition>,
+    @InjectRepository(SubteamMember)
+    private readonly subteamMemberRepository: Repository<SubteamMember>,
   ) {}
 
   async findById(id: string): Promise<User | null> {
@@ -377,6 +383,30 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    // Check if this is the last admin
+    if (user.state === UserState.ADMIN) {
+      const adminCount = await this.userRepository.count({
+        where: { state: UserState.ADMIN },
+      });
+      
+      if (adminCount <= 1) {
+        throw new BadRequestException(
+          'Cannot delete the last administrator account. There must be at least one administrator.',
+        );
+      }
+    }
+
+    // Remove user from any subteam lead positions they hold
+    await this.subteamLeadPositionRepository.update(
+      { userId: id },
+      { userId: null }
+    );
+
+    // Remove user from all subteam memberships
+    await this.subteamMemberRepository.delete({ userId: id });
+
+    // The cascade delete on UserTeam entity will automatically
+    // remove the user's team memberships
     await this.userRepository.remove(user);
   }
 

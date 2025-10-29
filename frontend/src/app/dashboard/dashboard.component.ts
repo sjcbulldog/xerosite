@@ -111,6 +111,12 @@ export class DashboardComponent implements OnInit {
   protected readonly userPasswordHasNumber = computed(() => /[0-9]/.test(this.newUserPassword()));
   protected readonly userPasswordHasSymbol = computed(() => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(this.newUserPassword()));
   
+  // Delete user confirmation dialog signals
+  protected readonly showDeleteUserDialog = signal(false);
+  protected readonly userToDelete = signal<UserProfile | null>(null);
+  protected readonly isDeletingUser = signal(false);
+  protected readonly deleteUserError = signal<string | null>(null);
+  
   // Computed signal for sorted users
   protected readonly sortedUsers = computed(() => {
     const users = [...this.allUsers()];
@@ -468,6 +474,41 @@ export class DashboardComponent implements OnInit {
       this.changeUserPasswordError.set(error.message || 'Failed to change password');
     } finally {
       this.isChangingUserPassword.set(false);
+    }
+  }
+
+  protected openDeleteUserDialog(user: UserProfile): void {
+    this.openUserActionsMenuId.set(null);
+    this.userToDelete.set(user);
+    this.deleteUserError.set(null);
+    this.showDeleteUserDialog.set(true);
+  }
+
+  protected closeDeleteUserDialog(): void {
+    this.showDeleteUserDialog.set(false);
+    this.userToDelete.set(null);
+    this.deleteUserError.set(null);
+  }
+
+  protected async deleteUser(): Promise<void> {
+    const user = this.userToDelete();
+    if (!user) return;
+
+    this.isDeletingUser.set(true);
+    this.deleteUserError.set(null);
+
+    try {
+      await this.usersService.deleteUser(user.id);
+      
+      // Remove the user from the local list
+      const updatedUsers = this.allUsers().filter(u => u.id !== user.id);
+      this.allUsers.set(updatedUsers);
+      
+      this.closeDeleteUserDialog();
+    } catch (error: any) {
+      this.deleteUserError.set(error.message || 'Failed to delete user');
+    } finally {
+      this.isDeletingUser.set(false);
     }
   }
 

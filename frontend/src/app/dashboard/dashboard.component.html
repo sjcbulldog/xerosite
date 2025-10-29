@@ -191,6 +191,11 @@
                                   (click)="openChangeUserPasswordDialog(user)">
                                   Change Password
                                 </button>
+                                <button 
+                                  class="menu-item delete-item"
+                                  (click)="openDeleteUserDialog(user)">
+                                  Delete User
+                                </button>
                               </div>
                             }
                           </div>
@@ -616,6 +621,56 @@
             (click)="changeUserPassword()"
             [disabled]="isChangingUserPassword()">
             {{ isChangingUserPassword() ? 'Changing...' : 'Change Password' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete User Confirmation Dialog -->
+@if (showDeleteUserDialog()) {
+  <div class="dialog-overlay" (click)="closeDeleteUserDialog()">
+    <div class="dialog-content delete-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Delete User</h2>
+        <button class="close-button" (click)="closeDeleteUserDialog()">×</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="warning-message">
+          <strong>⚠️ Warning: This action cannot be undone!</strong>
+          <p>
+            You are about to permanently delete the user 
+            <strong>{{ userToDelete()?.fullName }}</strong> 
+            ({{ userToDelete()?.primaryEmail }}).
+          </p>
+          <p>
+            This will remove the user from the system and clear all their team 
+            and subteam memberships.
+          </p>
+        </div>
+
+        @if (deleteUserError()) {
+          <div class="alert-error">
+            {{ deleteUserError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            type="button" 
+            class="cancel-button"
+            (click)="closeDeleteUserDialog()"
+            [disabled]="isDeletingUser()">
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="delete-button"
+            (click)="deleteUser()"
+            [disabled]="isDeletingUser()">
+            {{ isDeletingUser() ? 'Deleting...' : 'Delete User' }}
           </button>
         </div>
       </div>

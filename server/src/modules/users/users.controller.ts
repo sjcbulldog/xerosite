@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, NotFoundException, UnauthorizedException, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Body, UseGuards, NotFoundException, UnauthorizedException, Request, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserResponseDto } from './dto/user-response.dto';
@@ -298,6 +298,37 @@ export class UsersController {
       return { message: 'Password changed successfully' };
     } catch (error) {
       console.error('Error changing user password:', error);
+      throw error;
+    }
+  }
+
+  @Delete(':id')
+  async deleteUser(
+    @Param('id') id: string,
+    @Request() req: any,
+  ): Promise<{ message: string }> {
+    try {
+      // Verify the requesting user is an admin
+      const requestingUser = await this.usersService.findById(req.user.id);
+      if (!requestingUser || requestingUser.state !== 'admin') {
+        throw new UnauthorizedException('Only administrators can delete users');
+      }
+
+      const user = await this.usersService.findById(id);
+      if (!user) {
+        throw new NotFoundException(`User with id ${id} not found`);
+      }
+
+      // Prevent users from deleting themselves
+      if (id === req.user.id) {
+        throw new BadRequestException('You cannot delete your own account');
+      }
+
+      await this.usersService.remove(id);
+
+      return { message: 'User deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting user:', error);
       throw error;
     }
   }

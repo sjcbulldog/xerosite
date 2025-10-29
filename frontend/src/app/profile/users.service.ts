@@ -117,4 +117,10 @@ export class UsersService {
       })
     );
   }
+
+  async deleteUser(userId: string): Promise<{ message: string }> {
+    return firstValueFrom(
+      this.http.delete<{ message: string }>(`${this.apiUrl}/${userId}`)
+    );
+  }
 }
