@@ -174,13 +174,15 @@
                         <td>
                           <div class="user-actions-menu-container">
                             <button 
-                              (click)="toggleUserActionsMenu(user.id)" 
+                              (click)="toggleUserActionsMenu(user.id, $event)" 
                               class="user-actions-button"
                               [class.active]="openUserActionsMenuId() === user.id">
                               ⋮
                             </button>
-                            @if (openUserActionsMenuId() === user.id) {
-                              <div class="user-actions-dropdown">
+                            @if (openUserActionsMenuId() === user.id && userActionsMenuPosition()) {
+                              <div class="user-actions-dropdown"
+                                [style.top.px]="userActionsMenuPosition()!.top"
+                                [style.left.px]="userActionsMenuPosition()!.left">
                                 <button 
                                   class="menu-item"
                                   (click)="viewUserProfile(user.id)">
