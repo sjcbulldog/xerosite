@@ -915,8 +915,6 @@ export class TeamsService {
   }
 
   async getUserPermissions(userId: string, teamId: string): Promise<UserPermissionDto[]> {
-<<<<<<< HEAD
-=======
     // Check if user is team administrator - admins automatically have all permissions
     const userTeam = await this.userTeamRepository.findOne({
       where: { userId, teamId },
@@ -931,7 +929,6 @@ export class TeamsService {
     }
 
     // For non-admins, return permissions from database
->>>>>>> butch
     const permissions = await this.userPermissionRepository.find({
       where: { userId, teamId },
     });
@@ -947,8 +944,6 @@ export class TeamsService {
     teamId: string,
     permission: TeamPermission,
   ): Promise<boolean> {
-<<<<<<< HEAD
-=======
     // Check if user is team administrator - admins automatically have all permissions
     const userTeam = await this.userTeamRepository.findOne({
       where: { userId, teamId },
@@ -959,7 +954,6 @@ export class TeamsService {
     }
 
     // Check for explicit permission in database
->>>>>>> butch
     const userPermission = await this.userPermissionRepository.findOne({
       where: { userId, teamId, permission },
     });
@@ -976,8 +970,6 @@ export class TeamsService {
       throw new BadRequestException('User must be a team administrator');
     }
   }
-<<<<<<< HEAD
-=======
 
   async exportUsersToCSV(
     teamId: string,
@@ -1101,6 +1093,5 @@ export class TeamsService {
     }
     return value;
   }
->>>>>>> butch
 }
 

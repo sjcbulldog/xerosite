@@ -13,10 +13,7 @@ import { Subteam } from './entities/subteam.entity';
 import { SubteamMember } from './entities/subteam-member.entity';
 import { SubteamLeadPosition } from './entities/subteam-lead-position.entity';
 import { UserPermission } from './entities/user-permission.entity';
-<<<<<<< HEAD
-=======
 import { UserGroup } from './entities/user-group.entity';
->>>>>>> butch
 import { EmailModule } from '../email/email.module';
 import { UsersModule } from '../users/users.module';
 
@@ -30,10 +27,7 @@ import { UsersModule } from '../users/users.module';
       SubteamMember,
       SubteamLeadPosition,
       UserPermission,
-<<<<<<< HEAD
-=======
       UserGroup,
->>>>>>> butch
     ]),
     EmailModule,
     UsersModule,
