@@ -1,7 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { TeamEvent, CreateEventRequest, UpdateEventRequest } from './calendar.types';
+import {
+  TeamEvent,
+  CreateEventRequest,
+  UpdateEventRequest,
+  EventAttendance,
+  AttendanceStatus,
+} from './calendar.types';
 
 @Injectable({
   providedIn: 'root'
@@ -109,6 +115,79 @@ export class CalendarService {
     } catch (error: any) {
       console.error('Error deleting event:', error);
       throw new Error(error.error?.message || 'Failed to delete event');
+    }
+  }
+
+  async getAttendanceForDateRange(
+    teamId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<EventAttendance[]> {
+    try {
+      const params = new URLSearchParams({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      });
+      
+      const attendance = await firstValueFrom(
+        this.http.get<EventAttendance[]>(
+          `${this.apiUrl}/${teamId}/events/attendance/range?${params.toString()}`
+        )
+      );
+      
+      return attendance.map(a => ({
+        ...a,
+        instanceDate: new Date(a.instanceDate),
+        createdAt: new Date(a.createdAt),
+        updatedAt: new Date(a.updatedAt)
+      }));
+    } catch (error: any) {
+      console.error('Error loading attendance:', error);
+      throw new Error(error.error?.message || 'Failed to load attendance');
+    }
+  }
+
+  async updateAttendance(
+    teamId: string,
+    eventId: string,
+    instanceDate: Date,
+    attendance: AttendanceStatus
+  ): Promise<EventAttendance> {
+    try {
+      const result = await firstValueFrom(
+        this.http.patch<EventAttendance>(
+          `${this.apiUrl}/${teamId}/events/${eventId}/attendance`,
+          {
+            eventId,
+            instanceDate: instanceDate.toISOString().split('T')[0],
+            attendance
+          }
+        )
+      );
+      
+      return {
+        ...result,
+        instanceDate: new Date(result.instanceDate),
+        createdAt: new Date(result.createdAt),
+        updatedAt: new Date(result.updatedAt)
+      };
+    } catch (error: any) {
+      console.error('Error updating attendance:', error);
+      throw new Error(error.error?.message || 'Failed to update attendance');
+    }
+  }
+
+  cycleAttendance(current: AttendanceStatus | undefined): AttendanceStatus {
+    switch (current) {
+      case AttendanceStatus.YES:
+        return AttendanceStatus.NOT_SURE;
+      case AttendanceStatus.NOT_SURE:
+        return AttendanceStatus.NO;
+      case AttendanceStatus.NO:
+      case undefined:
+        return AttendanceStatus.YES;
+      default:
+        return AttendanceStatus.NOT_SURE;
     }
   }
 }

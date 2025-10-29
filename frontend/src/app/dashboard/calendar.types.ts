@@ -6,6 +6,12 @@ export enum RecurrenceType {
   CUSTOM = 'custom',
 }
 
+export enum AttendanceStatus {
+  YES = 'yes',
+  NO = 'no',
+  NOT_SURE = 'not-sure',
+}
+
 export enum VisibilityType {
   ALL_MEMBERS = 'all_members',
   SPECIFIC_ROLES = 'specific_roles',
@@ -47,6 +53,21 @@ export interface TeamEvent {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface EventAttendance {
+  id: string;
+  eventId: string;
+  userId: string;
+  instanceDate: Date;
+  attendance: AttendanceStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CalendarEventInstance extends TeamEvent {
+  instanceDate: Date;
+  attendance?: AttendanceStatus;
 }
 
 export interface CreateEventRequest {

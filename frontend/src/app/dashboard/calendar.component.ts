@@ -2,7 +2,18 @@ import { Component, inject, signal, computed, input, OnInit, ChangeDetectionStra
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CalendarService } from './calendar.service';
-import { TeamEvent, CreateEventRequest, UpdateEventRequest, RecurrenceType, VisibilityType, RecurrencePattern, VisibilityRules } from './calendar.types';
+import {
+  TeamEvent,
+  CreateEventRequest,
+  UpdateEventRequest,
+  RecurrenceType,
+  VisibilityType,
+  RecurrencePattern,
+  VisibilityRules,
+  AttendanceStatus,
+  EventAttendance,
+  CalendarEventInstance,
+} from './calendar.types';
 import { AuthService } from '../auth/auth.service';
 import { TeamMember } from './teams.service';
 import { UserGroupsService, UserGroup } from './user-groups.service';
@@ -14,7 +25,7 @@ interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
   isToday: boolean;
-  events: TeamEvent[];
+  events: CalendarEventInstance[];
 }
 
 @Component({
@@ -38,6 +49,7 @@ export class CalendarComponent implements OnInit {
   protected readonly currentView = signal<CalendarView>('month');
   protected readonly currentDate = signal(new Date());
   protected readonly events = signal<TeamEvent[]>([]);
+  protected readonly attendance = signal<EventAttendance[]>([]);
   protected readonly isLoadingEvents = signal(false);
   
   // Computed permission check
@@ -143,7 +155,6 @@ export class CalendarComponent implements OnInit {
   protected readonly filteredEvents = computed(() => {
     const view = this.currentView();
     const date = this.currentDate();
-    const allEvents = this.events();
     
     if (view === 'day') {
       return this.getEventsForDate(date);
@@ -178,15 +189,59 @@ export class CalendarComponent implements OnInit {
     try {
       const events = await this.calendarService.getEventsForTeam(this.teamId());
       this.events.set(events);
+      
+      // Load attendance for visible date range
+      await this.loadAttendance();
     } catch (error) {
       console.error('Failed to load events:', error);
     } finally {
       this.isLoadingEvents.set(false);
     }
   }
+
+  protected async loadAttendance(): Promise<void> {
+    try {
+      const view = this.currentView();
+      const date = this.currentDate();
+      let startDate: Date;
+      let endDate: Date;
+
+      if (view === 'day') {
+        startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (view === 'week') {
+        startDate = new Date(date);
+        startDate.setDate(date.getDate() - date.getDay());
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (view === 'month') {
+        startDate = new Date(date.getFullYear(), date.getMonth(), 1);
+        endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      } else {
+        // Year view
+        startDate = new Date(date.getFullYear(), 0, 1);
+        endDate = new Date(date.getFullYear(), 11, 31);
+      }
+
+      const attendance = await this.calendarService.getAttendanceForDateRange(
+        this.teamId(),
+        startDate,
+        endDate
+      );
+      this.attendance.set(attendance);
+    } catch (error) {
+      console.error('Failed to load attendance:', error);
+    }
+  }
   
   protected changeView(view: CalendarView): void {
     this.currentView.set(view);
+    // Reload attendance for new view range
+    this.loadAttendance();
   }
   
   protected previousPeriod(): void {
@@ -405,24 +460,34 @@ export class CalendarComponent implements OnInit {
     return undefined;
   }
   
-  private getEventsForDate(date: Date): TeamEvent[] {
+  private getEventsForDate(date: Date): CalendarEventInstance[] {
     const allEvents = this.events();
+    const allAttendance = this.attendance();
     const targetDate = new Date(date);
     targetDate.setHours(0, 0, 0, 0);
     
-    const eventsForDate: TeamEvent[] = [];
+    const eventsForDate: CalendarEventInstance[] = [];
     
     for (const event of allEvents) {
       if (this.eventOccursOnDate(event, targetDate)) {
-        eventsForDate.push(event);
+        // Find attendance for this event instance
+        const attendanceRecord = allAttendance.find(
+          a => a.eventId === event.id && 
+               new Date(a.instanceDate).getTime() === targetDate.getTime()
+        );
+        
+        eventsForDate.push({
+          ...event,
+          instanceDate: targetDate,
+          attendance: attendanceRecord?.attendance
+        });
       }
     }
     
     return eventsForDate;
   }
   
-  private getEventsForWeek(date: Date): TeamEvent[] {
-    const allEvents = this.events();
+  private getEventsForWeek(date: Date): CalendarEventInstance[] {
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - date.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
@@ -431,16 +496,19 @@ export class CalendarComponent implements OnInit {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
     
-    const eventsForWeek: TeamEvent[] = [];
+    const eventsForWeek: CalendarEventInstance[] = [];
     
     // Check each day in the week
     for (let d = new Date(startOfWeek); d <= endOfWeek; d.setDate(d.getDate() + 1)) {
       const dayDate = new Date(d);
       dayDate.setHours(0, 0, 0, 0);
       
-      for (const event of allEvents) {
-        if (this.eventOccursOnDate(event, dayDate) && !eventsForWeek.includes(event)) {
-          eventsForWeek.push(event);
+      const dayEvents = this.getEventsForDate(dayDate);
+      for (const eventInstance of dayEvents) {
+        // Avoid duplicates by checking if we already have this event+instance combination
+        if (!eventsForWeek.find(e => e.id === eventInstance.id && 
+            e.instanceDate.getTime() === eventInstance.instanceDate.getTime())) {
+          eventsForWeek.push(eventInstance);
         }
       }
     }
@@ -448,21 +516,23 @@ export class CalendarComponent implements OnInit {
     return eventsForWeek;
   }
   
-  private getEventsForMonth(date: Date): TeamEvent[] {
-    const allEvents = this.events();
+  private getEventsForMonth(date: Date): CalendarEventInstance[] {
     const year = date.getFullYear();
     const month = date.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    const eventsForMonth: TeamEvent[] = [];
+    const eventsForMonth: CalendarEventInstance[] = [];
     
     // Check each day in the month
     for (let day = 1; day <= daysInMonth; day++) {
       const dayDate = new Date(year, month, day);
       
-      for (const event of allEvents) {
-        if (this.eventOccursOnDate(event, dayDate) && !eventsForMonth.includes(event)) {
-          eventsForMonth.push(event);
+      const dayEvents = this.getEventsForDate(dayDate);
+      for (const eventInstance of dayEvents) {
+        // Avoid duplicates by checking if we already have this event+instance combination
+        if (!eventsForMonth.find(e => e.id === eventInstance.id && 
+            e.instanceDate.getTime() === eventInstance.instanceDate.getTime())) {
+          eventsForMonth.push(eventInstance);
         }
       }
     }
@@ -470,11 +540,10 @@ export class CalendarComponent implements OnInit {
     return eventsForMonth;
   }
   
-  private getEventsForYear(date: Date): TeamEvent[] {
-    const allEvents = this.events();
+  private getEventsForYear(date: Date): CalendarEventInstance[] {
     const year = date.getFullYear();
     
-    const eventsForYear: TeamEvent[] = [];
+    const eventsForYear: CalendarEventInstance[] = [];
     
     // Check each month in the year
     for (let month = 0; month < 12; month++) {
@@ -483,9 +552,12 @@ export class CalendarComponent implements OnInit {
       for (let day = 1; day <= daysInMonth; day++) {
         const dayDate = new Date(year, month, day);
         
-        for (const event of allEvents) {
-          if (this.eventOccursOnDate(event, dayDate) && !eventsForYear.includes(event)) {
-            eventsForYear.push(event);
+        const dayEvents = this.getEventsForDate(dayDate);
+        for (const eventInstance of dayEvents) {
+          // Avoid duplicates by checking if we already have this event+instance combination
+          if (!eventsForYear.find(e => e.id === eventInstance.id && 
+              e.instanceDate.getTime() === eventInstance.instanceDate.getTime())) {
+            eventsForYear.push(eventInstance);
           }
         }
       }
@@ -623,4 +695,51 @@ export class CalendarComponent implements OnInit {
     
     return false;
   }
+
+  protected async updateAttendance(
+    eventInstance: CalendarEventInstance,
+    newStatus: AttendanceStatus
+  ): Promise<void> {
+    try {
+      await this.calendarService.updateAttendance(
+        this.teamId(),
+        eventInstance.id,
+        eventInstance.instanceDate,
+        newStatus
+      );
+
+      // Update local state
+      const allAttendance = this.attendance();
+      const existingIndex = allAttendance.findIndex(
+        a => a.eventId === eventInstance.id &&
+             new Date(a.instanceDate).getTime() === eventInstance.instanceDate.getTime()
+      );
+
+      if (existingIndex >= 0) {
+        allAttendance[existingIndex].attendance = newStatus;
+      } else {
+        allAttendance.push({
+          id: crypto.randomUUID(),
+          eventId: eventInstance.id,
+          userId: this.authService.currentUser()!.id,
+          instanceDate: eventInstance.instanceDate,
+          attendance: newStatus,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+
+      this.attendance.set([...allAttendance]);
+    } catch (error) {
+      console.error('Failed to update attendance:', error);
+    }
+  }
+
+  protected async cycleAttendance(eventInstance: CalendarEventInstance): Promise<void> {
+    const currentStatus = eventInstance.attendance;
+    const newStatus = this.calendarService.cycleAttendance(currentStatus);
+    await this.updateAttendance(eventInstance, newStatus);
+  }
+
+  protected readonly AttendanceStatus = AttendanceStatus;
 }

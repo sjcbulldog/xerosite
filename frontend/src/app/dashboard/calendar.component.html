@@ -74,12 +74,28 @@
               
               @if (day.events.length > 0) {
                 <div class="day-events">
-                  @for (event of day.events; track event.id) {
+                  @for (event of day.events; track event.id + event.instanceDate.getTime()) {
                     <div 
                       class="event-chip"
-                      (click)="openEditEventDialog(event)"
                       [title]="event.name">
-                      {{ event.name }}
+                      <span class="event-name" (click)="openEditEventDialog(event)">
+                        {{ event.name }}
+                      </span>
+                      <span 
+                        class="attendance-icon"
+                        (click)="cycleAttendance(event); $event.stopPropagation()"
+                        [class.yes]="event.attendance === AttendanceStatus.YES"
+                        [class.no]="event.attendance === AttendanceStatus.NO"
+                        [class.not-sure]="!event.attendance || event.attendance === AttendanceStatus.NOT_SURE"
+                        [title]="event.attendance || 'Not sure'">
+                        @if (event.attendance === AttendanceStatus.YES) {
+                          ✓
+                        } @else if (event.attendance === AttendanceStatus.NO) {
+                          ✗
+                        } @else {
+                          ?
+                        }
+                      </span>
                     </div>
                   }
                 </div>
@@ -96,22 +112,49 @@
         @if (filteredEvents().length === 0) {
           <p class="no-events">No events for this period</p>
         } @else {
-          @for (event of filteredEvents(); track event.id) {
+          @for (event of filteredEvents(); track event.id + event.instanceDate.getTime()) {
             <div class="event-card">
               <div class="event-header">
                 <h4 class="event-title">{{ event.name }}</h4>
-                @if (isAdmin()) {
-                  <div class="event-actions">
-                    <button class="action-btn edit" (click)="openEditEventDialog(event)" title="Edit">✎</button>
-                    <button class="action-btn delete" (click)="deleteEvent(event)" title="Delete">🗑</button>
+                <div class="event-header-actions">
+                  <!-- Attendance Toggle -->
+                  <div class="attendance-toggle">
+                    <button 
+                      class="attendance-btn yes"
+                      [class.active]="event.attendance === AttendanceStatus.YES"
+                      (click)="updateAttendance(event, AttendanceStatus.YES)"
+                      title="Attending">
+                      Yes
+                    </button>
+                    <button 
+                      class="attendance-btn not-sure"
+                      [class.active]="!event.attendance || event.attendance === AttendanceStatus.NOT_SURE"
+                      (click)="updateAttendance(event, AttendanceStatus.NOT_SURE)"
+                      title="Not sure">
+                      Not Sure
+                    </button>
+                    <button 
+                      class="attendance-btn no"
+                      [class.active]="event.attendance === AttendanceStatus.NO"
+                      (click)="updateAttendance(event, AttendanceStatus.NO)"
+                      title="Not attending">
+                      No
+                    </button>
                   </div>
-                }
+                  
+                  @if (isAdmin()) {
+                    <div class="event-actions">
+                      <button class="action-btn edit" (click)="openEditEventDialog(event)" title="Edit">✎</button>
+                      <button class="action-btn delete" (click)="deleteEvent(event)" title="Delete">🗑</button>
+                    </div>
+                  }
+                </div>
               </div>
               
               <div class="event-details">
                 <div class="event-detail">
                   <strong>📅 Date:</strong> 
-                  {{ event.startDateTime | date:'MMM d, y' }}
+                  {{ event.instanceDate | date:'MMM d, y' }}
                 </div>
                 <div class="event-detail">
                   <strong>🕐 Time:</strong> 

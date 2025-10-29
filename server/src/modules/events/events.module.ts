@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventsService } from './events.service';
+import { AttendanceService } from './attendance.service';
 import { EventsController } from './events.controller';
 import { TeamEvent } from './entities/team-event.entity';
 import { EventNotification } from './entities/event-notification.entity';
+import { EventAttendance } from './entities/event-attendance.entity';
 import { EventNotificationsService } from './event-notifications.service';
 import { UserTeam } from '../teams/entities/user-team.entity';
 import { User } from '../users/entities/user.entity';
@@ -15,6 +17,7 @@ import { EmailModule } from '../email/email.module';
     TypeOrmModule.forFeature([
       TeamEvent,
       EventNotification,
+      EventAttendance,
       UserTeam,
       User,
       UserPreference,
@@ -22,7 +25,7 @@ import { EmailModule } from '../email/email.module';
     EmailModule,
   ],
   controllers: [EventsController],
-  providers: [EventsService, EventNotificationsService],
-  exports: [EventsService, EventNotificationsService],
+  providers: [EventsService, AttendanceService, EventNotificationsService],
+  exports: [EventsService, AttendanceService, EventNotificationsService],
 })
 export class EventsModule {}

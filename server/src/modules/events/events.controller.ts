@@ -10,14 +10,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
+import { AttendanceService } from './attendance.service';
 import { CreateEventDto, UpdateEventDto, EventResponseDto } from './dto/event.dto';
+import { UpdateAttendanceDto, AttendanceResponseDto } from './dto/attendance.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('teams/:teamId/events')
 @UseGuards(JwtAuthGuard)
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+    private readonly eventsService: EventsService,
+    private readonly attendanceService: AttendanceService,
+  ) {}
 
   @Post()
   async create(
@@ -61,5 +66,31 @@ export class EventsController {
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
     return this.eventsService.remove(id);
+  }
+
+  // Attendance endpoints
+  @Get('attendance/range')
+  async getUserAttendanceForRange(
+    @Param('teamId') teamId: string,
+    @CurrentUser() user: any,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ): Promise<AttendanceResponseDto[]> {
+    return this.attendanceService.getUserAttendanceForDateRange(
+      user.id,
+      teamId,
+      new Date(startDate),
+      new Date(endDate),
+    );
+  }
+
+  @Patch(':id/attendance')
+  async updateAttendance(
+    @Param('id') eventId: string,
+    @Body() updateDto: UpdateAttendanceDto,
+    @CurrentUser() user: any,
+  ): Promise<AttendanceResponseDto> {
+    updateDto.eventId = eventId;
+    return this.attendanceService.updateAttendance(user.id, updateDto);
   }
 }
