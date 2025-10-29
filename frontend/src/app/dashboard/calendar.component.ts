@@ -5,8 +5,7 @@ import { CalendarService } from './calendar.service';
 import { TeamEvent, CreateEventRequest, UpdateEventRequest, RecurrenceType, VisibilityType, RecurrencePattern, VisibilityRules } from './calendar.types';
 import { AuthService } from '../auth/auth.service';
 import { TeamMember } from './teams.service';
-import { VisibilitySelectorComponent } from './visibility-selector.component';
-import { VisibilityRuleSet } from './visibility-selector.types';
+import { UserGroupsService, UserGroup } from './user-groups.service';
 import { Subteam } from './subteam.types';
 
 type CalendarView = 'day' | 'week' | 'month' | 'year';
@@ -20,13 +19,14 @@ interface CalendarDay {
 
 @Component({
   selector: 'app-calendar',
-  imports: [CommonModule, DatePipe, FormsModule, VisibilitySelectorComponent],
+  imports: [CommonModule, DatePipe, FormsModule],
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CalendarComponent implements OnInit {
   private readonly calendarService = inject(CalendarService);
+  private readonly userGroupsService = inject(UserGroupsService);
   protected readonly authService = inject(AuthService);
   
   readonly teamId = input.required<string>();
@@ -48,6 +48,9 @@ export class CalendarComponent implements OnInit {
     const member = this.members().find(m => m.userId === currentUser.id);
     if (!member) return false;
 
+    // Administrators always have permission to schedule events
+    if (member.roles.includes('Administrator')) return true;
+
     // Check if user has SCHEDULE_EVENTS permission
     const permission = member.permissions?.find(p => p.permission === 'SCHEDULE_EVENTS');
     return permission?.enabled ?? false;
@@ -64,7 +67,7 @@ export class CalendarComponent implements OnInit {
   protected readonly eventEndDate = signal('');
   protected readonly eventEndTime = signal('');
   protected readonly recurrenceType = signal<RecurrenceType>(RecurrenceType.NONE);
-  protected readonly visibilityType = signal<VisibilityType>(VisibilityType.ALL_MEMBERS);
+  protected readonly selectedUserGroupId = signal<string | null>(null);
   protected readonly isSavingEvent = signal(false);
   protected readonly eventError = signal<string | null>(null);
   
@@ -75,11 +78,8 @@ export class CalendarComponent implements OnInit {
   protected readonly monthlyPattern = signal('');
   protected readonly recurrenceEndDate = signal('');
   
-  // Visibility rule signals
-  protected readonly selectedRoles = signal<string[]>([]);
-  protected readonly selectedSubteams = signal<string[]>([]);
-  protected readonly showVisibilitySelector = signal(false);
-  protected readonly visibilityRuleSet = signal<VisibilityRuleSet | null>(null);
+  // User groups
+  protected readonly userGroups = signal<UserGroup[]>([]);
   
   // Computed properties
   protected readonly monthName = computed(() => {
@@ -161,6 +161,16 @@ export class CalendarComponent implements OnInit {
   
   async ngOnInit(): Promise<void> {
     await this.loadEvents();
+    await this.loadUserGroups();
+  }
+
+  protected async loadUserGroups(): Promise<void> {
+    try {
+      const groups = await this.userGroupsService.getUserGroups(this.teamId());
+      this.userGroups.set(groups);
+    } catch (error) {
+      console.error('Failed to load user groups:', error);
+    }
   }
   
   protected async loadEvents(): Promise<void> {
@@ -258,7 +268,7 @@ export class CalendarComponent implements OnInit {
     }
     
     this.recurrenceType.set(event.recurrenceType);
-    this.visibilityType.set(event.visibilityType);
+    this.selectedUserGroupId.set(event.userGroupId || null);
     
     if (event.recurrenceEndDate) {
       const recEndDate = new Date(event.recurrenceEndDate);
@@ -288,7 +298,6 @@ export class CalendarComponent implements OnInit {
         : undefined;
       
       const recurrencePattern = this.buildRecurrencePattern();
-      const visibilityRules = this.buildVisibilityRules();
       
       const selectedEvent = this.selectedEvent();
       if (selectedEvent) {
@@ -302,8 +311,7 @@ export class CalendarComponent implements OnInit {
           recurrenceType: this.recurrenceType(),
           recurrencePattern,
           recurrenceEndDate: this.recurrenceEndDate() || undefined,
-          visibilityType: this.visibilityType(),
-          visibilityRules
+          userGroupId: this.selectedUserGroupId() || undefined
         };
         await this.calendarService.updateEvent(this.teamId(), selectedEvent.id, updateRequest);
       } else {
@@ -318,8 +326,7 @@ export class CalendarComponent implements OnInit {
           recurrenceType: this.recurrenceType(),
           recurrencePattern,
           recurrenceEndDate: this.recurrenceEndDate() || undefined,
-          visibilityType: this.visibilityType(),
-          visibilityRules
+          userGroupId: this.selectedUserGroupId() || undefined
         };
         await this.calendarService.createEvent(this.teamId(), createRequest);
       }
@@ -352,17 +359,6 @@ export class CalendarComponent implements OnInit {
     this.weeklyDays.set([...days]);
   }
   
-  protected toggleRole(role: string): void {
-    const roles = this.selectedRoles();
-    const index = roles.indexOf(role);
-    if (index > -1) {
-      roles.splice(index, 1);
-    } else {
-      roles.push(role);
-    }
-    this.selectedRoles.set([...roles]);
-  }
-  
   private resetEventForm(): void {
     this.eventName.set('');
     this.eventDescription.set('');
@@ -372,15 +368,12 @@ export class CalendarComponent implements OnInit {
     this.eventEndDate.set('');
     this.eventEndTime.set('');
     this.recurrenceType.set(RecurrenceType.NONE);
-    this.visibilityType.set(VisibilityType.ALL_MEMBERS);
+    this.selectedUserGroupId.set(null);
     this.dailyInterval.set(1);
     this.weeklyDays.set([false, false, false, false, false, false, false]);
     this.monthlyDays.set([]);
     this.monthlyPattern.set('');
     this.recurrenceEndDate.set('');
-    this.selectedRoles.set([]);
-    this.selectedSubteams.set([]);
-    this.visibilityRuleSet.set(null);
     this.eventError.set(null);
   }
   
@@ -410,44 +403,6 @@ export class CalendarComponent implements OnInit {
     }
     
     return undefined;
-  }
-  
-  private buildVisibilityRules(): VisibilityRules | undefined {
-    // If we have a rule set from the visibility selector, use that
-    const ruleSet = this.visibilityRuleSet();
-    if (ruleSet && ruleSet.rows.length > 0) {
-      return { ruleSet };
-    }
-    
-    // Otherwise fall back to legacy visibility type
-    const type = this.visibilityType();
-    
-    if (type === VisibilityType.ALL_MEMBERS) {
-      return undefined;
-    }
-    
-    if (type === VisibilityType.SPECIFIC_ROLES) {
-      return { roles: this.selectedRoles() };
-    }
-    
-    if (type === VisibilityType.SUBTEAM || type === VisibilityType.SUBTEAM_LEADS) {
-      return { subteamIds: this.selectedSubteams() };
-    }
-    
-    return undefined;
-  }
-  
-  protected openVisibilitySelector(): void {
-    this.showVisibilitySelector.set(true);
-  }
-  
-  protected handleVisibilityChanged(ruleSet: VisibilityRuleSet): void {
-    this.visibilityRuleSet.set(ruleSet);
-    this.showVisibilitySelector.set(false);
-  }
-  
-  protected closeVisibilitySelector(): void {
-    this.showVisibilitySelector.set(false);
   }
   
   private getEventsForDate(date: Date): TeamEvent[] {

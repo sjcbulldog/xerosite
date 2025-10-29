@@ -43,8 +43,7 @@ export interface TeamEvent {
   recurrenceType: RecurrenceType;
   recurrencePattern: RecurrencePattern | null;
   recurrenceEndDate: Date | null;
-  visibilityType: VisibilityType;
-  visibilityRules: VisibilityRules | null;
+  userGroupId: string | null;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -60,8 +59,7 @@ export interface CreateEventRequest {
   recurrenceType?: RecurrenceType;
   recurrencePattern?: RecurrencePattern;
   recurrenceEndDate?: string;
-  visibilityType?: VisibilityType;
-  visibilityRules?: VisibilityRules;
+  userGroupId?: string;
 }
 
 export interface UpdateEventRequest {
@@ -73,6 +71,5 @@ export interface UpdateEventRequest {
   recurrenceType?: RecurrenceType;
   recurrencePattern?: RecurrencePattern;
   recurrenceEndDate?: string;
-  visibilityType?: VisibilityType;
-  visibilityRules?: VisibilityRules;
+  userGroupId?: string;
 }

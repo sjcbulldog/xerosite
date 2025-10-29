@@ -46,6 +46,12 @@
                       <span class="menu-icon">📋</span>
                       Import Roster
                     </button>
+                    @if (canCreateUserGroups()) {
+                      <button (click)="openUserGroupsManager()" class="menu-item">
+                        <span class="menu-icon">👥</span>
+                        Manage User Groups
+                      </button>
+                    }
                   </div>
                 }
               </div>
@@ -1396,4 +1402,125 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Edit Member Dialog -->
+@if (showEditMemberDialog() && editingMember()) {
+  <div class="dialog-overlay" (click)="closeEditMemberDialog()">
+    <div class="dialog-content edit-member-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Edit Member: {{ editingMember()!.user?.fullName }}</h2>
+        <button class="close-button" (click)="closeEditMemberDialog()">×</button>
+      </div>
+
+      <div class="edit-member-content">
+        <div class="form-group">
+          <label>Roles</label>
+          <div class="role-checkboxes">
+            @for (role of teamRoles(); track role) {
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox"
+                  [checked]="memberEditRoles().includes(role)"
+                  (change)="toggleEditDialogRole(role)"
+                />
+                {{ role }}
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox"
+              [checked]="memberEditIsActive()"
+              (change)="memberEditIsActive.set(!memberEditIsActive())"
+            />
+            User Account Active
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Permissions</label>
+          @if (isEditingMemberAdmin()) {
+            <p class="admin-permissions-note">
+              Administrators automatically have all permissions enabled.
+            </p>
+          }
+          <div class="permissions-list">
+            <div class="permission-item">
+              <span>Send Messages</span>
+              <label class="toggle-switch" [class.disabled]="isEditingMemberAdmin()">
+                <input 
+                  type="checkbox"
+                  [checked]="memberEditPermissions().get('SEND_MESSAGES')"
+                  [disabled]="isEditingMemberAdmin()"
+                  (change)="togglePermission('SEND_MESSAGES')"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="permission-item">
+              <span>Schedule Events</span>
+              <label class="toggle-switch" [class.disabled]="isEditingMemberAdmin()">
+                <input 
+                  type="checkbox"
+                  [checked]="memberEditPermissions().get('SCHEDULE_EVENTS')"
+                  [disabled]="isEditingMemberAdmin()"
+                  (change)="togglePermission('SCHEDULE_EVENTS')"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="permission-item">
+              <span>Create Public User Groups</span>
+              <label class="toggle-switch" [class.disabled]="isEditingMemberAdmin()">
+                <input 
+                  type="checkbox"
+                  [checked]="memberEditPermissions().get('CREATE_PUBLIC_USER_GROUPS')"
+                  [disabled]="isEditingMemberAdmin()"
+                  (change)="togglePermission('CREATE_PUBLIC_USER_GROUPS')"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        @if (memberEditError()) {
+          <div class="alert-error">
+            {{ memberEditError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeEditMemberDialog()"
+            [disabled]="isSavingMemberAttributes()">
+            Cancel
+          </button>
+          <button 
+            class="save-button"
+            (click)="saveMemberAttributes()"
+            [disabled]="isSavingMemberAttributes()">
+            {{ isSavingMemberAttributes() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- User Groups Manager Dialog -->
+@if (showUserGroupsManager()) {
+  <app-user-groups-manager
+    [teamId]="team()!.id"
+    [teamRoles]="teamRoles()"
+    [teamMembers]="activeMembers()"
+    [subteams]="subteams()"
+    [canCreatePublic]="canCreatePublicGroups()"
+    (close)="closeUserGroupsManager()">
+  </app-user-groups-manager>
 }

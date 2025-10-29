@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { Team } from '../../teams/entities/team.entity';
 import { RecurrenceType } from '../enums/recurrence-type.enum';
-import { VisibilityType } from '../enums/visibility-type.enum';
 
 @Entity('team_events')
 export class TeamEvent {
@@ -55,19 +54,9 @@ export class TeamEvent {
   @Column({ type: 'datetime', nullable: true })
   recurrenceEndDate: Date;
 
-  @Column({
-    type: 'enum',
-    enum: VisibilityType,
-    default: VisibilityType.ALL_MEMBERS,
-  })
-  visibilityType: VisibilityType;
-
-  // JSON field to store visibility rules
-  // For specific roles: { roles: ['Mentor', 'Student'] }
-  // For subteam: { subteamIds: ['uuid1', 'uuid2'] }
-  // For subteam leads: { subteamIds: ['uuid1', 'uuid2'] }
-  @Column({ type: 'json', nullable: true })
-  visibilityRules: any;
+  // Reference to user group for visibility (null means all team members can see)
+  @Column({ type: 'uuid', nullable: true, name: 'user_group_id' })
+  userGroupId: string;
 
   @Column({ type: 'uuid' })
   createdBy: string;

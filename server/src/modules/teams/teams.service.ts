@@ -915,6 +915,20 @@ export class TeamsService {
   }
 
   async getUserPermissions(userId: string, teamId: string): Promise<UserPermissionDto[]> {
+    // Check if user is team administrator - admins automatically have all permissions
+    const userTeam = await this.userTeamRepository.findOne({
+      where: { userId, teamId },
+    });
+
+    if (userTeam && userTeam.getRolesArray().includes('Administrator')) {
+      // Return all permissions as enabled for administrators
+      return Object.values(TeamPermission).map((permission) => ({
+        permission,
+        enabled: true,
+      }));
+    }
+
+    // For non-admins, return permissions from database
     const permissions = await this.userPermissionRepository.find({
       where: { userId, teamId },
     });
@@ -930,6 +944,16 @@ export class TeamsService {
     teamId: string,
     permission: TeamPermission,
   ): Promise<boolean> {
+    // Check if user is team administrator - admins automatically have all permissions
+    const userTeam = await this.userTeamRepository.findOne({
+      where: { userId, teamId },
+    });
+
+    if (userTeam && userTeam.getRolesArray().includes('Administrator')) {
+      return true;
+    }
+
+    // Check for explicit permission in database
     const userPermission = await this.userPermissionRepository.findOne({
       where: { userId, teamId, permission },
     });

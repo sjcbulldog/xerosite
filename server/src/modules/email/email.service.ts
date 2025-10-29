@@ -331,6 +331,21 @@ export class EmailService implements OnModuleInit {
   }
 
   /**
+   * Send event notification email
+   */
+  async sendEventNotificationEmail(
+    to: string,
+    subject: string,
+    htmlContent: string,
+  ): Promise<void> {
+    await this.queueEmail({
+      to,
+      subject,
+      html: htmlContent,
+    });
+  }
+
+  /**
    * Clean up old sent emails (older than 30 days)
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
