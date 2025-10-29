@@ -206,14 +206,21 @@ Add the concept of per user per team per user permissions allowing the permissio
 
 Replace the robot on the sign in page with a picture of an FRC style robot, preferrebly a cartoonized version of a robot from the robotics team Error Code Xero, team 1425.
 
+On the edit/new calendar event, make the visibility section a set of criteria, one per row, that are created and added to a set that are combined to decide who sees an event.  Each criteria in the set can be either 'All Users', 'Select Users', 'Subteam Leads', 'Subteam Member', or 'Roles'.  If All Users is selected, all users that belong to the team are selected.  If Select Users is added, there should be a button beside that selection to bring up another window to select the users that are to see the event.  If Subteam Leads is selected, all users in leads positions in the subteams can see the event.  If Roles is selected, then a button should bring up a popup to select the roles that will see the event.  For a given row, there should be a way to add additional criteria on that row that are anded with others on that row.  So, within a row the criteria are and'ed and between rows they are or'ed.  This visibilty selector should be a popup that is used to set these values based on a button on the Edit Event window as this visibility popup will be used later for other functions.
+
+Email should be queued, redirected if requested, and have a rate limit.
+
 In Progress
 ===========
-When selecting lead positions in a subteam, only show users that are members of the subteam and have the right role.
+
+When setting the roles for a person in the Edit Member popup, the Roles should obey the role constraints.  A user cannot be in both roles in the constraint pair, so if a new role is selected and there are constraints, the older role is unselected.
 
 Pending
 =======
 
-On the edit/new calendar event, make the visibility section a set of criteria, one per row, that are created and added to a set that are combined to decide who sees an event.  Each criteria in the set can be either 'All Users', 'Select Users', 'Subteam Leads', 'Subteam Member', or 'Roles'.  If All Users is selected, all users that belong to the team are selected.  If Select Users is added, there should be a button beside that selection to bring up another window to select the users that are to see the event.  If Subteam Leads is selected, all users in leads positions in the subteams can see the event.  If Roles is selected, then a button should bring up a popup to select the roles that will see the event.  For a given row, there should be a way to add additional criteria on that row that are anded with others on that row.  So, within a row the criteria are and'ed and between rows they are or'ed.  This visibilty selector should be a popup that is used to set these values based on a button on the Edit Event window as this visibility popup will be used later for other functions.
+Move the visibility popup of the calendar event window to a feature available for anyone with event or message privileges at the team level.  This feature should be accessible from the hamburger menu on the team dashboard page.  It should be labeled 'Create User Group'.  This should popup a window that allows you to create new named user groups or delete existing named user groups.  If the user has 'Create Public User Groups' permissions, then a user should be able to create a user group accessible by everyone.  If the user does not have 'Create Public User Groups' permissions, that user should be able to create user groups just for themselves.  The User groups are edited using the existing visibility popup renamed to say user group and with a name field added at the top and with a public/private setting.  In the Calendar event editor, the visibility setting should be a select box that allows the user to select a fixed value of 'All Team Members' or any global named user group.
+
+When selecting lead positions in a subteam, only show users that are members of the subteam and have the right role.
 
 Create a messaging system where members of a team can send messages to other members of the team via email or text.  The target users should be selectable as all users on a team, only users with a specific team role, only users that belong to a given subteam, only users that are leads of a subteam.  These should be able to be combined.  For instance, a message should be able to be sent to users with a specific team role and users on a specific subteam.  The initiation of the send message should be on the team dashboard in the menu and should popup a window that enables the recipents to be selected as well as typing the message.  The message, with the sender and its recipents should be stored in the database for later use.
 
@@ -222,4 +229,10 @@ Add the concept of per user per team per user permissions allowing the permissio
 Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
 
 Add the ability to export all users that belong to a given team to a CSV file that is saved to the user's disk.  This should be only be available to a user with the administrator role on a given team.  It should be accessible through the menu on the team dashboard.
+
+Any site adminstrator should have the option to remove any user from the system.
+
+In the All Users section of the Dashboard, for the last user at the bottom, when the menu button under Actions is pressed, the menu is clipped and not visible.
+
+If a user is invited to a team and they accept the invitation, their status for the team should be active and not pending.
 

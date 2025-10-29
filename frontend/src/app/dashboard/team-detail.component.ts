@@ -634,10 +634,21 @@ export class TeamDetailComponent implements OnInit {
 
   protected toggleEditDialogRole(role: string): void {
     const currentRoles = this.memberEditRoles();
+    
     if (currentRoles.includes(role)) {
+      // Removing a role - just remove it
       this.memberEditRoles.set(currentRoles.filter(r => r !== role));
     } else {
-      this.memberEditRoles.set([...currentRoles, role]);
+      // Adding a role - check for conflicts and remove conflicting roles
+      const conflictingRoles = this.getConflictingRoles(role);
+      
+      // Remove any conflicting roles from current selection
+      let newRoles = currentRoles.filter(r => !conflictingRoles.includes(r));
+      
+      // Add the new role
+      newRoles = [...newRoles, role];
+      
+      this.memberEditRoles.set(newRoles);
     }
   }
 

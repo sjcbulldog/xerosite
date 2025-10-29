@@ -445,6 +445,42 @@
   }
 }
 
+.config-visibility-button {
+  width: 100%;
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+
+  &:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+}
+
+.visibility-summary {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #f0f9ff;
+  border-left: 3px solid #667eea;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #1e40af;
+
+  &.no-rules {
+    background: #f9fafb;
+    border-left-color: #9ca3af;
+    color: #6b7280;
+  }
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

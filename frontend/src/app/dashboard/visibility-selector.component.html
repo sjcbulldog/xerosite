@@ -1,0 +1,209 @@
+<div class="visibility-selector-dialog">
+  <div class="dialog-content">
+    <div class="dialog-header">
+      <h2>Visibility Settings</h2>
+      <button class="close-button" (click)="onCancel()">×</button>
+    </div>
+
+    <div class="dialog-body">
+      <div class="help-text">
+        <p>
+          Define who can see this item by adding criteria. Within each row, criteria are AND'ed together. 
+          Between rows, criteria are OR'ed together.
+        </p>
+      </div>
+
+      <!-- Visibility Rows -->
+      <div class="visibility-rows">
+        @for (row of rows(); track row.id; let rowIndex = $index) {
+          <div class="visibility-row">
+            <div class="row-header">
+              <span class="row-label">{{ rowIndex > 0 ? 'OR' : 'Rule' }} {{ rowIndex + 1 }}</span>
+              @if (rows().length > 1) {
+                <button 
+                  class="remove-row-button" 
+                  (click)="removeRow(row.id)"
+                  title="Remove this rule">
+                  ×
+                </button>
+              }
+            </div>
+
+            <!-- Criteria in this row -->
+            <div class="criteria-list">
+              @for (criterion of row.criteria; track $index; let criterionIndex = $index) {
+                <div class="criterion-item">
+                  @if (criterionIndex > 0) {
+                    <span class="and-label">AND</span>
+                  }
+                  
+                  <div class="criterion-content">
+                    <span class="criterion-label">{{ getCriterionLabel(criterion) }}</span>
+                    
+                    @if (criterion.type === CriteriaType.SELECT_USERS) {
+                      <button 
+                        class="config-button" 
+                        (click)="openUserSelector(row.id, criterionIndex)"
+                        title="Select users">
+                        Select Users
+                      </button>
+                    }
+                    
+                    @if (criterion.type === CriteriaType.SUBTEAM_LEADS || criterion.type === CriteriaType.SUBTEAM_MEMBERS) {
+                      <button 
+                        class="config-button" 
+                        (click)="openSubteamSelector(row.id, criterionIndex)"
+                        title="Select subteams">
+                        Select Subteams
+                      </button>
+                    }
+                    
+                    @if (criterion.type === CriteriaType.ROLES) {
+                      <button 
+                        class="config-button" 
+                        (click)="openRoleSelector(row.id, criterionIndex)"
+                        title="Select roles">
+                        Select Roles
+                      </button>
+                    }
+                    
+                    <button 
+                      class="remove-criterion-button" 
+                      (click)="removeCriterion(row.id, criterionIndex)"
+                      title="Remove criterion">
+                      ×
+                    </button>
+                  </div>
+                </div>
+              }
+              
+              <!-- Add Criterion Dropdown -->
+              <div class="add-criterion">
+                <select 
+                  class="criterion-type-select"
+                  (change)="addCriterion(row.id, $any($event.target).value); $any($event.target).value = ''">
+                  <option value="">+ Add Criterion</option>
+                  <option [value]="CriteriaType.ALL_USERS">All Users</option>
+                  <option [value]="CriteriaType.SELECT_USERS">Select Users</option>
+                  <option [value]="CriteriaType.SUBTEAM_LEADS">Subteam Leads</option>
+                  <option [value]="CriteriaType.SUBTEAM_MEMBERS">Subteam Members</option>
+                  <option [value]="CriteriaType.ROLES">Roles</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Add Row Button -->
+      <div class="add-row-section">
+        <button class="add-row-button" (click)="addRow()">
+          + Add OR Rule
+        </button>
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button class="cancel-button" (click)="onCancel()">Cancel</button>
+      <button class="save-button" (click)="onSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- User Selector Dialog -->
+@if (showUserSelector()) {
+  <div class="modal-overlay" (click)="cancelSelection()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Select Users</h3>
+        <button class="close-button" (click)="cancelSelection()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="user-list">
+          @for (member of teamMembers(); track member.userId) {
+            @if (member.user) {
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox"
+                  [checked]="tempSelectedUsers().includes(member.userId)"
+                  (change)="toggleUser(member.userId)">
+                <span>{{ member.user.firstName }} {{ member.user.lastName }}</span>
+                @if (member.user.primaryEmail) {
+                  <span class="user-email">({{ member.user.primaryEmail }})</span>
+                }
+              </label>
+            }
+          }
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="cancel-button" (click)="cancelSelection()">Cancel</button>
+        <button class="save-button" (click)="saveUserSelection()">Save</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Role Selector Dialog -->
+@if (showRoleSelector()) {
+  <div class="modal-overlay" (click)="cancelSelection()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Select Roles</h3>
+        <button class="close-button" (click)="cancelSelection()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="role-list">
+          @for (role of teamRoles(); track role) {
+            <label class="checkbox-label">
+              <input 
+                type="checkbox"
+                [checked]="tempSelectedRoles().includes(role)"
+                (change)="toggleRole(role)">
+              <span>{{ role }}</span>
+            </label>
+          }
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="cancel-button" (click)="cancelSelection()">Cancel</button>
+        <button class="save-button" (click)="saveRoleSelection()">Save</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Subteam Selector Dialog -->
+@if (showSubteamSelector()) {
+  <div class="modal-overlay" (click)="cancelSelection()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Select Subteams</h3>
+        <button class="close-button" (click)="cancelSelection()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="subteam-list">
+          @for (subteam of subteams(); track subteam.id) {
+            <label class="checkbox-label">
+              <input 
+                type="checkbox"
+                [checked]="tempSelectedSubteams().includes(subteam.id)"
+                (change)="toggleSubteam(subteam.id)">
+              <span>{{ subteam.name }}</span>
+            </label>
+          }
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="cancel-button" (click)="cancelSelection()">Cancel</button>
+        <button class="save-button" (click)="saveSubteamSelection()">Save</button>
+      </div>
+    </div>
+  </div>
+}

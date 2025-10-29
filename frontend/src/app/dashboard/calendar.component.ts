@@ -5,6 +5,9 @@ import { CalendarService } from './calendar.service';
 import { TeamEvent, CreateEventRequest, UpdateEventRequest, RecurrenceType, VisibilityType, RecurrencePattern, VisibilityRules } from './calendar.types';
 import { AuthService } from '../auth/auth.service';
 import { TeamMember } from './teams.service';
+import { VisibilitySelectorComponent } from './visibility-selector.component';
+import { VisibilityRuleSet } from './visibility-selector.types';
+import { Subteam } from './subteam.types';
 
 type CalendarView = 'day' | 'week' | 'month' | 'year';
 
@@ -17,7 +20,7 @@ interface CalendarDay {
 
 @Component({
   selector: 'app-calendar',
-  imports: [CommonModule, DatePipe, FormsModule],
+  imports: [CommonModule, DatePipe, FormsModule, VisibilitySelectorComponent],
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -30,6 +33,7 @@ export class CalendarComponent implements OnInit {
   readonly teamRoles = input.required<string[]>();
   readonly isAdmin = input.required<boolean>();
   readonly members = input.required<TeamMember[]>();
+  readonly subteams = input.required<Subteam[]>();
   
   protected readonly currentView = signal<CalendarView>('month');
   protected readonly currentDate = signal(new Date());
@@ -74,6 +78,8 @@ export class CalendarComponent implements OnInit {
   // Visibility rule signals
   protected readonly selectedRoles = signal<string[]>([]);
   protected readonly selectedSubteams = signal<string[]>([]);
+  protected readonly showVisibilitySelector = signal(false);
+  protected readonly visibilityRuleSet = signal<VisibilityRuleSet | null>(null);
   
   // Computed properties
   protected readonly monthName = computed(() => {
@@ -374,6 +380,7 @@ export class CalendarComponent implements OnInit {
     this.recurrenceEndDate.set('');
     this.selectedRoles.set([]);
     this.selectedSubteams.set([]);
+    this.visibilityRuleSet.set(null);
     this.eventError.set(null);
   }
   
@@ -406,6 +413,13 @@ export class CalendarComponent implements OnInit {
   }
   
   private buildVisibilityRules(): VisibilityRules | undefined {
+    // If we have a rule set from the visibility selector, use that
+    const ruleSet = this.visibilityRuleSet();
+    if (ruleSet && ruleSet.rows.length > 0) {
+      return { ruleSet };
+    }
+    
+    // Otherwise fall back to legacy visibility type
     const type = this.visibilityType();
     
     if (type === VisibilityType.ALL_MEMBERS) {
@@ -421,6 +435,19 @@ export class CalendarComponent implements OnInit {
     }
     
     return undefined;
+  }
+  
+  protected openVisibilitySelector(): void {
+    this.showVisibilitySelector.set(true);
+  }
+  
+  protected handleVisibilityChanged(ruleSet: VisibilityRuleSet): void {
+    this.visibilityRuleSet.set(ruleSet);
+    this.showVisibilitySelector.set(false);
+  }
+  
+  protected closeVisibilitySelector(): void {
+    this.showVisibilitySelector.set(false);
   }
   
   private getEventsForDate(date: Date): TeamEvent[] {

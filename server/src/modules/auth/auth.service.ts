@@ -29,15 +29,37 @@ export class AuthService {
     // Find user by email
     const user = await this.usersService.findByEmail(email);
     
-    if (
-      user &&
-      (user.state === UserState.ACTIVE || user.state === UserState.ADMIN) &&
-      (await user.validatePassword(password))
-    ) {
+    if (!user) {
+      return null;
+    }
+
+    // Check if password is valid
+    const isPasswordValid = await user.validatePassword(password);
+    if (!isPasswordValid) {
+      return null;
+    }
+
+    // Check user state
+    if (user.state === UserState.PENDING) {
+      // Resend verification email
+      await this.createAndSendVerificationToken(user);
+      
+      // Throw a specific exception for pending users
+      throw new UnauthorizedException(
+        'Your account is pending email verification. A new verification email has been sent to your email address. Please verify your email before logging in.'
+      );
+    }
+
+    if (user.state === UserState.DISABLED) {
+      throw new UnauthorizedException('Your account has been disabled. Please contact support.');
+    }
+
+    if (user.state === UserState.ACTIVE || user.state === UserState.ADMIN) {
       // Update last login
       await this.usersService.updateLastLogin(user.id);
       return user;
     }
+
     return null;
   }
 
@@ -52,8 +74,15 @@ export class AuthService {
     // Create user - first user gets active state, others get pending
     const user = await this.usersService.register(registerDto, isFirstUser);
 
-    // If not first user, send verification email
-    if (!isFirstUser) {
+    // Send appropriate email based on user type
+    if (isFirstUser) {
+      // First user becomes site admin - send welcome email
+      await this.emailService.sendFirstUserAdminEmail(
+        user.primaryEmail,
+        user.firstName,
+      );
+    } else {
+      // Regular users get verification email
       await this.createAndSendVerificationToken(user);
     }
 
