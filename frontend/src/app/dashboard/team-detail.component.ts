@@ -426,7 +426,9 @@ export class TeamDetailComponent implements OnInit {
   // Helper method to parse role constraints and find conflicting roles
   private getConflictingRoles(roleName: string): string[] {
     const team = this.team();
-    if (!team?.roleConstraints) return [];
+    if (!team?.roleConstraints) {
+      return [];
+    }
     
     const constraints = team.roleConstraints
       .split(',')
@@ -639,15 +641,16 @@ export class TeamDetailComponent implements OnInit {
       // Removing a role - just remove it
       this.memberEditRoles.set(currentRoles.filter(r => r !== role));
     } else {
-      // Adding a role - check for conflicts and remove conflicting roles
+      // Adding a role - check for ALL constraints and remove any conflicting roles
       const conflictingRoles = this.getConflictingRoles(role);
       
-      // Remove any conflicting roles from current selection
-      let newRoles = currentRoles.filter(r => !conflictingRoles.includes(r));
+      // Start with current roles, but filter out any that conflict with the new role
+      const newRoles = currentRoles.filter(r => !conflictingRoles.includes(r));
       
       // Add the new role
-      newRoles = [...newRoles, role];
+      newRoles.push(role);
       
+      // Update the signal with the new roles array
       this.memberEditRoles.set(newRoles);
     }
   }

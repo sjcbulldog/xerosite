@@ -104,6 +104,7 @@
   padding: 2rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin-bottom: 1.5rem;
+  overflow: visible;
 
   h2 {
     color: #1f2937;
@@ -444,10 +445,12 @@
 
 .collapsible-content {
   margin-top: 1.5rem;
+  overflow: visible;
 }
 
 .users-table-container {
   overflow-x: auto;
+  overflow-y: visible;
   margin-top: 1rem;
 }
 
@@ -935,6 +938,18 @@
     &:active {
       background-color: #e5e7eb;
     }
+
+    &.delete-item {
+      color: #dc2626;
+
+      &:hover {
+        background-color: #fee2e2;
+      }
+
+      &:active {
+        background-color: #fecaca;
+      }
+    }
   }
 }
 
@@ -1040,5 +1055,66 @@
         color: #059669;
       }
     }
+  }
+}
+
+.delete-dialog {
+  max-width: 500px;
+}
+
+.warning-message {
+  padding: 1rem;
+  background-color: #fef2f2;
+  border: 2px solid #fecaca;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+
+  strong {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #dc2626;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0.5rem 0;
+    color: #7f1d1d;
+    font-size: 0.875rem;
+    line-height: 1.5;
+
+    strong {
+      display: inline;
+      color: #991b1b;
+      font-weight: 600;
+    }
+  }
+}
+
+.delete-button {
+  padding: 0.625rem 1.25rem;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+  }
+
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 }
