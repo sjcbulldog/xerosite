@@ -13,19 +13,51 @@
  * @returns Date object in UTC
  */
 export function parseInTimezone(dateString: string, timezone: string): Date {
-  // For now, we'll use a simple approach with Intl.DateTimeFormat
-  // This assumes the input dateString is meant to be interpreted in the team's timezone
+  // Parse the input string and treat it as being in the specified timezone
+  // Input format: "2025-10-30T15:00:00" or "2025-10-30"
   
-  // Parse the date components
-  const date = new Date(dateString);
+  // Extract date/time components
+  const parts = dateString.split('T');
+  const datePart = parts[0];
+  const timePart = parts[1] || '00:00:00';
   
-  // Get the timezone offset for this date in the team's timezone
-  const offset = getTimezoneOffset(date, timezone);
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes, seconds] = timePart.split(':').map(Number);
   
-  // Adjust the date by the offset to get UTC
-  const utcTime = date.getTime() - offset;
+  // Build a UTC date with the given components
+  const utcDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds || 0).padStart(2, '0')}Z`;
+  const utcDate = new Date(utcDateString);
   
-  return new Date(utcTime);
+  // Now find out what this same wall-clock time is when formatted in the target timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  
+  const formattedInTimezone = formatter.format(utcDate);
+  
+  // Parse the formatted string back to get the actual UTC time
+  // formattedInTimezone will be like "10/30/2025, 08:00:00" for Pacific when UTC is "10/30/2025, 15:00:00"
+  // The difference tells us the offset
+  const [datePortion, timePortion] = formattedInTimezone.split(', ');
+  const [tzMonth, tzDay, tzYear] = datePortion.split('/').map(Number);
+  const [tzHours, tzMinutes, tzSeconds] = timePortion.split(':').map(Number);
+  
+  const tzTime = Date.UTC(tzYear, tzMonth - 1, tzDay, tzHours, tzMinutes, tzSeconds);
+  const utcTime = Date.UTC(year, month - 1, day, hours, minutes, seconds || 0);
+  
+  const offset = utcTime - tzTime;
+  
+  // Apply the offset to get the correct UTC time
+  const correctUtcTime = utcTime + offset;
+  
+  return new Date(correctUtcTime);
 }
 
 /**

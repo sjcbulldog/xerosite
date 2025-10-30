@@ -20,6 +20,7 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       synchronize,
       logging,
+      timezone: 'Z', // Treat DATETIME columns as UTC
     };
   }
 }

@@ -408,9 +408,13 @@ export class CalendarComponent implements OnInit {
       // The backend will interpret these as already being in the team timezone
       const timezone = this.teamTimezone();
       const startDateTime = `${this.eventStartDate()}T${this.eventStartTime()}:00`;
-      const endDateTime = this.eventEndDate() && this.eventEndTime() 
-        ? `${this.eventEndDate()}T${this.eventEndTime()}:00`
-        : undefined;
+      
+      // If end time is provided, use end date (or default to start date)
+      let endDateTime: string | undefined = undefined;
+      if (this.eventEndTime()) {
+        const endDate = this.eventEndDate() || this.eventStartDate();
+        endDateTime = `${endDate}T${this.eventEndTime()}:00`;
+      }
       
       const recurrencePattern = this.buildRecurrencePattern();
       
@@ -755,42 +759,41 @@ export class CalendarComponent implements OnInit {
   private eventOccursOnDate(event: TeamEvent, targetDate: Date): boolean {
     const timezone = this.teamTimezone();
     
-    // Convert the UTC event start time to the team's timezone
+    // Convert the UTC event start time to the team's timezone and get date string
     const eventStartParts = formatInTimezone(event.startDateTime.toISOString(), timezone);
-    const eventStartDate = new Date(`${eventStartParts.date}T00:00:00`);
+    const eventStartDateStr = eventStartParts.date; // YYYY-MM-DD in team timezone
     
-    const targetDateOnly = new Date(targetDate);
-    targetDateOnly.setHours(0, 0, 0, 0);
+    // Format target date in team timezone for comparison
+    const targetDateStr = formatInTimezone(targetDate.toISOString(), timezone).date;
     
     // Check if this date is excluded
     if (event.excludedDates && event.excludedDates.length > 0) {
       const isExcluded = event.excludedDates.some(excludedDate => {
         const excludedParts = formatInTimezone(excludedDate.toISOString(), timezone);
-        const excluded = new Date(`${excludedParts.date}T00:00:00`);
-        return excluded.getTime() === targetDateOnly.getTime();
+        return excludedParts.date === targetDateStr;
       });
       if (isExcluded) {
         return false;
       }
     }
     
-    // Check if target date is before event start date
-    if (targetDateOnly < eventStartDate) {
+    // Check if target date is before event start date (string comparison works for YYYY-MM-DD)
+    if (targetDateStr < eventStartDateStr) {
       return false;
     }
     
     // Check if event has ended (for recurring events)
     if (event.recurrenceEndDate) {
       const recEndParts = formatInTimezone(event.recurrenceEndDate.toISOString(), timezone);
-      const recEndDate = new Date(`${recEndParts.date}T23:59:59`);
-      if (targetDateOnly > recEndDate) {
+      const recEndDateStr = recEndParts.date;
+      if (targetDateStr > recEndDateStr) {
         return false;
       }
     }
     
     // Non-recurring events - check if it's the exact same date
     if (event.recurrenceType === RecurrenceType.NONE) {
-      return eventStartDate.getTime() === targetDateOnly.getTime();
+      return eventStartDateStr === targetDateStr;
     }
     
     // Recurring events
@@ -798,25 +801,36 @@ export class CalendarComponent implements OnInit {
     
     if (event.recurrenceType === RecurrenceType.DAILY) {
       const interval = pattern?.interval || 1;
-      const daysDiff = Math.floor((targetDateOnly.getTime() - eventStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      // Calculate day difference using date strings
+      const startDate = new Date(eventStartDateStr + 'T00:00:00Z');
+      const targetDateObj = new Date(targetDateStr + 'T00:00:00Z');
+      const daysDiff = Math.floor((targetDateObj.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
       return daysDiff >= 0 && daysDiff % interval === 0;
     }
     
     if (event.recurrenceType === RecurrenceType.WEEKLY) {
+      // Get day of week from date string (in team timezone)
+      const getdayOfWeek = (dateStr: string): number => {
+        // Parse as UTC to avoid timezone shifts
+        const d = new Date(dateStr + 'T00:00:00Z');
+        return d.getUTCDay();
+      };
+      
       // If no pattern or no daysOfWeek, default to the day the event was created
       if (!pattern || !pattern.daysOfWeek || pattern.daysOfWeek.length === 0) {
-        const eventDay = eventStartDate.getDay();
-        const targetDay = targetDateOnly.getDay();
+        const eventDay = getdayOfWeek(eventStartDateStr);
+        const targetDay = getdayOfWeek(targetDateStr);
         return eventDay === targetDay;
       }
       
       const daysOfWeek = pattern.daysOfWeek;
-      const targetDay = targetDateOnly.getDay();
+      const targetDay = getdayOfWeek(targetDateStr);
       return daysOfWeek.includes(targetDay);
     }
     
     if (event.recurrenceType === RecurrenceType.MONTHLY) {
-      const targetDay = targetDateOnly.getDate();
+      // Get day of month from date string
+      const targetDay = parseInt(targetDateStr.split('-')[2], 10);
       
       // Monthly by specific days of month (e.g., 1st, 15th, 30th)
       if (pattern?.daysOfMonth && pattern.daysOfMonth.length > 0) {
@@ -825,7 +839,9 @@ export class CalendarComponent implements OnInit {
       
       // Monthly by pattern (e.g., "first-monday", "last-friday")
       if (pattern?.pattern) {
-        return this.matchesMonthlyPattern(targetDateOnly, pattern.pattern);
+        // Parse as UTC to avoid timezone issues
+        const targetDateObj = new Date(targetDateStr + 'T00:00:00Z');
+        return this.matchesMonthlyPattern(targetDateObj, pattern.pattern);
       }
     }
     
@@ -840,58 +856,58 @@ export class CalendarComponent implements OnInit {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const targetDayOfWeek = dayNames.indexOf(dayName.toLowerCase());
     
-    if (targetDayOfWeek === -1 || date.getDay() !== targetDayOfWeek) {
+    if (targetDayOfWeek === -1 || date.getUTCDay() !== targetDayOfWeek) {
       return false;
     }
     
-    const year = date.getFullYear();
-    const month = date.getMonth();
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
     
     if (position === 'first') {
       // First occurrence of this day in the month
-      const firstOfMonth = new Date(year, month, 1);
+      const firstOfMonth = new Date(Date.UTC(year, month, 1));
       let firstOccurrence = 1;
-      while (new Date(year, month, firstOccurrence).getDay() !== targetDayOfWeek) {
+      while (new Date(Date.UTC(year, month, firstOccurrence)).getUTCDay() !== targetDayOfWeek) {
         firstOccurrence++;
       }
-      return date.getDate() === firstOccurrence;
+      return date.getUTCDate() === firstOccurrence;
     }
     
     if (position === 'second') {
-      const firstOfMonth = new Date(year, month, 1);
+      const firstOfMonth = new Date(Date.UTC(year, month, 1));
       let firstOccurrence = 1;
-      while (new Date(year, month, firstOccurrence).getDay() !== targetDayOfWeek) {
+      while (new Date(Date.UTC(year, month, firstOccurrence)).getUTCDay() !== targetDayOfWeek) {
         firstOccurrence++;
       }
-      return date.getDate() === firstOccurrence + 7;
+      return date.getUTCDate() === firstOccurrence + 7;
     }
     
     if (position === 'third') {
-      const firstOfMonth = new Date(year, month, 1);
+      const firstOfMonth = new Date(Date.UTC(year, month, 1));
       let firstOccurrence = 1;
-      while (new Date(year, month, firstOccurrence).getDay() !== targetDayOfWeek) {
+      while (new Date(Date.UTC(year, month, firstOccurrence)).getUTCDay() !== targetDayOfWeek) {
         firstOccurrence++;
       }
-      return date.getDate() === firstOccurrence + 14;
+      return date.getUTCDate() === firstOccurrence + 14;
     }
     
     if (position === 'fourth') {
-      const firstOfMonth = new Date(year, month, 1);
+      const firstOfMonth = new Date(Date.UTC(year, month, 1));
       let firstOccurrence = 1;
-      while (new Date(year, month, firstOccurrence).getDay() !== targetDayOfWeek) {
+      while (new Date(Date.UTC(year, month, firstOccurrence)).getUTCDay() !== targetDayOfWeek) {
         firstOccurrence++;
       }
-      return date.getDate() === firstOccurrence + 21;
+      return date.getUTCDate() === firstOccurrence + 21;
     }
     
     if (position === 'last') {
       // Last occurrence of this day in the month
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
       let lastOccurrence = daysInMonth;
-      while (new Date(year, month, lastOccurrence).getDay() !== targetDayOfWeek) {
+      while (new Date(Date.UTC(year, month, lastOccurrence)).getUTCDay() !== targetDayOfWeek) {
         lastOccurrence--;
       }
-      return date.getDate() === lastOccurrence;
+      return date.getUTCDate() === lastOccurrence;
     }
     
     return false;

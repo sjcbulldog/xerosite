@@ -11,7 +11,7 @@ import { UserGroup } from '../teams/entities/user-group.entity';
 import { MembershipStatus } from '../teams/enums/membership-status.enum';
 import { EmailService } from '../email/email.service';
 import { generateICS } from './utils/ics-generator';
-import { parseInTimezone } from './utils/timezone.utils';
+import { parseInTimezone, formatInTimezone } from './utils/timezone.utils';
 
 @Injectable()
 export class EventsService {
@@ -243,6 +243,8 @@ export class EventsService {
       where: { id: event.teamId },
     });
 
+    const timezone = team?.timezone || 'America/New_York';
+
     return {
       id: event.id,
       teamId: event.teamId,
@@ -259,7 +261,7 @@ export class EventsService {
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
       excludedDates: exclusions.map(e => e.excludedDate),
-      teamTimezone: team?.timezone || 'America/New_York',
+      teamTimezone: timezone,
     };
   }
 

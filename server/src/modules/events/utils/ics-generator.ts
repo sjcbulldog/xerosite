@@ -35,16 +35,14 @@ export function generateICS(
     `METHOD:${method}`,
   ];
 
-  // Add VTIMEZONE component
-  icsContent.push(...generateVTimezone(timezone));
-
   // Start VEVENT
+  // Use floating time (no timezone) - times are in team's local timezone
   icsContent.push(
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${timestamp}`,
-    `DTSTART;TZID=${timezone}:${dtStart}`,
-    `DTEND;TZID=${timezone}:${dtEnd}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
     `SUMMARY:${escapeICSText(event.name)}`,
     `SEQUENCE:${effectiveSequence}`,
   );
@@ -82,7 +80,14 @@ export function generateICS(
  * The date comes in as UTC from the database, we format it in the specified timezone
  */
 function formatICSDateTime(date: Date, timezone: string): string {
-  // Convert UTC date to timezone-specific date parts
+  // Ensure we have a valid Date object
+  let dateObj = date;
+  if (typeof date === 'string') {
+    dateObj = new Date(date);
+  }
+  
+  
+  // Convert UTC date to timezone-specific date parts using Intl.DateTimeFormat
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     year: 'numeric',
@@ -94,7 +99,7 @@ function formatICSDateTime(date: Date, timezone: string): string {
     hour12: false,
   });
   
-  const parts = formatter.formatToParts(date);
+  const parts = formatter.formatToParts(dateObj);
   const getValue = (type: string) => parts.find((p) => p.type === type)?.value || '00';
   
   const year = getValue('year');
@@ -104,7 +109,9 @@ function formatICSDateTime(date: Date, timezone: string): string {
   const minutes = getValue('minute');
   const seconds = getValue('second');
   
-  return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+  const result = `${year}${month}${day}T${hours}${minutes}${seconds}`;
+  
+  return result;
 }
 
 /**
