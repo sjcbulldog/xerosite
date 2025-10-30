@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventsService } from './events.service';
 import { AttendanceService } from './attendance.service';
 import { EventsController } from './events.controller';
+import { CalendarController } from './calendar.controller';
+import { CalendarService } from './calendar.service';
 import { TeamEvent } from './entities/team-event.entity';
 import { EventNotification } from './entities/event-notification.entity';
 import { EventAttendance } from './entities/event-attendance.entity';
@@ -32,8 +34,13 @@ import { SmsModule } from '../sms/sms.module';
     EmailModule,
     SmsModule,
   ],
-  controllers: [EventsController],
-  providers: [EventsService, AttendanceService, EventNotificationsService],
+  controllers: [EventsController, CalendarController],
+  providers: [
+    EventsService,
+    AttendanceService,
+    EventNotificationsService,
+    CalendarService,
+  ],
   exports: [EventsService, AttendanceService, EventNotificationsService],
 })
 export class EventsModule {}

@@ -291,7 +291,7 @@ Pending
 
 --- Calendar
 
-When an event is canceled, the ICS attachment is processed by google calendar, but fails in outlook calendar with the message 'Couldn't import calendar.  Try again later.'
+When an event is canceled, the ICS attachment is processed correctlyy by google calendar, but fails in outlook calendar with the message 'Couldn't import calendar.  Try again later.'
 
 When a single instance of an event is canceled, google calendar does not process the ICS file correctly and just delete that instance.
 
@@ -312,7 +312,6 @@ Add a new card to the team dashboard that is useful links.  For normal users thi
 --- Attachments & File Stores
 
 Add a new file storage service in the backend.  The location for storing files should be given by the FILE_STORAGE_PATH in the .env file.  This path should be an absolute path or it is an error.  Each file stored in the storage directory should have a unique file name.  Each file stored in the storage directory should have an entry in an associated database table that has a unique ID, its original file name, its unique name in the storage area, the date when it was created, the user that owns the file, and a subsystem (string) that created the file. The send message attachment support should change to remove attachement file data from the mysql database and have the data be stored in this storage service with an owner name of 'messages'.
-
 
 
 Add the ability to store and retreive a set of files.  The file storeages should be located at ../storage relative to the server directory.  User's should be able to provide a title and either browse or drag and drop a file (or set of files) to upload these files to the site.  User's should be able browse the set of uploaded files.  The uploaded files can be deleted by the team adminstrator, or by the user that uploaded the files.  When browsing files, there should be a text input box that can be used to filter the set of titles.
