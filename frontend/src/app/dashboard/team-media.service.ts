@@ -91,6 +91,10 @@ export class TeamMediaService {
     return `${this.apiUrl}/${teamId}/media/${mediaId}/download`;
   }
 
+  getPreviewUrl(teamId: string, mediaId: string): string {
+    return `${this.apiUrl}/${teamId}/media/${mediaId}/preview`;
+  }
+
   clearMedia(): void {
     this.mediaFiles.set([]);
     this.error.set(null);

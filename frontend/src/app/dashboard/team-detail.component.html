@@ -12,6 +12,9 @@
             <p class="team-number">Team #{{ team()?.teamNumber }}</p>
           </div>
           <div class="header-actions">
+            <button (click)="openTeamOverview()" class="team-overview-button">
+              Team Overview
+            </button>
             <span class="visibility-badge {{ team()?.visibility }}">
               {{ team()?.visibility | titlecase }}
             </span>
@@ -1650,4 +1653,14 @@
     [teamId]="team()!.id"
     (close)="closeReviewMessagesDialog()">
   </app-review-messages-dialog>
+}
+
+<!-- Team Overview Dialog -->
+@if (showTeamOverview()) {
+  <app-team-overview-dialog
+    [team]="team()!"
+    [members]="members()"
+    [subteams]="subteams()"
+    (close)="closeTeamOverview()">
+  </app-team-overview-dialog>
 }

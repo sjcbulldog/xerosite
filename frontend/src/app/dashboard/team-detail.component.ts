@@ -16,11 +16,12 @@ import { SendMessageDialogComponent } from './send-message-dialog.component';
 import { ReviewMessagesDialogComponent } from './review-messages-dialog.component';
 import { TeamLinksComponent } from './team-links.component';
 import { TeamMediaComponent } from './team-media.component';
+import { TeamOverviewDialogComponent } from './team-overview-dialog.component';
 import { COMMON_TIMEZONES } from './timezones';
 
 @Component({
   selector: 'app-team-detail',
-  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, EventAttendanceReportComponent, UserGroupsManagerComponent, ExportUsersDialogComponent, SendMessageDialogComponent, ReviewMessagesDialogComponent, TeamLinksComponent, TeamMediaComponent],
+  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, EventAttendanceReportComponent, UserGroupsManagerComponent, ExportUsersDialogComponent, SendMessageDialogComponent, ReviewMessagesDialogComponent, TeamLinksComponent, TeamMediaComponent, TeamOverviewDialogComponent],
   templateUrl: './team-detail.component.html',
   styleUrl: './team-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -162,6 +163,9 @@ export class TeamDetailComponent implements OnInit {
   
   // Review Messages dialog signal
   protected readonly showReviewMessagesDialog = signal(false);
+  
+  // Team Overview dialog signal
+  protected readonly showTeamOverview = signal(false);
   
   // Create/Edit Subteam form
   protected readonly subteamName = signal('');
@@ -1454,6 +1458,14 @@ export class TeamDetailComponent implements OnInit {
 
   protected closeUserGroupsManager(): void {
     this.showUserGroupsManager.set(false);
+  }
+
+  protected openTeamOverview(): void {
+    this.showTeamOverview.set(true);
+  }
+
+  protected closeTeamOverview(): void {
+    this.showTeamOverview.set(false);
   }
 
   protected openExportDialog(): void {

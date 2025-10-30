@@ -57,7 +57,30 @@
               } @else {
                 <div class="media-content">
                   <div class="media-info">
-                    <span class="file-icon">{{ getFileIcon(media.mimeType) }}</span>
+                    @if (isImage(media.mimeType) || isVideo(media.mimeType)) {
+                      <div 
+                        class="media-thumbnail" 
+                        (click)="openPreview(media)"
+                        [class.clickable]="canPreview(media.mimeType)"
+                        title="Click to preview">
+                        @if (isImage(media.mimeType)) {
+                          <img 
+                            [src]="getPreviewUrl(media)" 
+                            [alt]="media.title"
+                            class="thumbnail-image"
+                          />
+                        } @else if (isVideo(media.mimeType)) {
+                          <video 
+                            [src]="getPreviewUrl(media)"
+                            class="thumbnail-video"
+                            preload="metadata"
+                          ></video>
+                          <div class="video-play-overlay">▶️</div>
+                        }
+                      </div>
+                    } @else {
+                      <span class="file-icon">{{ getFileIcon(media.mimeType) }}</span>
+                    }
                     <div class="media-details">
                       <div class="media-title">{{ media.title }}</div>
                       <div class="media-meta">
@@ -170,6 +193,37 @@
           [disabled]="isUploading()">
           Cancel
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Preview Dialog -->
+@if (showPreviewDialog() && previewingMedia()) {
+  <div class="preview-overlay" (click)="closePreview()">
+    <div class="preview-container">
+      <button class="preview-close" (click)="closePreview()" title="Close">×</button>
+      
+      <div class="preview-content" (click)="$event.stopPropagation()">
+        @if (isImage(previewingMedia()!.mimeType)) {
+          <img 
+            [src]="getPreviewUrl(previewingMedia()!)" 
+            [alt]="previewingMedia()!.title"
+            class="preview-image"
+          />
+        } @else if (isVideo(previewingMedia()!.mimeType)) {
+          <video 
+            [src]="getPreviewUrl(previewingMedia()!)"
+            class="preview-video"
+            controls
+            autoplay
+          ></video>
+        }
+      </div>
+      
+      <div class="preview-info">
+        <h3>{{ previewingMedia()!.title }}</h3>
+        <p class="preview-filename">{{ previewingMedia()!.originalFilename }}</p>
       </div>
     </div>
   </div>

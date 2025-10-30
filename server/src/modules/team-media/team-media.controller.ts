@@ -79,4 +79,18 @@ export class TeamMediaController {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(data);
   }
+
+  @Get(':id/preview')
+  async previewFile(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { data, filename, mimeType } =
+      await this.teamMediaService.downloadFile(id);
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(data);
+  }
 }

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { TeamMediaService } from './team-media.service';
 import { TeamMedia } from './team-media.types';
 import { AuthService } from '../auth/auth.service';
@@ -26,17 +27,25 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
 
   readonly teamMediaService = inject(TeamMediaService);
   private readonly authService = inject(AuthService);
+  private readonly http = inject(HttpClient);
 
   readonly showSection = signal(true);
   readonly showUploadDialog = signal(false);
   readonly editingMedia = signal<TeamMedia | null>(null);
   readonly isDragging = signal(false);
+  readonly showPreviewDialog = signal(false);
+  readonly previewingMedia = signal<TeamMedia | null>(null);
 
   readonly filterText = signal('');
   readonly selectedFile = signal<File | null>(null);
   readonly uploadTitle = signal('');
   readonly editTitle = signal('');
   readonly isUploading = signal(false);
+
+  // Store blob URLs for cleanup
+  private blobUrls = new Map<string, string>();
+  // Signal to track loaded thumbnails
+  readonly thumbnailUrls = signal<Map<string, string>>(new Map());
 
   readonly filteredMedia = computed(() => {
     const media = this.teamMediaService.mediaFiles();
@@ -60,13 +69,48 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.teamMediaService.clearMedia();
+    // Clean up blob URLs
+    this.blobUrls.forEach(url => URL.revokeObjectURL(url));
+    this.blobUrls.clear();
   }
 
   async loadMedia(): Promise<void> {
     try {
       await this.teamMediaService.loadMediaForTeam(this.teamId());
+      // Load thumbnails for images and videos
+      await this.loadThumbnails();
     } catch (error) {
       console.error('Failed to load team media:', error);
+    }
+  }
+
+  private async loadThumbnails(): Promise<void> {
+    const media = this.teamMediaService.mediaFiles();
+    const previewableMedia = media.filter(m => this.canPreview(m.mimeType));
+    
+    for (const item of previewableMedia) {
+      if (!this.blobUrls.has(item.id)) {
+        await this.loadMediaBlob(item);
+      }
+    }
+  }
+
+  private async loadMediaBlob(media: TeamMedia): Promise<void> {
+    try {
+      const url = this.teamMediaService.getPreviewUrl(this.teamId(), media.id);
+      const blob = await this.http.get(url, { responseType: 'blob' }).toPromise();
+      
+      if (blob) {
+        const blobUrl = URL.createObjectURL(blob);
+        this.blobUrls.set(media.id, blobUrl);
+        
+        // Update the signal with new map
+        const newMap = new Map(this.thumbnailUrls());
+        newMap.set(media.id, blobUrl);
+        this.thumbnailUrls.set(newMap);
+      }
+    } catch (error) {
+      console.error(`Failed to load media blob for ${media.id}:`, error);
     }
   }
 
@@ -146,8 +190,13 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     this.isUploading.set(true);
 
     try {
-      await this.teamMediaService.uploadFile(this.teamId(), file, title);
+      const uploadedMedia = await this.teamMediaService.uploadFile(this.teamId(), file, title);
       this.closeUploadDialog();
+      
+      // Load thumbnail for newly uploaded media if it's an image or video
+      if (uploadedMedia && this.canPreview(uploadedMedia.mimeType)) {
+        await this.loadMediaBlob(uploadedMedia);
+      }
     } catch (error) {
       console.error('Failed to upload file:', error);
       alert('Failed to upload file. Please try again.');
@@ -192,15 +241,47 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
 
     try {
       await this.teamMediaService.deleteFile(this.teamId(), media.id);
+      
+      // Clean up blob URL if it exists
+      const blobUrl = this.blobUrls.get(media.id);
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+        this.blobUrls.delete(media.id);
+        
+        const urls = new Map(this.thumbnailUrls());
+        urls.delete(media.id);
+        this.thumbnailUrls.set(urls);
+      }
     } catch (error) {
       console.error('Failed to delete media:', error);
       alert('Failed to delete media. Please try again.');
     }
   }
 
-  downloadMedia(media: TeamMedia): void {
-    const url = this.teamMediaService.getDownloadUrl(this.teamId(), media.id);
-    window.open(url, '_blank');
+  async downloadMedia(media: TeamMedia): Promise<void> {
+    try {
+      const url = this.teamMediaService.getDownloadUrl(this.teamId(), media.id);
+      const blob = await this.http.get(url, { responseType: 'blob' }).toPromise();
+      
+      if (blob) {
+        // Create a temporary blob URL
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element and trigger download
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = media.originalFilename;
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }
+    } catch (error) {
+      console.error('Failed to download media:', error);
+      alert('Failed to download file. Please try again.');
+    }
   }
 
   canEditOrDelete(media: TeamMedia): boolean {
@@ -224,5 +305,34 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📊';
     if (mimeType.includes('zip') || mimeType.includes('compressed')) return '📦';
     return '📁';
+  }
+
+  isImage(mimeType: string): boolean {
+    return mimeType.startsWith('image/');
+  }
+
+  isVideo(mimeType: string): boolean {
+    return mimeType.startsWith('video/');
+  }
+
+  canPreview(mimeType: string): boolean {
+    return this.isImage(mimeType) || this.isVideo(mimeType);
+  }
+
+  getPreviewUrl(media: TeamMedia): string {
+    // Return cached blob URL from signal if available
+    const urls = this.thumbnailUrls();
+    return urls.get(media.id) || '';
+  }
+
+  openPreview(media: TeamMedia): void {
+    this.previewingMedia.set(media);
+    this.showPreviewDialog.set(true);
+  }
+
+  closePreview(): void {
+    this.showPreviewDialog.set(false);
+    // Small delay to allow animation to complete before clearing
+    setTimeout(() => this.previewingMedia.set(null), 300);
   }
 }

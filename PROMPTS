@@ -291,15 +291,18 @@ Add a new card to the team dashboard that is useful links.  For normal users thi
 
 On attendance report do not include past events.
 
+Add the ability to select, download, store and retreive a set of files, usually media files but could be anything.  The file storeage should be through the File Storage Service.  User's should be able to provide a title and either browse or drag and drop a file (or set of files) to upload these files to the site. These files would be assocaited with a team. All users on a team should be able browse the set of uploaded files.  The uploaded files can be deleted by the team adminstrator, or by the user that uploaded the files.  When browsing files, there should be a text input box that can be used to filter the set of titles.  Media should be another card on the team dashboard just below the useful links.
+
+For files stored in the media storage area, if their extension indicates a video or image file, show a thumbnail of their contents and allow them to be displayed directly on the site via a popup.
+
 In Progress
 ===========
 
-Add the ability to select, download, store and retreive a set of files, usually media files but could be anything.  The file storeage should be through the File Storage Service.  User's should be able to provide a title and either browse or drag and drop a file (or set of files) to upload these files to the site. These files would be assocaited with a team. All users on a team should be able browse the set of uploaded files.  The uploaded files can be deleted by the team adminstrator, or by the user that uploaded the files.  When browsing files, there should be a text input box that can be used to filter the set of titles.  Media should be another card on the team dashboard just below the useful links.
 
 Pending
 =======
 
-Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.  It should be a popup that is triggered by a button on the team dashboard top most summary card.  It should be labeled team overview.
+Add a delete team that is a big deal big and red.
 
 When an event is canceled, the ICS attachment is processed correctlyy by google calendar, but fails in outlook calendar with the message 'Couldn't import calendar.  Try again later.'
 
@@ -307,15 +310,9 @@ When a single instance of an event is canceled, google calendar does not process
 
 When displaying the event in the monthly calendar, include its name on a first line and the start and end time on a second line.  
 
-Add a delete team that is a big deal big and red.
-
-Add the webcal protocol to the server so that remote calendars can subscribe.  The authentication should be based on the same login used to enter the site.  When a user attaches to the calendar server, they should only see calendar events that they would see within the site.
+The webcal protocol does not seem to be working with various calendar applications (outlook or google calendar).
 
 When a new user joins a team, send calendar invites for all active and future calendar events to that user.
-
-Calendar server for calendar subscription.
-
-
 
 Continous
 ---------
