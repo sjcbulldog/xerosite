@@ -258,6 +258,97 @@ export class MessagesService {
     `;
   }
 
+  private async filterMessagesForUser(
+    messages: TeamMessage[],
+    userId: string,
+    teamId: string,
+  ): Promise<TeamMessage[]> {
+    if (messages.length === 0) return messages;
+
+    // Check if user is an active team member for ALL_TEAM_MEMBERS messages
+    const userTeam = await this.userTeamRepository.findOne({
+      where: { userId, teamId, status: MembershipStatus.ACTIVE },
+    });
+
+    // Get all user groups that might be referenced in messages
+    const userGroupIds = messages
+      .filter((m) => m.userGroupId)
+      .map((m) => m.userGroupId!)
+      .filter((id, index, arr) => arr.indexOf(id) === index);
+
+    const userGroups =
+      userGroupIds.length > 0
+        ? await this.userGroupRepository.find({
+            where: { id: In(userGroupIds) },
+          })
+        : [];
+
+    return messages.filter((message) => {
+      // Include messages sent by the user
+      if (message.senderId === userId) {
+        return true;
+      }
+
+      // Check if user is a recipient
+      if (message.recipientType === MessageRecipientType.ALL_TEAM_MEMBERS) {
+        // User receives message if they are an active team member
+        return userTeam !== null;
+      } else if (message.recipientType === MessageRecipientType.USER_GROUP && message.userGroupId) {
+        // Check if user is in the user group
+        const userGroup = userGroups.find((ug) => ug.id === message.userGroupId);
+        if (!userGroup) return false;
+
+        return this.isUserInVisibilityRules(userId, userGroup.visibilityRules);
+      }
+
+      return false;
+    });
+  }
+
+  private isUserInVisibilityRules(userId: string, visibilityRules: any): boolean {
+    if (!visibilityRules || !visibilityRules.rows) {
+      return false;
+    }
+
+    // Check each visibility row (OR logic between rows)
+    for (const row of visibilityRules.rows) {
+      if (!row.criteria) continue;
+
+      // All criteria in a row must match (AND logic within row)
+      let rowMatches = true;
+      
+      for (const criterion of row.criteria) {
+        let criterionMatches = false;
+
+        switch (criterion.type) {
+          case 'all_users':
+            criterionMatches = true; // User matches if it's "all users"
+            break;
+          case 'select_users':
+            criterionMatches = criterion.userIds?.includes(userId) || false;
+            break;
+          // Note: For subteam_leads, subteam_members, and roles criteria,
+          // we would need additional database queries to check membership.
+          // For now, we'll be conservative and not match these.
+          default:
+            criterionMatches = false;
+            break;
+        }
+
+        if (!criterionMatches) {
+          rowMatches = false;
+          break;
+        }
+      }
+
+      if (rowMatches) {
+        return true; // Found a matching row
+      }
+    }
+
+    return false; // No rows matched
+  }
+
   private transformToResponse(
     message: TeamMessage,
     sender: User,
