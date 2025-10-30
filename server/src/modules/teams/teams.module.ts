@@ -16,6 +16,7 @@ import { UserPermission } from './entities/user-permission.entity';
 import { UserGroup } from './entities/user-group.entity';
 import { EmailModule } from '../email/email.module';
 import { UsersModule } from '../users/users.module';
+import { TeamLinksModule } from '../team-links/team-links.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { UsersModule } from '../users/users.module';
     ]),
     EmailModule,
     UsersModule,
+    TeamLinksModule,
   ],
   controllers: [TeamsController, SubteamsController, UserGroupsController],
   providers: [TeamsService, SubteamsService, UserGroupsService],

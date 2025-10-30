@@ -14,11 +14,12 @@ import { UserGroupsManagerComponent } from './user-groups-manager.component';
 import { ExportUsersDialogComponent } from './export-users-dialog.component';
 import { SendMessageDialogComponent } from './send-message-dialog.component';
 import { ReviewMessagesDialogComponent } from './review-messages-dialog.component';
+import { TeamLinksComponent } from './team-links.component';
 import { COMMON_TIMEZONES } from './timezones';
 
 @Component({
   selector: 'app-team-detail',
-  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, EventAttendanceReportComponent, UserGroupsManagerComponent, ExportUsersDialogComponent, SendMessageDialogComponent, ReviewMessagesDialogComponent],
+  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, EventAttendanceReportComponent, UserGroupsManagerComponent, ExportUsersDialogComponent, SendMessageDialogComponent, ReviewMessagesDialogComponent, TeamLinksComponent],
   templateUrl: './team-detail.component.html',
   styleUrl: './team-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

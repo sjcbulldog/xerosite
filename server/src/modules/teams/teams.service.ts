@@ -20,6 +20,7 @@ import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { UserState } from '../users/enums/user-state.enum';
+import { TeamLinksService } from '../team-links/team-links.service';
 
 @Injectable()
 export class TeamsService {
@@ -42,6 +43,7 @@ export class TeamsService {
     private readonly userPermissionRepository: Repository<UserPermission>,
     private readonly emailService: EmailService,
     private readonly usersService: UsersService,
+    private readonly teamLinksService: TeamLinksService,
   ) {}
 
   async create(createTeamDto: CreateTeamDto): Promise<TeamResponseDto> {
@@ -70,6 +72,10 @@ export class TeamsService {
     }
 
     const savedTeam = await this.teamRepository.save(team);
+
+    // Create default Blue Alliance link
+    await this.teamLinksService.createDefaultLink(savedTeam.id, savedTeam.teamNumber);
+
     return this.transformToResponse(savedTeam);
   }
 

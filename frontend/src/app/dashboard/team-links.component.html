@@ -1,0 +1,111 @@
+<div class="team-links-card">
+  <button 
+    class="collapsible-header" 
+    (click)="toggleSection()"
+    [class.active]="showSection()">
+    <span class="chevron">{{ showSection() ? '▼' : '▶' }}</span>
+    <h2>Useful Links</h2>
+  </button>
+  @if (isAdmin()) {
+    <button (click)="openAddDialog()" class="add-link-button" title="Add Link">
+      <span class="plus-icon">+</span>
+    </button>
+  }
+
+  @if (showSection()) {
+    <div class="collapsible-content">
+      @if (teamLinksService.isLoading()) {
+        <p class="loading-message">Loading links...</p>
+      } @else if (teamLinksService.error()) {
+        <p class="error-message">{{ teamLinksService.error() }}</p>
+      } @else if (teamLinksService.links().length === 0) {
+        <p class="empty-message">No links available yet.</p>
+      } @else {
+        <ul class="links-list">
+          @for (link of teamLinksService.links(); track link.id) {
+            <li class="link-item">
+              @if (editingLink()?.id === link.id) {
+                <div class="edit-form">
+                  <input 
+                    type="text" 
+                    [value]="editLinkTitle()"
+                    (input)="editLinkTitle.set($any($event.target).value)"
+                    placeholder="Title"
+                    class="edit-input"
+                  />
+                  <input 
+                    type="url" 
+                    [value]="editLinkUrl()"
+                    (input)="editLinkUrl.set($any($event.target).value)"
+                    placeholder="URL"
+                    class="edit-input"
+                  />
+                  <div class="edit-actions">
+                    <button (click)="saveEdit()" class="save-button">Save</button>
+                    <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
+                  </div>
+                </div>
+              } @else {
+                <div class="link-content">
+                  <a [href]="link.url" target="_blank" rel="noopener noreferrer" class="link-anchor">
+                    <span class="link-title">{{ link.title }}</span>
+                    <svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </a>
+                  @if (isAdmin()) {
+                    <div class="link-actions">
+                      <button (click)="startEdit(link)" class="edit-button" title="Edit">✏️</button>
+                      <button (click)="deleteLink(link)" class="delete-button" title="Delete">🗑️</button>
+                    </div>
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</div>
+
+<!-- Add Link Dialog -->
+@if (showAddDialog()) {
+  <div class="dialog-overlay" (click)="closeAddDialog()">
+    <div class="dialog-content" (click)="$event.stopPropagation()">
+      <h3>Add New Link</h3>
+      <form (submit)="addLink(); $event.preventDefault()">
+        <div class="form-group">
+          <label for="link-title">Title</label>
+          <input 
+            id="link-title"
+            type="text" 
+            [value]="newLinkTitle()"
+            (input)="newLinkTitle.set($any($event.target).value)"
+            placeholder="Enter link title"
+            class="form-input"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="link-url">URL</label>
+          <input 
+            id="link-url"
+            type="url" 
+            [value]="newLinkUrl()"
+            (input)="newLinkUrl.set($any($event.target).value)"
+            placeholder="https://example.com"
+            class="form-input"
+            required
+          />
+        </div>
+        <div class="dialog-actions">
+          <button type="submit" class="primary-button">Add Link</button>
+          <button type="button" (click)="closeAddDialog()" class="secondary-button">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

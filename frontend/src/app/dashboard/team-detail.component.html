@@ -93,6 +93,12 @@
         </div>
       </div>
 
+      <!-- Team Links Card -->
+      <app-team-links 
+        [teamId]="team()!.id" 
+        [isAdmin]="isTeamAdmin()">
+      </app-team-links>
+
       @if (pendingMembers().length > 0) {
         <div class="members-card">
           <button 

@@ -49,13 +49,9 @@ export class TeamMessage {
   @Column('json', { nullable: true })
   recipientDetails?: RecipientDetails;
 
-  @Column('json', { nullable: true })
-  attachments?: Array<{
-    filename: string;
-    originalName: string;
-    mimetype: string;
-    size: number;
-  }>;
+  // Array of file IDs stored in the file storage system
+  @Column('simple-array', { nullable: true })
+  attachmentFileIds?: string[];
 
   @Column('timestamp', { nullable: true })
   sentAt?: Date;

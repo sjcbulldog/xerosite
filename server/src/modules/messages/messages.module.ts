@@ -9,11 +9,20 @@ import { UserTeam } from '../teams/entities/user-team.entity';
 import { UserPermission } from '../teams/entities/user-permission.entity';
 import { UserGroup } from '../teams/entities/user-group.entity';
 import { EmailModule } from '../email/email.module';
+import { FileStorageModule } from '../file-storage/file-storage.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TeamMessage, Team, User, UserTeam, UserPermission, UserGroup]),
+    TypeOrmModule.forFeature([
+      TeamMessage,
+      Team,
+      User,
+      UserTeam,
+      UserPermission,
+      UserGroup,
+    ]),
     EmailModule,
+    FileStorageModule,
   ],
   controllers: [MessagesController],
   providers: [MessagesService],

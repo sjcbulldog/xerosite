@@ -16,6 +16,8 @@ import { EventsModule } from './modules/events/events.module';
 import { PreferencesModule } from './modules/preferences/preferences.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MessagesModule } from './modules/messages/messages.module';
+import { FileStorageModule } from './modules/file-storage/file-storage.module';
+import { TeamLinksModule } from './modules/team-links/team-links.module';
 
 @Module({
   imports: [
@@ -36,7 +38,15 @@ import { MessagesModule } from './modules/messages/messages.module';
 
     // Serve static files from Angular frontend
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'frontend', 'dist', 'frontend', 'browser'),
+      rootPath: join(
+        __dirname,
+        '..',
+        '..',
+        'frontend',
+        'dist',
+        'frontend',
+        'browser',
+      ),
       exclude: ['/api*'],
     }),
 
@@ -50,6 +60,8 @@ import { MessagesModule } from './modules/messages/messages.module';
     PreferencesModule,
     AdminModule,
     MessagesModule,
+    FileStorageModule,
+    TeamLinksModule,
   ],
   controllers: [AppController],
 })

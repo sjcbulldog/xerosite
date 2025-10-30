@@ -10,6 +10,7 @@ import { UserPermission } from '../teams/entities/user-permission.entity';
 import { UserGroup } from '../teams/entities/user-group.entity';
 import { MembershipStatus } from '../teams/enums/membership-status.enum';
 import { EmailService } from '../email/email.service';
+import { FileStorageService } from '../file-storage/file-storage.service';
 
 @Injectable()
 export class MessagesService {
@@ -27,9 +28,14 @@ export class MessagesService {
     @InjectRepository(UserGroup)
     private readonly userGroupRepository: Repository<UserGroup>,
     private readonly emailService: EmailService,
+    private readonly fileStorageService: FileStorageService,
   ) {}
 
-  async sendMessage(senderId: string, sendMessageDto: SendMessageDto, files?: any[]): Promise<MessageResponseDto> {
+  async sendMessage(
+    senderId: string,
+    sendMessageDto: SendMessageDto,
+    files?: any[],
+  ): Promise<MessageResponseDto> {
     // Verify the sender has permission to send messages
     await this.verifyMessagePermission(senderId, sendMessageDto.teamId);
 
@@ -51,13 +57,20 @@ export class MessagesService {
     // Get recipients based on recipient type
     const recipients = await this.getMessageRecipients(sendMessageDto);
 
-    // Process attachments
-    const attachments = files?.map((file) => ({
-      filename: file.filename || file.originalname,
-      originalName: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-    }));
+    // Store attachments in file storage system
+    const attachmentFileIds: string[] = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const storedFile = await this.fileStorageService.storeFile(
+          file.buffer,
+          file.originalname,
+          senderId,
+          'messages',
+          file.mimetype,
+        );
+        attachmentFileIds.push(storedFile.id);
+      }
+    }
 
     // Create message record
     const message = this.messageRepository.create({
@@ -67,17 +80,26 @@ export class MessagesService {
       content: sendMessageDto.content,
       recipientType: sendMessageDto.recipientType,
       userGroupId: sendMessageDto.userGroupId || null,
-      attachments,
+      attachmentFileIds:
+        attachmentFileIds.length > 0 ? attachmentFileIds : undefined,
       recipientDetails: {
         recipientCount: recipients.length,
-        recipientEmails: recipients.map((r) => r.primaryEmail || r.emails?.[0]?.email || 'unknown'),
+        recipientEmails: recipients.map(
+          (r) => r.primaryEmail || r.emails?.[0]?.email || 'unknown',
+        ),
       },
     });
 
     const savedMessage = await this.messageRepository.save(message);
 
     // Send emails asynchronously with attachments
-    this.sendEmailsToRecipients(savedMessage, sender, team, recipients, files);
+    this.sendEmailsToRecipients(
+      savedMessage,
+      sender,
+      team,
+      recipients,
+      attachmentFileIds,
+    );
 
     return this.transformToResponse(savedMessage, sender);
   }
@@ -212,15 +234,25 @@ export class MessagesService {
     sender: User,
     team: Team,
     recipients: User[],
-    files?: any[],
+    attachmentFileIds?: string[],
   ): Promise<void> {
     try {
-      // Convert files to attachment format for email
-      const emailAttachments = files?.map((file) => ({
-        filename: file.originalname,
-        content: file.buffer.toString('base64'),
-        contentType: file.mimetype,
-      }));
+      // Fetch attachment files from storage
+      let emailAttachments: any[] = [];
+      if (attachmentFileIds && attachmentFileIds.length > 0) {
+        for (const fileId of attachmentFileIds) {
+          try {
+            const { file, data } = await this.fileStorageService.getFile(fileId);
+            emailAttachments.push({
+              filename: file.originalFilename,
+              content: data.toString('base64'),
+              contentType: file.mimeType || 'application/octet-stream',
+            });
+          } catch (error) {
+            console.error(`Failed to fetch attachment ${fileId}:`, error);
+          }
+        }
+      }
 
       const emailPromises = recipients.map((recipient) => {
         const recipientEmail = recipient.primaryEmail || recipient.emails?.[0]?.email;
@@ -232,7 +264,7 @@ export class MessagesService {
           to: recipientEmail,
           subject: `[${team.name}] ${message.subject}`,
           html: this.generateEmailContent(message, sender, team),
-          attachments: emailAttachments,
+          attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
         });
       });
 
