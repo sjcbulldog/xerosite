@@ -295,11 +295,15 @@ When an event is canceled, the ICS attachment is processed by google calendar, b
 
 When a single instance of an event is canceled, google calendar does not process the ICS file correctly and just delete that instance.
 
-When displaying the an event in the monthly calendar, include its time.
+When displaying the event in the monthly calendar, include its name on a first line and the start and end time on a second line.  
 
 Add a delete team that is a big deal big and red.
 
 Add the webcal protocol to the server so that remote calendars can subscribe.  The authentication should be based on the same login used to enter the site.  When a user attaches to the calendar server, they should only see calendar events that they would see within the site.
+
+When a new user joins a team, send calendar invites for all active and future calendar events to that user.
+
+Calendar server for calendar subscription.
 
 --- Link farm
 
@@ -313,14 +317,9 @@ Add a new file storage service in the backend.  The location for storing files s
 
 Add the ability to store and retreive a set of files.  The file storeages should be located at ../storage relative to the server directory.  User's should be able to provide a title and either browse or drag and drop a file (or set of files) to upload these files to the site.  User's should be able browse the set of uploaded files.  The uploaded files can be deleted by the team adminstrator, or by the user that uploaded the files.  When browsing files, there should be a text input box that can be used to filter the set of titles.
 
-When a new meeting is scheduled, send an email to all of the attendees letting them know that the meeting has been scheduled and the relatant information.
-
-Create a document describing the method for authenticaing with the server and the various rest APIs that are availabe for use by applications.
-
 Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
 
+Continous
+---------
 Update the user's guide to reflect features added single the last update to the user's guide.
-
-Calendar server for calendar subscription.
-
-Add a time zone selection per user, with the option to have a time zone unspecified.  If the time zone is specified it should be used in all interactions with the calendar.  If the time zone i sunspecified, the timezone should default to the time zone of the team.
+Update the API document to reflect changes in the rest APIs

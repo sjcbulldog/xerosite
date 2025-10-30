@@ -179,12 +179,35 @@ export class EventsService {
     if (occurrenceDate && event.recurrenceType !== 'none') {
       console.log('[EventDelete] Excluding single occurrence for recurring event');
       
-      // Normalize the date to midnight UTC to match how dates are stored
-      const normalizedDate = new Date(occurrenceDate);
-      normalizedDate.setUTCHours(0, 0, 0, 0);
+      // Get team to get timezone
+      const team = await this.teamRepository.findOne({
+        where: { id: event.teamId },
+      });
+      const timezone = team?.timezone || 'America/New_York';
+      
+      // Normalize the date to the calendar date in the team timezone
+      // Extract the date (YYYY-MM-DD) as seen in the team timezone
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      
+      const parts = formatter.formatToParts(occurrenceDate);
+      const year = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
+      const month = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10);
+      const day = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
+      
+      const calendarDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      
+      // Parse this date at midnight in the team timezone to get the UTC timestamp
+      const normalizedDate = parseInTimezone(`${calendarDate}T00:00:00`, timezone);
       
       console.log('[EventDelete] Normalized date:', {
         original: occurrenceDate.toISOString(),
+        timezone,
+        calendarDate,
         normalized: normalizedDate.toISOString(),
       });
       
