@@ -1,0 +1,363 @@
+.attendance-report {
+  margin-top: 2rem;
+  
+  .report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    
+    h3 {
+      margin: 0;
+      color: var(--text-color);
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    
+    .event-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      
+      label {
+        font-weight: 500;
+        color: var(--text-color);
+        white-space: nowrap;
+      }
+      
+      .event-dropdown {
+        min-width: 300px;
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--background-color);
+        color: var(--text-color);
+        font-size: 0.9rem;
+        
+        &:focus {
+          outline: none;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+        }
+      }
+    }
+  }
+  
+  .loading-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    
+    p {
+      margin: 0;
+      font-style: italic;
+    }
+  }
+  
+  .report-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .event-details-card {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    
+    h4 {
+      margin: 0 0 1rem 0;
+      color: var(--text-color);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .event-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      
+      .event-info-item {
+        color: var(--text-color);
+        font-size: 0.9rem;
+        
+        strong {
+          font-weight: 600;
+          margin-right: 0.5rem;
+        }
+      }
+    }
+  }
+  
+  .summary-card {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    
+    h4 {
+      margin: 0 0 1rem 0;
+      color: var(--text-color);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 1rem;
+        border-radius: 6px;
+        background: var(--background-color);
+        border: 1px solid var(--border-color);
+        
+        .stat-label {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+        }
+        
+        .stat-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: var(--text-color);
+        }
+        
+        &.attending .stat-value {
+          color: var(--success-color, #22c55e);
+        }
+        
+        &.not-attending .stat-value {
+          color: var(--error-color, #ef4444);
+        }
+        
+        &.not-sure .stat-value {
+          color: var(--warning-color, #f59e0b);
+        }
+      }
+    }
+  }
+  
+  .role-breakdown {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    
+    h4 {
+      margin: 0 0 1rem 0;
+      color: var(--text-color);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .role-section {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .role-header {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--background-color);
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        color: var(--text-color);
+        transition: background-color 0.2s;
+        
+        &:hover {
+          background: var(--hover-color, #f3f4f6);
+        }
+        
+        &.expanded {
+          background: var(--primary-color-light, #eff6ff);
+        }
+        
+        .chevron {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          transition: transform 0.2s;
+        }
+        
+        .role-name {
+          font-weight: 600;
+          flex-grow: 1;
+          text-align: left;
+        }
+        
+        .role-summary {
+          font-size: 0.9rem;
+          color: var(--text-muted);
+          font-weight: 500;
+        }
+      }
+      
+      .role-content {
+        border-top: 1px solid var(--border-color);
+        padding: 1rem;
+        background: var(--card-background);
+        
+        .role-stats {
+          display: flex;
+          gap: 1.5rem;
+          margin-bottom: 1rem;
+          flex-wrap: wrap;
+          
+          .role-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            
+            .stat-icon {
+              font-weight: bold;
+              font-size: 1rem;
+            }
+            
+            &.attending {
+              color: var(--success-color, #22c55e);
+            }
+            
+            &.not-attending {
+              color: var(--error-color, #ef4444);
+            }
+            
+            &.not-sure {
+              color: var(--warning-color, #f59e0b);
+            }
+          }
+        }
+        
+        .members-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          
+          .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            
+            .member-name {
+              font-weight: 500;
+              color: var(--text-color);
+            }
+            
+            .attendance-status {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              font-size: 0.85rem;
+              font-weight: 500;
+              
+              .status-icon {
+                font-weight: bold;
+              }
+              
+              &.attending {
+                color: var(--success-color, #22c55e);
+              }
+              
+              &.not-attending {
+                color: var(--error-color, #ef4444);
+              }
+              
+              &.not-sure {
+                color: var(--warning-color, #f59e0b);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .no-data-message, .placeholder-message {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    
+    p {
+      margin: 0;
+      font-style: italic;
+    }
+  }
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+  .attendance-report {
+    .report-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+      
+      .event-selector {
+        flex-direction: column;
+        align-items: stretch;
+        
+        .event-dropdown {
+          min-width: auto;
+          width: 100%;
+        }
+      }
+    }
+    
+    .summary-card .summary-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .role-breakdown .role-content .role-stats {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .members-list .member-item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+      
+      .member-name {
+        text-align: left;
+      }
+      
+      .attendance-status {
+        justify-content: center;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .attendance-report {
+    .summary-card .summary-stats {
+      grid-template-columns: 1fr;
+    }
+  }
+}

@@ -238,20 +238,28 @@ Add a backend to send text message to users via the Twilio service. (Need to get
 
 Add the ability to export all users that belong to a given team to a CSV file that is saved to the user's disk.  This should be only be available to a user with the administrator role on a given team.  It should be accessible through the menu on the team dashboard. Selecting this item should bring up a popup that allows the user to select the fields that are included in the output.  In addition there should be the option to select to include the subteams each user belongs to as a common seperated list.
 
-In Progress
-===========
+Add a way to delete events from the calendar.
 
-
-Pending
-=======
-
-Delete event from calendar.
+Below the calendar, add a view that allows any event to be selected that is on the team calendar at any date and show a report of all of the people on the team, in collaspable groups by role and their attendance status.  Also provide at the top a summary of the total people coming as well as a display per role of total coming to the event and total not coming to the event.
 
 Rename the Visibility Settings to User Groups Selection.
 
-In THe User Groups Selection, the red X to delete items should be trash cans.
+Create a messaging system where members of a team can send messages to other members of the team via email.  The target users should be selectable as all users on a team or any created and available user group.  Only users with the Send Messages permissions should be able to send messages.  The send message UI should be selected from the team dashboard menu and should be a popup.  It should contains a seletion for who to send the message to, a text box for the subject that becomes the subject of the email, and a text area that contains the contents of the message.  Sent messages should be stored in the database so that they can be retreived in the future.  There should be a review sent messages UI that is also available via the team dashboard menu.  It should be in a popup that displays a list of messages that have been sent in a table, searchable by date or by text in the subject or in the message.
 
-Create a messaging system where members of a team can send messages to other members of the team via email or text.  The target users should be selectable as all users on a team, only users with a specific team role, only users that belong to a given subteam, only users that are leads of a subteam.  These should be able to be combined.  For instance, a message should be able to be sent to users with a specific team role and users on a specific subteam.  The initiation of the send message should be on the team dashboard in the menu and should popup a window that enables the recipents to be selected as well as typing the message.  The message, with the sender and its recipents should be stored in the database for later use.
+Create the Send Message Popup
+
+Create the Review Messages Popup
+
+In Progress
+===========
+ 
+Pending
+=======
+
+In the User Groups Selection, the trash cans that are used to delete portions of a user group selection criteria have a red background.  This should not be red but rather white.
+
+When a new meeting is scheduled, send an email to all of the attendees letting them know that the meeting has been scheduled and the relatant information.
+
+Create a document describing the method for authenticaing with the server and the various rest APIs that are availabe for use by applications.
 
 Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
-

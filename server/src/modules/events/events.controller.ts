@@ -41,11 +41,7 @@ export class EventsController {
     @Query('endDate') endDate?: string,
   ): Promise<EventResponseDto[]> {
     if (startDate && endDate) {
-      return this.eventsService.findByDateRange(
-        teamId,
-        new Date(startDate),
-        new Date(endDate),
-      );
+      return this.eventsService.findByDateRange(teamId, new Date(startDate), new Date(endDate));
     }
     return this.eventsService.findAllForTeam(teamId);
   }
@@ -92,5 +88,13 @@ export class EventsController {
   ): Promise<AttendanceResponseDto> {
     updateDto.eventId = eventId;
     return this.attendanceService.updateAttendance(user.id, updateDto);
+  }
+
+  @Get(':id/attendance/:instanceDate')
+  async getEventInstanceAttendance(
+    @Param('id') eventId: string,
+    @Param('instanceDate') instanceDate: string,
+  ): Promise<AttendanceResponseDto[]> {
+    return this.attendanceService.getEventInstanceAttendance(eventId, new Date(instanceDate));
   }
 }

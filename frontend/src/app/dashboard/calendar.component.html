@@ -81,21 +81,31 @@
                       <span class="event-name" (click)="openEditEventDialog(event)">
                         {{ event.name }}
                       </span>
-                      <span 
-                        class="attendance-icon"
-                        (click)="cycleAttendance(event); $event.stopPropagation()"
-                        [class.yes]="event.attendance === AttendanceStatus.YES"
-                        [class.no]="event.attendance === AttendanceStatus.NO"
-                        [class.not-sure]="!event.attendance || event.attendance === AttendanceStatus.NOT_SURE"
-                        [title]="event.attendance || 'Not sure'">
-                        @if (event.attendance === AttendanceStatus.YES) {
-                          ✓
-                        } @else if (event.attendance === AttendanceStatus.NO) {
-                          ✗
-                        } @else {
-                          ?
+                      <div class="event-actions">
+                        <span 
+                          class="attendance-icon"
+                          (click)="cycleAttendance(event); $event.stopPropagation()"
+                          [class.yes]="event.attendance === AttendanceStatus.YES"
+                          [class.no]="event.attendance === AttendanceStatus.NO"
+                          [class.not-sure]="!event.attendance || event.attendance === AttendanceStatus.NOT_SURE"
+                          [title]="event.attendance || 'Not sure'">
+                          @if (event.attendance === AttendanceStatus.YES) {
+                            ✓
+                          } @else if (event.attendance === AttendanceStatus.NO) {
+                            ✗
+                          } @else {
+                            ?
+                          }
+                        </span>
+                        @if (canDeleteEvents()) {
+                          <span 
+                            class="delete-icon"
+                            (click)="deleteEvent(event); $event.stopPropagation()"
+                            title="Delete event">
+                            ×
+                          </span>
                         }
-                      </span>
+                      </div>
                     </div>
                   }
                 </div>
@@ -372,18 +382,28 @@
       </div>
 
       <div class="dialog-actions">
-        <button 
-          class="cancel-button"
-          (click)="closeEventDialog()"
-          [disabled]="isSavingEvent()">
-          Cancel
-        </button>
-        <button 
-          class="save-button"
-          (click)="saveEvent()"
-          [disabled]="isSavingEvent() || !eventName() || !eventStartDate() || !eventStartTime()">
-          {{ isSavingEvent() ? 'Saving...' : 'Save Event' }}
-        </button>
+        @if (selectedEvent() && canDeleteEvents()) {
+          <button 
+            class="delete-button"
+            (click)="deleteEvent(selectedEvent()!)"
+            [disabled]="isSavingEvent()">
+            Delete Event
+          </button>
+        }
+        <div class="action-group">
+          <button 
+            class="cancel-button"
+            (click)="closeEventDialog()"
+            [disabled]="isSavingEvent()">
+            Cancel
+          </button>
+          <button 
+            class="save-button"
+            (click)="saveEvent()"
+            [disabled]="isSavingEvent() || !eventName() || !eventStartDate() || !eventStartTime()">
+            {{ isSavingEvent() ? 'Saving...' : 'Save Event' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

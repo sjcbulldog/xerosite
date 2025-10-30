@@ -15,6 +15,7 @@ import { EmailModule } from './modules/email/email.module';
 import { EventsModule } from './modules/events/events.module';
 import { PreferencesModule } from './modules/preferences/preferences.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { MessagesModule } from './modules/messages/messages.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AdminModule } from './modules/admin/admin.module';
     EventsModule,
     PreferencesModule,
     AdminModule,
+    MessagesModule,
   ],
   controllers: [AppController],
 })

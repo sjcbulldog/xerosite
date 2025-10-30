@@ -1,0 +1,112 @@
+<div class="dialog-overlay" (click)="closeDialog()">
+  <div class="dialog-content" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2>Send Team Message</h2>
+      <button class="close-button" (click)="closeDialog()">×</button>
+    </div>
+
+    <form [formGroup]="sendMessageForm" (ngSubmit)="onSendMessage()" class="send-message-form">
+      <div class="form-group">
+        <label for="recipientType">Send To *</label>
+        <select id="recipientType" formControlName="recipientType" [class.error]="getFieldError('recipientType')">
+          <option [value]="MessageRecipientType.ALL_TEAM_MEMBERS">
+            {{ getRecipientTypeDisplayName(MessageRecipientType.ALL_TEAM_MEMBERS) }}
+          </option>
+          <option [value]="MessageRecipientType.USER_GROUP">
+            {{ getRecipientTypeDisplayName(MessageRecipientType.USER_GROUP) }}
+          </option>
+        </select>
+        @if (getFieldError('recipientType')) {
+          <span class="error-message">{{ getFieldError('recipientType') }}</span>
+        }
+      </div>
+
+      @if (showUserGroupSelect()) {
+        <div class="form-group">
+          <label for="userGroupId">User Group *</label>
+          @if (isLoadingUserGroups()) {
+            <div class="loading-select">Loading user groups...</div>
+          } @else if (userGroups().length === 0) {
+            <div class="no-groups-message">
+              No user groups available. Contact a team administrator to create user groups.
+            </div>
+          } @else {
+            <select id="userGroupId" formControlName="userGroupId" [class.error]="getFieldError('userGroupId')">
+              <option value="">Select a user group...</option>
+              @for (group of userGroups(); track group.id) {
+                <option [value]="group.id">{{ group.name }}</option>
+              }
+            </select>
+          }
+          @if (getFieldError('userGroupId')) {
+            <span class="error-message">{{ getFieldError('userGroupId') }}</span>
+          }
+        </div>
+      }
+
+      <div class="form-group">
+        <label for="subject">Subject *</label>
+        <input 
+          id="subject"
+          type="text" 
+          formControlName="subject"
+          [class.error]="getFieldError('subject')"
+          placeholder="Enter the message subject"
+          maxlength="255"
+        />
+        <div class="character-count">
+          {{ sendMessageForm.get('subject')?.value?.length || 0 }} / 255
+        </div>
+        @if (getFieldError('subject')) {
+          <span class="error-message">{{ getFieldError('subject') }}</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="content">Message *</label>
+        <textarea 
+          id="content"
+          formControlName="content"
+          [class.error]="getFieldError('content')"
+          placeholder="Enter your message content"
+          rows="8"
+          maxlength="5000"
+        ></textarea>
+        <div class="character-count">
+          {{ sendMessageForm.get('content')?.value?.length || 0 }} / 5000
+        </div>
+        @if (getFieldError('content')) {
+          <span class="error-message">{{ getFieldError('content') }}</span>
+        }
+      </div>
+
+      @if (error()) {
+        <div class="alert-error">
+          {{ error() }}
+        </div>
+      }
+
+      @if (success()) {
+        <div class="alert-success">
+          {{ success() }}
+        </div>
+      }
+
+      <div class="dialog-actions">
+        <button 
+          type="button" 
+          class="cancel-button"
+          (click)="closeDialog()"
+          [disabled]="isSending()">
+          Cancel
+        </button>
+        <button 
+          type="submit" 
+          class="submit-button"
+          [disabled]="sendMessageForm.invalid || isSending()">
+          {{ isSending() ? 'Sending...' : 'Send Message' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

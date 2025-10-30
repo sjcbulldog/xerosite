@@ -217,6 +217,13 @@
     text-overflow: ellipsis;
   }
 
+  .event-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    flex-shrink: 0;
+  }
+
   .attendance-icon {
     flex-shrink: 0;
     font-weight: bold;
@@ -241,6 +248,23 @@
     }
 
     &:hover {
+      transform: scale(1.1);
+    }
+  }
+
+  .delete-icon {
+    flex-shrink: 0;
+    font-weight: bold;
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #ef4444;
       transform: scale(1.1);
     }
   }
@@ -572,15 +596,22 @@
 
 .dialog-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 0.75rem;
   padding: 1.5rem;
   border-top: 1px solid #e5e7eb;
   background: #f9fafb;
 }
 
+.action-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .cancel-button,
-.save-button {
+.save-button,
+.delete-button {
   padding: 0.625rem 1.25rem;
   border-radius: 8px;
   font-weight: 600;
@@ -615,6 +646,17 @@
   }
 }
 
+.delete-button {
+  background: #dc2626;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
+  }
+}
+
 // Responsive Design
 @media (max-width: 768px) {
   .calendar-header {
@@ -637,5 +679,19 @@
   .calendar-day {
     min-height: 80px;
     font-size: 0.75rem;
+  }
+
+  .dialog-actions {
+    flex-direction: column;
+    gap: 1rem;
+
+    .action-group {
+      order: 1;
+    }
+
+    .delete-button {
+      order: 2;
+      align-self: stretch;
+    }
   }
 }

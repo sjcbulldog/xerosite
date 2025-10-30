@@ -202,6 +202,17 @@ export class EmailService implements OnModuleInit {
   }
 
   /**
+   * Send a generic email
+   */
+  async sendEmail(options: { to: string; subject: string; html: string }): Promise<void> {
+    await this.queueEmail({
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+    });
+  }
+
+  /**
    * Queue an email for sending
    */
   private async queueEmail(options: QueueEmailOptions): Promise<void> {
@@ -348,11 +359,7 @@ export class EmailService implements OnModuleInit {
   /**
    * Send test email (for administrators)
    */
-  async sendTestEmail(
-    to: string,
-    subject: string,
-    message: string,
-  ): Promise<void> {
+  async sendTestEmail(to: string, subject: string, message: string): Promise<void> {
     await this.queueEmail({
       to,
       subject,

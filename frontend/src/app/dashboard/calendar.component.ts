@@ -69,6 +69,21 @@ export class CalendarComponent implements OnInit {
     const permission = member.permissions?.find(p => p.permission === 'SCHEDULE_EVENTS');
     return permission?.enabled ?? false;
   });
+
+  protected readonly canDeleteEvents = computed(() => {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) return false;
+
+    const member = this.members().find(m => m.userId === currentUser.id);
+    if (!member) return false;
+
+    // Administrators always have permission to delete events
+    if (member.roles.includes('Administrator')) return true;
+
+    // Check if user has DELETE_EVENTS permission (or use SCHEDULE_EVENTS for now)
+    const permission = member.permissions?.find(p => p.permission === 'SCHEDULE_EVENTS');
+    return permission?.enabled ?? false;
+  });
   
   // Dialog signals
   protected readonly showEventDialog = signal(false);
@@ -418,6 +433,7 @@ export class CalendarComponent implements OnInit {
     try {
       await this.calendarService.deleteEvent(this.teamId(), event.id);
       await this.loadEvents();
+      this.closeEventDialog(); // Close the dialog after successful deletion
     } catch (error: any) {
       alert(error.message || 'Failed to delete event');
     }

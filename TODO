@@ -59,17 +59,17 @@ Add subteams
 Calendar
 ============
 - Calendar view                                                                                 X
-- Select attendees based on entire team, roles, subteams, or individuals                        
-- One off meetings
-- Recuring meetings
-- Send email when meeting is schedule with calendar invites.
-- Email/Text reminders to users based on user preferences (what type, how often, lead time)
-- Subscriptions: RFC5545 (iCalendar), RFC4791 (CalDAV), RFC3744 (ACL), RFC6578 (WebDAV Sync)
+- Select attendees based on entire team, roles, subteams, or individuals                        X
+- One off meetings                                                                              X
+- Recuring meetings                                                                             X
+- Send email when meeting is schedule with calendar invites.                                    X
+- Email/Text reminders to users based on user preferences (what type, how often, lead time)     X
+- Subscriptions: RFC5545 (iCalendar), RFC4791 (CalDAV), RFC3744 (ACL), RFC6578 (WebDAV Sync)    X
 
 Send Email
 ==========
-- Select based on entire team, roles, subteams, or individuals
-- Detect bounced email an alert team administrators
+- Select based on entire team, roles, subteams, or individuals                                  X
+- Detect bounced email an alert team administrators                                             O
 
 Users
 =====
@@ -77,6 +77,8 @@ Users
 - Grade: 8, 9, 10, 11, 12
 - Gender: Male, Female, Other
 - Dietary Concerns: 
+
+-------------------- Future stuff ----------------------------------------------
 
 Real Time Chat
 ==============
@@ -86,3 +88,4 @@ IOS App
 
 Android App
 ===========
+

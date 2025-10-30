@@ -177,6 +177,31 @@ export class CalendarService {
     }
   }
 
+  async getEventInstanceAttendance(
+    teamId: string,
+    eventId: string,
+    instanceDate: Date
+  ): Promise<EventAttendance[]> {
+    try {
+      const formattedDate = instanceDate.toISOString().split('T')[0];
+      const attendance = await firstValueFrom(
+        this.http.get<EventAttendance[]>(
+          `${this.apiUrl}/${teamId}/events/${eventId}/attendance/${formattedDate}`
+        )
+      );
+      
+      return attendance.map(a => ({
+        ...a,
+        instanceDate: new Date(a.instanceDate),
+        createdAt: new Date(a.createdAt),
+        updatedAt: new Date(a.updatedAt)
+      }));
+    } catch (error: any) {
+      console.error('Error loading event attendance:', error);
+      throw new Error(error.error?.message || 'Failed to load event attendance');
+    }
+  }
+
   cycleAttendance(current: AttendanceStatus | undefined): AttendanceStatus {
     switch (current) {
       case AttendanceStatus.YES:

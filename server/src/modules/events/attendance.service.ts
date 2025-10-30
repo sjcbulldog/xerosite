@@ -137,6 +137,26 @@ export class AttendanceService {
   }
 
   /**
+   * Get attendance records for all team members for a specific event instance
+   */
+  async getEventInstanceAttendance(
+    eventId: string,
+    instanceDate: Date,
+  ): Promise<AttendanceResponseDto[]> {
+    const instanceDateNormalized = new Date(instanceDate);
+    instanceDateNormalized.setHours(0, 0, 0, 0);
+
+    const attendances = await this.attendanceRepository.find({
+      where: {
+        eventId,
+        instanceDate: instanceDateNormalized,
+      },
+    });
+
+    return attendances.map((attendance) => this.transformToResponse(attendance));
+  }
+
+  /**
    * Cycle to next attendance status
    */
   cycleAttendanceStatus(currentStatus: AttendanceStatus): AttendanceStatus {

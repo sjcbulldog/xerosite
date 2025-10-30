@@ -26,6 +26,16 @@
                 </button>
                 @if (showAdminMenu()) {
                   <div class="admin-menu-dropdown">
+                    @if (canSendMessages()) {
+                      <button (click)="openSendMessageDialog()" class="menu-item">
+                        <span class="menu-icon">📧</span>
+                        Send Message
+                      </button>
+                      <button (click)="openReviewMessagesDialog()" class="menu-item">
+                        <span class="menu-icon">📋</span>
+                        Review Messages
+                      </button>
+                    }
                     <button (click)="openDescriptionEditor()" class="menu-item">
                       <span class="menu-icon">📝</span>
                       Edit Team Information
@@ -349,6 +359,14 @@
                 [subteams]="subteams()">
               </app-calendar>
             </div>
+            
+            <!-- Event Attendance Report -->
+            <app-event-attendance-report
+              [teamId]="team()!.id"
+              [teamMembers]="activeMembers()"
+              [teamRoles]="teamRoles()"
+              [events]="calendarEvents()">
+            </app-event-attendance-report>
           </div>
         }
       </div>
@@ -1532,4 +1550,21 @@
 <!-- Export Users Dialog -->
 @if (showExportDialog()) {
   <app-export-users-dialog />
+}
+
+<!-- Send Message Dialog -->
+@if (showSendMessageDialog()) {
+  <app-send-message-dialog
+    [teamId]="team()!.id"
+    (close)="closeSendMessageDialog()"
+    (messageSent)="onMessageSent()">
+  </app-send-message-dialog>
+}
+
+<!-- Review Messages Dialog -->
+@if (showReviewMessagesDialog()) {
+  <app-review-messages-dialog
+    [teamId]="team()!.id"
+    (close)="closeReviewMessagesDialog()">
+  </app-review-messages-dialog>
 }

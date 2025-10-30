@@ -6,13 +6,18 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../profile/users.service';
+import { CalendarService } from './calendar.service';
+import { TeamEvent } from './calendar.types';
 import { CalendarComponent } from './calendar.component';
+import { EventAttendanceReportComponent } from './event-attendance-report.component';
 import { UserGroupsManagerComponent } from './user-groups-manager.component';
 import { ExportUsersDialogComponent } from './export-users-dialog.component';
+import { SendMessageDialogComponent } from './send-message-dialog.component';
+import { ReviewMessagesDialogComponent } from './review-messages-dialog.component';
 
 @Component({
   selector: 'app-team-detail',
-  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, UserGroupsManagerComponent, ExportUsersDialogComponent],
+  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, EventAttendanceReportComponent, UserGroupsManagerComponent, ExportUsersDialogComponent, SendMessageDialogComponent, ReviewMessagesDialogComponent],
   templateUrl: './team-detail.component.html',
   styleUrl: './team-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -21,6 +26,7 @@ export class TeamDetailComponent implements OnInit {
   protected readonly teamsService = inject(TeamsService);
   protected readonly authService = inject(AuthService);
   protected readonly usersService = inject(UsersService);
+  protected readonly calendarService = inject(CalendarService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -136,12 +142,19 @@ export class TeamDetailComponent implements OnInit {
   
   // Calendar signals
   protected readonly showCalendarSection = signal(false);
+  protected readonly calendarEvents = signal<TeamEvent[]>([]);
   
   // User Groups signals
   protected readonly showUserGroupsManager = signal(false);
   
   // Export Users dialog signal
   protected readonly showExportDialog = signal(false);
+  
+  // Send Message dialog signal
+  protected readonly showSendMessageDialog = signal(false);
+  
+  // Review Messages dialog signal
+  protected readonly showReviewMessagesDialog = signal(false);
   
   // Create/Edit Subteam form
   protected readonly subteamName = signal('');
@@ -187,6 +200,27 @@ export class TeamDetailComponent implements OnInit {
     const isSiteAdministrator = this.authService.currentUser()?.isSiteAdmin || false;
 
     return isTeamAdministrator || isSiteAdministrator;
+  });
+
+  // Computed signal to check if current user can send messages
+  protected readonly canSendMessages = computed(() => {
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) return false;
+    
+    const allMembers = this.members();
+    const userMembership = allMembers.find(m => m.userId === currentUserId);
+    
+    if (!userMembership || userMembership.status !== 'active') return false;
+
+    // Administrators always have permission
+    const isTeamAdministrator = userMembership.roles.includes('Administrator') || false;
+    const isSiteAdministrator = this.authService.currentUser()?.isSiteAdmin || false;
+    
+    if (isTeamAdministrator || isSiteAdministrator) return true;
+
+    // Check if user has SEND_MESSAGES permission
+    const sendMessagesPermission = userMembership.permissions?.find(p => p.permission === 'SEND_MESSAGES');
+    return sendMessagesPermission?.enabled || false;
   });
 
   // Computed signal to group subteam members by role for detail view
@@ -282,6 +316,9 @@ export class TeamDetailComponent implements OnInit {
       
       // Load subteams for count display
       await this.loadSubteams();
+      
+      // Load calendar events for attendance report
+      await this.loadCalendarEvents(teamId);
     } catch (error) {
       console.error('Error loading team details:', error);
     } finally {
@@ -622,6 +659,31 @@ export class TeamDetailComponent implements OnInit {
     } finally {
       this.isSendingInvitation.set(false);
     }
+  }
+
+  // Send Message Dialog Methods
+  protected openSendMessageDialog(): void {
+    this.closeAdminMenu();
+    this.showSendMessageDialog.set(true);
+  }
+
+  protected closeSendMessageDialog(): void {
+    this.showSendMessageDialog.set(false);
+  }
+
+  protected onMessageSent(): void {
+    // Optionally reload team data or show confirmation
+    console.log('Message sent successfully');
+  }
+
+  // Review Messages Dialog Methods
+  protected openReviewMessagesDialog(): void {
+    this.closeAdminMenu();
+    this.showReviewMessagesDialog.set(true);
+  }
+
+  protected closeReviewMessagesDialog(): void {
+    this.showReviewMessagesDialog.set(false);
   }
 
   // Edit Member Dialog Methods
@@ -1076,6 +1138,16 @@ export class TeamDetailComponent implements OnInit {
       console.error('Error loading subteams:', error);
     } finally {
       this.isLoadingSubteams.set(false);
+    }
+  }
+
+  private async loadCalendarEvents(teamId: string): Promise<void> {
+    try {
+      const events = await this.calendarService.getEventsForTeam(teamId);
+      this.calendarEvents.set(events);
+    } catch (error: any) {
+      console.error('Error loading calendar events:', error);
+      this.calendarEvents.set([]);
     }
   }
 
