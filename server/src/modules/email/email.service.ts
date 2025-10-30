@@ -12,6 +12,11 @@ interface QueueEmailOptions {
   html?: string;
   template?: string;
   context?: any;
+  attachments?: Array<{
+    filename: string;
+    content: string;
+    contentType: string;
+  }>;
 }
 
 @Injectable()
@@ -180,10 +185,22 @@ export class EmailService implements OnModuleInit {
       mailOptions.html = emailItem.htmlContent;
     }
 
+    // Add attachments if present
+    if (emailItem.attachments && emailItem.attachments.length > 0) {
+      mailOptions.attachments = emailItem.attachments.map((attachment) => ({
+        filename: attachment.filename,
+        content: Buffer.from(attachment.content, 'base64'),
+        contentType: attachment.contentType,
+      }));
+    }
+
     try {
       this.logger.log(`[SMTP] Sending email to: ${mailOptions.to}`);
       this.logger.log(`[SMTP] Subject: ${mailOptions.subject}`);
       this.logger.log(`[SMTP] Template: ${mailOptions.template || 'none (using HTML)'}`);
+      if (emailItem.attachments && emailItem.attachments.length > 0) {
+        this.logger.log(`[SMTP] Attachments: ${emailItem.attachments.length} file(s)`);
+      }
       if (emailItem.originalTo) {
         this.logger.log(`[SMTP] Original recipient: ${emailItem.originalTo}`);
       }
@@ -209,6 +226,27 @@ export class EmailService implements OnModuleInit {
       to: options.to,
       subject: options.subject,
       html: options.html,
+    });
+  }
+
+  /**
+   * Send a generic email with attachments
+   */
+  async sendEmailWithAttachments(options: {
+    to: string;
+    subject: string;
+    html: string;
+    attachments?: Array<{
+      filename: string;
+      content: string;
+      contentType: string;
+    }>;
+  }): Promise<void> {
+    await this.queueEmail({
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      attachments: options.attachments,
     });
   }
 
@@ -244,6 +282,7 @@ export class EmailService implements OnModuleInit {
       htmlContent: options.html || null,
       template: options.template || null,
       context: options.context || null,
+      attachments: options.attachments || null,
       status: EmailStatus.PENDING,
       attempts: 0,
     });

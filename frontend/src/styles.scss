@@ -39,3 +39,106 @@ a {
   outline: 2px solid #667eea;
   outline-offset: 2px;
 }
+
+/* Recurring Event Delete Dialog (Global - rendered outside component) */
+.recurring-delete-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.recurring-delete-dialog {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  h3 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0 0 1.5rem 0;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+
+  .event-details {
+    background: #f9fafb;
+    border-left: 4px solid #3b82f6;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+
+    strong {
+      display: block;
+      color: #1f2937;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .occurrence-date {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+  }
+
+  .dialog-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+    }
+  }
+
+  .dialog-button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+
+    &.cancel-button {
+      background: #f3f4f6;
+      color: #4b5563;
+      border-color: #d1d5db;
+
+      &:hover {
+        background: #e5e7eb;
+      }
+    }
+
+    &.occurrence-button {
+      background: #3b82f6;
+      color: white;
+
+      &:hover {
+        background: #2563eb;
+      }
+    }
+
+    &.series-button {
+      background: #ef4444;
+      color: white;
+
+      &:hover {
+        background: #dc2626;
+      }
+    }
+  }
+}

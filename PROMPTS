@@ -250,16 +250,58 @@ Create the Send Message Popup
 
 Create the Review Messages Popup
 
+In the User Groups Selection, the trash cans that are used to delete portions of a user group selection criteria have a red background.  This should not be red but rather white.
+
+In the Send Message Popup, add the ability to either browse the current computer/drag and drop files that are added to the outgoing email as attachments.
+
+After the recent change, sending a message with an attachment gives this error message 'teamId must be a UUID,subject must be a string,content must be a string,recipientType must be one of the following values: ALL_TEAM_MEMBERS, USER_GROUP'
+
+Limit attachments to a message so that no single file exceeds 1 MB and the total does not exceed 4 MB.
+
+On events displayed in the event calendar montly view, the icon for deleting an event should be a waste basket.
+
+There should no be an end date on the calendar event entry form.  Just a date, starting time and ending time.
+
+Double clicking on a day in the event calendar should bring up the form to enter a new calendar event with the date already filled in.
+
+When a new calendar event is scheduled, send an email to all of the attendees letting them know that the meeting has been scheduled and the relatant information.
+
+When new role constratints are added to the system, they are not honored by the Edit Member popup until the page is reloaded.
+
+Clicking on the wastebasket in a calendar event that is recuring is not bringing up the question about deleting the complete sequence or just that one occurance.
+
+When a recurring calendar event is canceled, a popup should appear to prompt for canceling the complete sequence of calendar events, or just the one event on the one day where the delete request was made.  If it is the one day, the event should be just removed for that one day, otherwise the complete sequence should be deleted.
+
+When deleting an event in the calendar and I select 'This Event Only' in the Delete Recurring Event popup, the entire event series gets deleted and not just the event on that one day.
+
 In Progress
 ===========
- 
+
+
+
 Pending
 =======
 
-In the User Groups Selection, the trash cans that are used to delete portions of a user group selection criteria have a red background.  This should not be red but rather white.
+When an event is canceled, the ICS attachment is processed by google calendar, but fails in outlook calendar with the message 'Couldn't import calendar.  Try again later.'
+
+When a single instance of an event is canceled, google calendar does not process the ICS file correctly and just delete that instance.
+
+When displaying the an event in the monthly calendar, include its time.
+
+Add the webcal protocol to the server so that remote calendars can subscribe.  The authentication should be based on the same login used to enter the site.  When a user attaches to the calendar server, they should only see calendar events that they would see within the site.
+
+Add a new file storage service in the backend.  The location for storing files should be given by the FILE_STORAGE_PATH in the .env file.  This path should be an absolute path or it is an error.  Each file stored in the storage directory should have a unique file name.  Each file stored in the storage directory should have an entry in an associated database table that has a unique ID, its original file name, its unique name in the storage area, the date when it was created, the user that owns the file, and a subsystem (string) that created the file. The send message attachment support should change to remove attachement file data from the mysql database and have the data be stored in this storage service with an owner name of 'messages'.
+
+Add a new card to the team dashboard that is useful links.  For normal users this will be a set of links that are useful for a member of the team.  The team administrator should be able to add or remove links from this set.  Each link should be a title that is linked to a provided link.
+
+Add the ability to store and retreive a set of files.  The file storeages should be located at ../storage relative to the server directory.  User's should be able to provide a title and either browse or drag and drop a file (or set of files) to upload these files to the site.  User's should be able browse the set of uploaded files.  The uploaded files can be deleted by the team adminstrator, or by the user that uploaded the files.  When browsing files, there should be a text input box that can be used to filter the set of titles.
 
 When a new meeting is scheduled, send an email to all of the attendees letting them know that the meeting has been scheduled and the relatant information.
 
 Create a document describing the method for authenticaing with the server and the various rest APIs that are availabe for use by applications.
 
 Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
+
+Update the user's guide to reflect features added single the last update to the user's guide.
+
+Calendar server for calendar subscription.

@@ -46,11 +46,32 @@ export class MessagesService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = '/api/teams';
 
-  async sendMessage(teamId: string, request: SendMessageRequest): Promise<MessageResponse> {
+  async sendMessage(teamId: string, request: SendMessageRequest, files?: File[]): Promise<MessageResponse> {
     try {
-      return await firstValueFrom(
-        this.http.post<MessageResponse>(`${this.apiUrl}/${teamId}/messages`, request)
-      );
+      if (files && files.length > 0) {
+        // Send as multipart form data with files
+        const formData = new FormData();
+        formData.append('subject', request.subject);
+        formData.append('content', request.content);
+        formData.append('recipientType', request.recipientType);
+        if (request.userGroupId) {
+          formData.append('userGroupId', request.userGroupId);
+        }
+
+        // Append files
+        files.forEach(file => {
+          formData.append('attachments', file);
+        });
+
+        return await firstValueFrom(
+          this.http.post<MessageResponse>(`${this.apiUrl}/${teamId}/messages`, formData)
+        );
+      } else {
+        // Send as JSON without files
+        return await firstValueFrom(
+          this.http.post<MessageResponse>(`${this.apiUrl}/${teamId}/messages`, request)
+        );
+      }
     } catch (error: any) {
       console.error('Error sending message:', error);
       throw new Error(error.error?.message || 'Failed to send message');

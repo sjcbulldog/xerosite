@@ -39,7 +39,8 @@ export class CalendarService {
         endDateTime: event.endDateTime ? new Date(event.endDateTime) : null,
         recurrenceEndDate: event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : null,
         createdAt: new Date(event.createdAt),
-        updatedAt: new Date(event.updatedAt)
+        updatedAt: new Date(event.updatedAt),
+        excludedDates: event.excludedDates?.map(d => new Date(d)) || [],
       }));
     } catch (error: any) {
       console.error('Error loading events:', error);
@@ -59,7 +60,8 @@ export class CalendarService {
         endDateTime: event.endDateTime ? new Date(event.endDateTime) : null,
         recurrenceEndDate: event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : null,
         createdAt: new Date(event.createdAt),
-        updatedAt: new Date(event.updatedAt)
+        updatedAt: new Date(event.updatedAt),
+        excludedDates: event.excludedDates?.map(d => new Date(d)) || [],
       };
     } catch (error: any) {
       console.error('Error loading event:', error);
@@ -107,10 +109,19 @@ export class CalendarService {
     }
   }
 
-  async deleteEvent(teamId: string, eventId: string): Promise<void> {
+  async deleteEvent(teamId: string, eventId: string, occurrenceDate?: Date): Promise<void> {
     try {
+      let url = `${this.apiUrl}/${teamId}/events/${eventId}`;
+      
+      if (occurrenceDate) {
+        const params = new URLSearchParams({
+          occurrenceDate: occurrenceDate.toISOString()
+        });
+        url += `?${params.toString()}`;
+      }
+      
       await firstValueFrom(
-        this.http.delete<void>(`${this.apiUrl}/${teamId}/events/${eventId}`)
+        this.http.delete<void>(url)
       );
     } catch (error: any) {
       console.error('Error deleting event:', error);

@@ -37,6 +37,13 @@ export class EmailQueue {
   @Column({ type: 'json', nullable: true })
   context: any;
 
+  @Column({ type: 'json', nullable: true })
+  attachments: Array<{
+    filename: string;
+    content: string; // Base64 encoded content
+    contentType: string;
+  }>;
+
   @Column({
     type: 'enum',
     enum: EmailStatus,

@@ -313,10 +313,23 @@ export class CalendarComponent implements OnInit {
     this.currentDate.set(new Date());
   }
   
-  protected openCreateEventDialog(): void {
+  protected openCreateEventDialog(date?: Date): void {
     this.resetEventForm();
+    if (date) {
+      // Pre-fill the date if provided
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      this.eventStartDate.set(`${year}-${month}-${day}`);
+    }
     this.selectedEvent.set(null);
     this.showEventDialog.set(true);
+  }
+  
+  protected onDayDoubleClick(day: CalendarDay): void {
+    if (this.canScheduleEvents()) {
+      this.openCreateEventDialog(day.date);
+    }
   }
   
   protected openEditEventDialog(event: TeamEvent): void {
@@ -425,18 +438,143 @@ export class CalendarComponent implements OnInit {
     }
   }
   
-  protected async deleteEvent(event: TeamEvent): Promise<void> {
-    if (!confirm(`Are you sure you want to delete "${event.name}"?`)) {
-      return;
-    }
+  protected async deleteEvent(event: TeamEvent | CalendarEventInstance): Promise<void> {
+    // Determine if this is a full TeamEvent or a CalendarEventInstance
+    const isInstance = 'instanceDate' in event;
+    const eventData = isInstance ? this.events().find(e => e.id === event.id) : event;
     
-    try {
-      await this.calendarService.deleteEvent(this.teamId(), event.id);
-      await this.loadEvents();
-      this.closeEventDialog(); // Close the dialog after successful deletion
-    } catch (error: any) {
-      alert(error.message || 'Failed to delete event');
+    if (!eventData) return;
+
+    console.log('deleteEvent called:', {
+      isInstance,
+      hasInstanceDate: 'instanceDate' in event,
+      recurrenceType: eventData.recurrenceType,
+      isNone: eventData.recurrenceType === RecurrenceType.NONE,
+      eventId: eventData.id
+    });
+
+    // For recurring events, show confirmation dialog when deleting from calendar view
+    if (isInstance && eventData.recurrenceType !== RecurrenceType.NONE) {
+      console.log('Showing recurring event deletion dialog');
+      const eventInstance = event as CalendarEventInstance;
+      const result = await this.confirmRecurringEventDeletion(eventInstance);
+      if (result === 'cancel') return;
+
+      try {
+        if (result === 'occurrence') {
+          // Delete single occurrence
+          console.log('Deleting single occurrence:', {
+            eventId: eventInstance.id,
+            instanceDate: eventInstance.instanceDate,
+            instanceDateISO: eventInstance.instanceDate.toISOString()
+          });
+          await this.calendarService.deleteEvent(
+            this.teamId(),
+            eventInstance.id,
+            eventInstance.instanceDate
+          );
+          // Reload events to reflect the exclusion
+          await this.loadEvents();
+        } else if (result === 'series') {
+          // Delete entire series
+          await this.calendarService.deleteEvent(
+            this.teamId(),
+            eventInstance.id
+          );
+          // Remove event from local state
+          this.events.set(this.events().filter(e => e.id !== eventInstance.id));
+          this.closeEventDialog();
+        }
+      } catch (error: any) {
+        console.error('Failed to delete event:', error);
+        alert(error.message || 'Failed to delete event. Please try again.');
+      }
+    } else {
+      // Non-recurring event or deleting from edit dialog - simple confirmation
+      console.log('Showing simple delete confirmation');
+      if (!confirm(`Are you sure you want to delete "${eventData.name}"?`)) {
+        return;
+      }
+      
+      try {
+        await this.calendarService.deleteEvent(this.teamId(), eventData.id);
+        this.events.set(this.events().filter(e => e.id !== eventData.id));
+        this.closeEventDialog();
+      } catch (error: any) {
+        alert(error.message || 'Failed to delete event');
+      }
     }
+  }
+
+  private confirmRecurringEventDeletion(eventInstance: CalendarEventInstance): Promise<'series' | 'occurrence' | 'cancel'> {
+    return new Promise((resolve) => {
+      const event = this.events().find(e => e.id === eventInstance.id);
+      if (!event) {
+        console.log('Event not found in events array');
+        resolve('cancel');
+        return;
+      }
+
+      console.log('Creating dialog for event:', event.name);
+      const dialog = document.createElement('div');
+      dialog.className = 'recurring-delete-dialog-overlay';
+      dialog.innerHTML = `
+        <div class="recurring-delete-dialog">
+          <h3>Delete Recurring Event</h3>
+          <p>This is a recurring event. What would you like to delete?</p>
+          <div class="event-details">
+            <strong>${event.name}</strong>
+            <div class="occurrence-date">${eventInstance.instanceDate.toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}</div>
+          </div>
+          <div class="dialog-actions">
+            <button class="dialog-button cancel-button">Cancel</button>
+            <button class="dialog-button occurrence-button">This Event Only</button>
+            <button class="dialog-button series-button danger-button">All Events in Series</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(dialog);
+      console.log('Dialog appended to body, checking visibility...');
+      console.log('Dialog element:', dialog);
+      console.log('Dialog computed style:', window.getComputedStyle(dialog).display);
+
+      const cleanup = () => {
+        console.log('Cleaning up dialog');
+        dialog.remove();
+      };
+
+      dialog.querySelector('.cancel-button')?.addEventListener('click', () => {
+        console.log('Cancel clicked');
+        cleanup();
+        resolve('cancel');
+      });
+
+      dialog.querySelector('.occurrence-button')?.addEventListener('click', () => {
+        console.log('Occurrence clicked');
+        cleanup();
+        resolve('occurrence');
+      });
+
+      dialog.querySelector('.series-button')?.addEventListener('click', () => {
+        console.log('Series clicked');
+        cleanup();
+        resolve('series');
+      });
+
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+          console.log('Overlay clicked');
+          cleanup();
+          resolve('cancel');
+        }
+      });
+    });
   }
   
   protected toggleWeekDay(index: number): void {
@@ -599,10 +737,22 @@ export class CalendarComponent implements OnInit {
   
   private eventOccursOnDate(event: TeamEvent, targetDate: Date): boolean {
     const eventStartDate = new Date(event.startDateTime);
-    eventStartDate.setHours(0, 0, 0, 0);
+    eventStartDate.setUTCHours(0, 0, 0, 0);
     
     const targetDateOnly = new Date(targetDate);
-    targetDateOnly.setHours(0, 0, 0, 0);
+    targetDateOnly.setUTCHours(0, 0, 0, 0);
+    
+    // Check if this date is excluded
+    if (event.excludedDates && event.excludedDates.length > 0) {
+      const isExcluded = event.excludedDates.some(excludedDate => {
+        const excluded = new Date(excludedDate);
+        excluded.setUTCHours(0, 0, 0, 0);
+        return excluded.getTime() === targetDateOnly.getTime();
+      });
+      if (isExcluded) {
+        return false;
+      }
+    }
     
     // Check if target date is before event start date
     if (targetDateOnly < eventStartDate) {

@@ -883,6 +883,10 @@ export class TeamDetailComponent implements OnInit {
 
     try {
       await this.teamsService.updateRoleConstraints(teamId, this.editingConstraints());
+      
+      // Reload team details to get updated constraints
+      await this.loadTeamDetails(teamId);
+      
       this.closeConstraintsEditor();
     } catch (error: any) {
       this.constraintsEditorError.set(error.message || 'Failed to save constraints');

@@ -53,6 +53,7 @@ export interface TeamEvent {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+  excludedDates?: Date[];
 }
 
 export interface EventAttendance {

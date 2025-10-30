@@ -60,8 +60,20 @@ export class EventsController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.eventsService.remove(id);
+  async remove(
+    @Param('id') id: string,
+    @Query('occurrenceDate') occurrenceDate: string,
+    @CurrentUser() user: any,
+  ): Promise<void> {
+    console.log('[Controller] Delete event called:', {
+      id,
+      occurrenceDate,
+      occurrenceDateType: typeof occurrenceDate,
+      userId: user.id
+    });
+    const excludeDate = occurrenceDate ? new Date(occurrenceDate) : undefined;
+    console.log('[Controller] Parsed excludeDate:', excludeDate);
+    return this.eventsService.remove(id, user.id, excludeDate);
   }
 
   // Attendance endpoints

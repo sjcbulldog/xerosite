@@ -29,7 +29,7 @@ export class MessagesService {
     private readonly emailService: EmailService,
   ) {}
 
-  async sendMessage(senderId: string, sendMessageDto: SendMessageDto): Promise<MessageResponseDto> {
+  async sendMessage(senderId: string, sendMessageDto: SendMessageDto, files?: any[]): Promise<MessageResponseDto> {
     // Verify the sender has permission to send messages
     await this.verifyMessagePermission(senderId, sendMessageDto.teamId);
 
@@ -51,6 +51,14 @@ export class MessagesService {
     // Get recipients based on recipient type
     const recipients = await this.getMessageRecipients(sendMessageDto);
 
+    // Process attachments
+    const attachments = files?.map((file) => ({
+      filename: file.filename || file.originalname,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+    }));
+
     // Create message record
     const message = this.messageRepository.create({
       teamId: sendMessageDto.teamId,
@@ -59,6 +67,7 @@ export class MessagesService {
       content: sendMessageDto.content,
       recipientType: sendMessageDto.recipientType,
       userGroupId: sendMessageDto.userGroupId || null,
+      attachments,
       recipientDetails: {
         recipientCount: recipients.length,
         recipientEmails: recipients.map((r) => r.primaryEmail || r.emails?.[0]?.email || 'unknown'),
@@ -67,8 +76,8 @@ export class MessagesService {
 
     const savedMessage = await this.messageRepository.save(message);
 
-    // Send emails asynchronously
-    this.sendEmailsToRecipients(savedMessage, sender, team, recipients);
+    // Send emails asynchronously with attachments
+    this.sendEmailsToRecipients(savedMessage, sender, team, recipients, files);
 
     return this.transformToResponse(savedMessage, sender);
   }
@@ -203,18 +212,27 @@ export class MessagesService {
     sender: User,
     team: Team,
     recipients: User[],
+    files?: any[],
   ): Promise<void> {
     try {
+      // Convert files to attachment format for email
+      const emailAttachments = files?.map((file) => ({
+        filename: file.originalname,
+        content: file.buffer.toString('base64'),
+        contentType: file.mimetype,
+      }));
+
       const emailPromises = recipients.map((recipient) => {
         const recipientEmail = recipient.primaryEmail || recipient.emails?.[0]?.email;
         if (!recipientEmail) {
           return Promise.resolve();
         }
 
-        return this.emailService.sendEmail({
+        return this.emailService.sendEmailWithAttachments({
           to: recipientEmail,
           subject: `[${team.name}] ${message.subject}`,
           html: this.generateEmailContent(message, sender, team),
+          attachments: emailAttachments,
         });
       });
 

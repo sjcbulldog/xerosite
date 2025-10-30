@@ -108,4 +108,5 @@ export class EventResponseDto {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+  excludedDates?: Date[];
 }

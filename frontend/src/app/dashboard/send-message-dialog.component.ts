@@ -27,6 +27,8 @@ export class SendMessageDialogComponent implements OnInit {
   protected readonly success = signal<string | null>(null);
   protected readonly userGroups = signal<UserGroup[]>([]);
   protected readonly isLoadingUserGroups = signal(false);
+  protected readonly attachedFiles = signal<File[]>([]);
+  protected readonly isDraggingOver = signal(false);
 
   protected sendMessageForm: FormGroup;
 
@@ -92,7 +94,7 @@ export class SendMessageDialogComponent implements OnInit {
         userGroupId: formValue.userGroupId || undefined
       };
 
-      await this.messagesService.sendMessage(this.teamId, request);
+      await this.messagesService.sendMessage(this.teamId, request, this.attachedFiles());
       
       this.success.set('Message sent successfully!');
       this.messageSent.emit();
@@ -108,6 +110,84 @@ export class SendMessageDialogComponent implements OnInit {
     } finally {
       this.isSending.set(false);
     }
+  }
+
+  protected onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.addFiles(Array.from(input.files));
+      input.value = ''; // Reset input so same file can be selected again
+    }
+  }
+
+  protected onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver.set(true);
+  }
+
+  protected onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver.set(false);
+  }
+
+  protected onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver.set(false);
+
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      this.addFiles(Array.from(event.dataTransfer.files));
+    }
+  }
+
+  protected removeFile(index: number): void {
+    const files = this.attachedFiles();
+    files.splice(index, 1);
+    this.attachedFiles.set([...files]);
+  }
+
+  protected formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  private addFiles(files: File[]): void {
+    const currentFiles = this.attachedFiles();
+    const maxFiles = 10;
+    const maxFileSize = 1 * 1024 * 1024; // 1MB per file
+    const maxTotalSize = 4 * 1024 * 1024; // 4MB total
+
+    // Check total file count
+    if (currentFiles.length + files.length > maxFiles) {
+      this.error.set(`You can only attach up to ${maxFiles} files.`);
+      return;
+    }
+
+    // Check individual file sizes
+    for (const file of files) {
+      if (file.size > maxFileSize) {
+        this.error.set(`File "${file.name}" is too large. Maximum file size is 1MB.`);
+        return;
+      }
+    }
+
+    // Check total size
+    const currentTotalSize = currentFiles.reduce((sum, file) => sum + file.size, 0);
+    const newFilesSize = files.reduce((sum, file) => sum + file.size, 0);
+    const totalSize = currentTotalSize + newFilesSize;
+
+    if (totalSize > maxTotalSize) {
+      this.error.set(`Total attachment size exceeds 4MB limit. Current: ${this.formatFileSize(currentTotalSize)}, Adding: ${this.formatFileSize(newFilesSize)}`);
+      return;
+    }
+
+    this.attachedFiles.set([...currentFiles, ...files]);
+    this.error.set(null);
   }
 
   protected closeDialog(): void {

@@ -80,6 +80,55 @@
         }
       </div>
 
+      <!-- File Attachments -->
+      <div class="form-group">
+        <label>Attachments (Optional)</label>
+        
+        <div 
+          class="file-drop-zone"
+          [class.dragging]="isDraggingOver()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)">
+          <div class="drop-zone-content">
+            <span class="upload-icon">📎</span>
+            <p>Drag and drop files here or</p>
+            <label class="browse-button" for="fileInput">
+              Browse Files
+              <input
+                id="fileInput"
+                type="file"
+                multiple
+                (change)="onFileSelected($event)"
+                style="display: none;"
+              />
+            </label>
+            <p class="file-limits">Maximum 10 files, 1MB each, 4MB total</p>
+          </div>
+        </div>
+
+        @if (attachedFiles().length > 0) {
+          <div class="attached-files-list">
+            @for (file of attachedFiles(); track $index; let i = $index) {
+              <div class="attached-file-item">
+                <span class="file-icon">📄</span>
+                <div class="file-info">
+                  <span class="file-name">{{ file.name }}</span>
+                  <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                </div>
+                <button
+                  type="button"
+                  class="remove-file-button"
+                  (click)="removeFile(i)"
+                  title="Remove file">
+                  ✕
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
       @if (error()) {
         <div class="alert-error">
           {{ error() }}

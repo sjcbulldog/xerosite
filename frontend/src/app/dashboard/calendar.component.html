@@ -69,7 +69,8 @@
             <div 
               class="calendar-day"
               [class.other-month]="!day.isCurrentMonth"
-              [class.today]="day.isToday">
+              [class.today]="day.isToday"
+              (dblclick)="onDayDoubleClick(day)">
               <div class="day-number">{{ day.date.getDate() }}</div>
               
               @if (day.events.length > 0) {
@@ -102,7 +103,7 @@
                             class="delete-icon"
                             (click)="deleteEvent(event); $event.stopPropagation()"
                             title="Delete event">
-                            ×
+                            🗑️
                           </span>
                         }
                       </div>
@@ -245,13 +246,16 @@
         <!-- Start Date and Time -->
         <div class="form-row">
           <div class="form-group">
-            <label for="eventStartDate">Start Date *</label>
+            <label for="eventStartDate">Date *</label>
             <input 
               id="eventStartDate"
               type="date"
               [(ngModel)]="eventStartDate"
               required>
           </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
             <label for="eventStartTime">Start Time *</label>
             <input 
@@ -259,17 +263,6 @@
               type="time"
               [(ngModel)]="eventStartTime"
               required>
-          </div>
-        </div>
-
-        <!-- End Date and Time -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="eventEndDate">End Date</label>
-            <input 
-              id="eventEndDate"
-              type="date"
-              [(ngModel)]="eventEndDate">
           </div>
           <div class="form-group">
             <label for="eventEndTime">End Time</label>
