@@ -9,6 +9,7 @@ import { UsersService, UserProfile } from '../profile/users.service';
 import { PreferencesDialogComponent } from '../preferences/preferences-dialog.component';
 import { TestMessageDialogComponent } from './test-message-dialog.component';
 import { HelpDialogComponent } from './help-dialog.component';
+import { COMMON_TIMEZONES } from './timezones';
 
 type SortField = 'firstName' | 'lastName' | 'email';
 type SortDirection = 'asc' | 'desc';
@@ -24,6 +25,7 @@ interface CreateTeamForm {
   teamNumber: FormControl<number | null>;
   description: FormControl<string>;
   visibility: FormControl<'public' | 'private'>;
+  timezone: FormControl<string>;
 }
 
 @Component({
@@ -38,6 +40,9 @@ export class DashboardComponent implements OnInit {
   protected readonly teamsService = inject(TeamsService);
   protected readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
+
+  // Expose timezones for template
+  protected readonly COMMON_TIMEZONES = COMMON_TIMEZONES;
 
   protected readonly showCreateTeamDialog = signal(false);
   protected readonly showMyTeams = signal(true);
@@ -190,7 +195,8 @@ export class DashboardComponent implements OnInit {
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(100)] }),
     teamNumber: new FormControl<number | null>(null, { validators: [Validators.required, Validators.min(1), Validators.max(30000)] }),
     description: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(1000)] }),
-    visibility: new FormControl<'public' | 'private'>('private', { nonNullable: true, validators: [Validators.required] })
+    visibility: new FormControl<'public' | 'private'>('private', { nonNullable: true, validators: [Validators.required] }),
+    timezone: new FormControl('America/New_York', { nonNullable: true, validators: [Validators.required] })
   });
 
   async ngOnInit(): Promise<void> {
@@ -282,7 +288,7 @@ export class DashboardComponent implements OnInit {
 
   protected openCreateTeamDialog(): void {
     this.showCreateTeamDialog.set(true);
-    this.createTeamForm.reset({ visibility: 'private', teamNumber: null });
+    this.createTeamForm.reset({ visibility: 'private', teamNumber: null, timezone: 'America/New_York' });
     this.createTeamError.set(null);
   }
 
@@ -310,7 +316,8 @@ export class DashboardComponent implements OnInit {
         name: formValue.name,
         teamNumber: formValue.teamNumber!,
         description: formValue.description || undefined,
-        visibility: formValue.visibility
+        visibility: formValue.visibility,
+        timezone: formValue.timezone
       }, userId);
 
       this.closeCreateTeamDialog();

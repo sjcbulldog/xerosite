@@ -173,6 +173,7 @@
                   @if (event.endDateTime) {
                     - {{ event.endDateTime | date:'h:mm a' }}
                   }
+                  <span class="timezone-indicator">{{ timezoneAbbr() }}</span>
                 </div>
                 @if (event.location) {
                   <div class="event-detail">

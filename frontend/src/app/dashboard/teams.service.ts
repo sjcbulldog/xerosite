@@ -11,6 +11,7 @@ export interface Team {
   roles: string[];
   roleConstraints?: string;
   visibility: 'public' | 'private';
+  timezone?: string;
   memberCount?: number;
   pendingCount?: number;
   createdAt: Date;
@@ -48,6 +49,7 @@ export interface CreateTeamRequest {
   teamNumber: number;
   description?: string;
   visibility?: 'public' | 'private';
+  timezone?: string;
   roles?: string[];
 }
 
@@ -240,7 +242,7 @@ export class TeamsService {
     }
   }
 
-  async updateTeam(teamId: string, updateData: { roles?: string[], roleConstraints?: string, description?: string, visibility?: 'public' | 'private' }): Promise<Team> {
+  async updateTeam(teamId: string, updateData: { roles?: string[], roleConstraints?: string, description?: string, visibility?: 'public' | 'private', timezone?: string }): Promise<Team> {
     try {
       return await firstValueFrom(
         this.http.patch<Team>(`${this.apiUrl}/${teamId}`, updateData)

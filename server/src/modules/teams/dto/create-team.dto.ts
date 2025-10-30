@@ -45,4 +45,9 @@ export class CreateTeamDto {
   @IsOptional()
   @IsEnum(TeamVisibility)
   visibility?: TeamVisibility;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  timezone?: string;
 }

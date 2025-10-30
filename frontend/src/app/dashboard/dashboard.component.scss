@@ -674,6 +674,13 @@
     resize: vertical;
     min-height: 80px;
   }
+
+  .helper-text {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
 }
 
 .error-message {

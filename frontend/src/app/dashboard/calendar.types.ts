@@ -54,6 +54,7 @@ export interface TeamEvent {
   createdAt: Date;
   updatedAt: Date;
   excludedDates?: Date[];
+  teamTimezone?: string;
 }
 
 export interface EventAttendance {

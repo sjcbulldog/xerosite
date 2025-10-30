@@ -384,6 +384,16 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label for="timezone">Timezone *</label>
+          <select id="timezone" formControlName="timezone">
+            @for (tz of COMMON_TIMEZONES; track tz.value) {
+              <option [value]="tz.value">{{ tz.label }}</option>
+            }
+          </select>
+          <small class="helper-text">Calendar events will be displayed in this timezone</small>
+        </div>
+
         @if (createTeamError()) {
           <div class="alert-error">
             {{ createTeamError() }}

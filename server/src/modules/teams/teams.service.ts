@@ -61,6 +61,7 @@ export class TeamsService {
       roles: createTeamDto.roles ? createTeamDto.roles.join(',') : 'Administrator,Mentor,Student,Parent',
       roleConstraints: createTeamDto.roleConstraints || null,
       visibility: createTeamDto.visibility,
+      timezone: createTeamDto.timezone || 'America/New_York',
     });
 
     // Validate role names
@@ -399,6 +400,7 @@ export class TeamsService {
       roles: team.getRolesArray(),
       roleConstraints: team.roleConstraints,
       visibility: team.visibility,
+      timezone: team.timezone,
       memberCount: activeMemberCount,
       pendingCount: pendingMemberCount,
       createdAt: team.createdAt,

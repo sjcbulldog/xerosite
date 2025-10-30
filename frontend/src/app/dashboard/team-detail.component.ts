@@ -14,6 +14,7 @@ import { UserGroupsManagerComponent } from './user-groups-manager.component';
 import { ExportUsersDialogComponent } from './export-users-dialog.component';
 import { SendMessageDialogComponent } from './send-message-dialog.component';
 import { ReviewMessagesDialogComponent } from './review-messages-dialog.component';
+import { COMMON_TIMEZONES } from './timezones';
 
 @Component({
   selector: 'app-team-detail',
@@ -32,6 +33,9 @@ export class TeamDetailComponent implements OnInit {
 
   // Expose Object for template use
   protected readonly Object = Object;
+  
+  // Expose timezones for template use
+  protected readonly COMMON_TIMEZONES = COMMON_TIMEZONES;
 
   protected readonly team = signal<Team | null>(null);
   protected readonly members = signal<TeamMember[]>([]);
@@ -96,6 +100,7 @@ export class TeamDetailComponent implements OnInit {
   protected readonly showDescriptionEditor = signal(false);
   protected readonly editingDescription = signal('');
   protected readonly editingVisibility = signal<'public' | 'private'>('private');
+  protected readonly editingTimezone = signal('America/New_York');
   protected readonly isSavingDescription = signal(false);
   protected readonly descriptionEditorError = signal<string | null>(null);
   
@@ -900,8 +905,10 @@ export class TeamDetailComponent implements OnInit {
     this.closeAdminMenu();
     const currentDescription = this.team()?.description || '';
     const currentVisibility = this.team()?.visibility || 'private';
+    const currentTimezone = this.team()?.timezone || 'America/New_York';
     this.editingDescription.set(currentDescription);
     this.editingVisibility.set(currentVisibility);
+    this.editingTimezone.set(currentTimezone);
     this.descriptionEditorError.set(null);
     this.showDescriptionEditor.set(true);
   }
@@ -910,6 +917,7 @@ export class TeamDetailComponent implements OnInit {
     this.showDescriptionEditor.set(false);
     this.editingDescription.set('');
     this.editingVisibility.set('private');
+    this.editingTimezone.set('America/New_York');
     this.descriptionEditorError.set(null);
   }
 
@@ -919,17 +927,18 @@ export class TeamDetailComponent implements OnInit {
 
     const description = this.editingDescription().trim();
     const visibility = this.editingVisibility();
+    const timezone = this.editingTimezone();
 
     this.isSavingDescription.set(true);
     this.descriptionEditorError.set(null);
 
     try {
-      await this.teamsService.updateTeam(teamId, { description, visibility });
+      await this.teamsService.updateTeam(teamId, { description, visibility, timezone });
       
       // Update local team state
       const currentTeam = this.team();
       if (currentTeam) {
-        this.team.set({ ...currentTeam, description, visibility });
+        this.team.set({ ...currentTeam, description, visibility, timezone });
       }
       
       this.closeDescriptionEditor();

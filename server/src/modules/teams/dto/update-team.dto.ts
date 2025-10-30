@@ -24,4 +24,8 @@ export class UpdateTeamDto extends PartialType(CreateTeamDto) {
   @IsOptional()
   @IsEnum(TeamVisibility)
   visibility?: TeamVisibility;
+
+  @IsOptional()
+  @IsString()
+  timezone?: string;
 }

@@ -11,6 +11,7 @@ export class TeamResponseDto {
   roles: string[];
   roleConstraints?: string;
   visibility: TeamVisibility;
+  timezone?: string;
   memberCount?: number;
   pendingCount?: number;
   createdAt: Date;

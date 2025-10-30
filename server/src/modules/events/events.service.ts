@@ -11,6 +11,7 @@ import { UserGroup } from '../teams/entities/user-group.entity';
 import { MembershipStatus } from '../teams/enums/membership-status.enum';
 import { EmailService } from '../email/email.service';
 import { generateICS } from './utils/ics-generator';
+import { parseInTimezone } from './utils/timezone.utils';
 
 @Injectable()
 export class EventsService {
@@ -33,13 +34,32 @@ export class EventsService {
   async create(createEventDto: CreateEventDto, userId: string): Promise<EventResponseDto> {
     console.log('[EventCreate] Creating new event:', createEventDto.name);
     
+    // Fetch the team to get its timezone
+    const team = await this.teamRepository.findOne({
+      where: { id: createEventDto.teamId },
+    });
+    
+    if (!team) {
+      throw new NotFoundException(`Team with ID ${createEventDto.teamId} not found`);
+    }
+    
+    const timezone = team.timezone || 'America/New_York';
+    console.log('[EventCreate] Using team timezone:', timezone);
+    
+    // Parse dates in the team's timezone and convert to UTC for storage
+    const startDateTime = parseInTimezone(createEventDto.startDateTime, timezone);
+    const endDateTime = createEventDto.endDateTime 
+      ? parseInTimezone(createEventDto.endDateTime, timezone)
+      : null;
+    const recurrenceEndDate = createEventDto.recurrenceEndDate
+      ? parseInTimezone(createEventDto.recurrenceEndDate, timezone)
+      : null;
+    
     const event = this.eventRepository.create({
       ...createEventDto,
-      startDateTime: new Date(createEventDto.startDateTime),
-      endDateTime: createEventDto.endDateTime ? new Date(createEventDto.endDateTime) : null,
-      recurrenceEndDate: createEventDto.recurrenceEndDate
-        ? new Date(createEventDto.recurrenceEndDate)
-        : null,
+      startDateTime,
+      endDateTime,
+      recurrenceEndDate,
       createdBy: userId,
     });
 
@@ -98,15 +118,36 @@ export class EventsService {
       throw new NotFoundException(`Event with ID ${id} not found`);
     }
 
+    // Fetch the team to get its timezone
+    const team = await this.teamRepository.findOne({
+      where: { id: event.teamId },
+    });
+    
+    if (!team) {
+      throw new NotFoundException(`Team with ID ${event.teamId} not found`);
+    }
+    
+    const timezone = team.timezone || 'America/New_York';
+
     // Update fields
     if (updateEventDto.name !== undefined) event.name = updateEventDto.name;
     if (updateEventDto.description !== undefined) event.description = updateEventDto.description;
     if (updateEventDto.location !== undefined) event.location = updateEventDto.location;
-    if (updateEventDto.startDateTime !== undefined) event.startDateTime = new Date(updateEventDto.startDateTime);
-    if (updateEventDto.endDateTime !== undefined) event.endDateTime = updateEventDto.endDateTime ? new Date(updateEventDto.endDateTime) : null;
+    if (updateEventDto.startDateTime !== undefined) {
+      event.startDateTime = parseInTimezone(updateEventDto.startDateTime, timezone);
+    }
+    if (updateEventDto.endDateTime !== undefined) {
+      event.endDateTime = updateEventDto.endDateTime 
+        ? parseInTimezone(updateEventDto.endDateTime, timezone)
+        : null;
+    }
     if (updateEventDto.recurrenceType !== undefined) event.recurrenceType = updateEventDto.recurrenceType;
     if (updateEventDto.recurrencePattern !== undefined) event.recurrencePattern = updateEventDto.recurrencePattern;
-    if (updateEventDto.recurrenceEndDate !== undefined) event.recurrenceEndDate = updateEventDto.recurrenceEndDate ? new Date(updateEventDto.recurrenceEndDate) : null;
+    if (updateEventDto.recurrenceEndDate !== undefined) {
+      event.recurrenceEndDate = updateEventDto.recurrenceEndDate 
+        ? parseInTimezone(updateEventDto.recurrenceEndDate, timezone)
+        : null;
+    }
     if (updateEventDto.userGroupId !== undefined) event.userGroupId = updateEventDto.userGroupId;
 
     const updatedEvent = await this.eventRepository.save(event);
@@ -197,6 +238,11 @@ export class EventsService {
       order: { excludedDate: 'ASC' },
     });
 
+    // Fetch team to get timezone
+    const team = await this.teamRepository.findOne({
+      where: { id: event.teamId },
+    });
+
     return {
       id: event.id,
       teamId: event.teamId,
@@ -213,6 +259,7 @@ export class EventsService {
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
       excludedDates: exclusions.map(e => e.excludedDate),
+      teamTimezone: team?.timezone || 'America/New_York',
     };
   }
 
@@ -255,7 +302,7 @@ export class EventsService {
         console.log('[EventNotifications] Sending email to:', recipientEmail);
         
         // Generate ICS attachment with sequence 0 for new events
-        const icsContent = generateICS(event, 'REQUEST', 0);
+        const icsContent = generateICS(event, 'REQUEST', 0, team.timezone || 'America/New_York');
         const icsBase64 = Buffer.from(icsContent).toString('base64');
 
         return this.emailService.sendEmailWithAttachments({
@@ -319,7 +366,7 @@ export class EventsService {
         console.log('[EventCancellation] Sending cancellation email to:', recipientEmail);
         
         // Generate ICS cancellation attachment with sequence 1 (higher than the original event's sequence 0)
-        const icsContent = generateICS(event, 'CANCEL', 1);
+        const icsContent = generateICS(event, 'CANCEL', 1, team.timezone || 'America/New_York');
         const icsBase64 = Buffer.from(icsContent).toString('base64');
 
         return this.emailService.sendEmailWithAttachments({
@@ -393,7 +440,7 @@ export class EventsService {
         console.log('[OccurrenceCancellation] Sending cancellation email to:', recipientEmail);
         
         // Generate ICS cancellation attachment for single occurrence with RECURRENCE-ID
-        const icsContent = generateICS(occurrenceEvent as TeamEvent, 'CANCEL', 1);
+        const icsContent = generateICS(occurrenceEvent as TeamEvent, 'CANCEL', 1, team.timezone || 'America/New_York');
         const icsBase64 = Buffer.from(icsContent).toString('base64');
 
         return this.emailService.sendEmailWithAttachments({

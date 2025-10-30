@@ -274,13 +274,22 @@ When a recurring calendar event is canceled, a popup should appear to prompt for
 
 When deleting an event in the calendar and I select 'This Event Only' in the Delete Recurring Event popup, the entire event series gets deleted and not just the event on that one day.
 
+Add to the team information the default time zone for the team calendar.  All events entered in the calendar should be relative to this default time zone.  The time zone should be able to be specified when a team is created, or via the Edit Team Information popup.
+
+Event creation/editing should interpret dates relative to team timezone
+
+Use the teamTimezone field when displaying event times
+Show times in the team's timezone rather than the user's local timezone
+Handle recurring event generation with timezone awareness
+
 In Progress
 ===========
 
 
-
 Pending
 =======
+
+--- Calendar
 
 When an event is canceled, the ICS attachment is processed by google calendar, but fails in outlook calendar with the message 'Couldn't import calendar.  Try again later.'
 
@@ -288,11 +297,19 @@ When a single instance of an event is canceled, google calendar does not process
 
 When displaying the an event in the monthly calendar, include its time.
 
+Add a delete team that is a big deal big and red.
+
 Add the webcal protocol to the server so that remote calendars can subscribe.  The authentication should be based on the same login used to enter the site.  When a user attaches to the calendar server, they should only see calendar events that they would see within the site.
+
+--- Link farm
+
+Add a new card to the team dashboard that is useful links.  For normal users this will be a set of links that are useful for a member of the team.  The team administrator should be able to add or remove links from this set.  Each link should be a title that is linked to a provided link.
+
+--- Attachments & File Stores
 
 Add a new file storage service in the backend.  The location for storing files should be given by the FILE_STORAGE_PATH in the .env file.  This path should be an absolute path or it is an error.  Each file stored in the storage directory should have a unique file name.  Each file stored in the storage directory should have an entry in an associated database table that has a unique ID, its original file name, its unique name in the storage area, the date when it was created, the user that owns the file, and a subsystem (string) that created the file. The send message attachment support should change to remove attachement file data from the mysql database and have the data be stored in this storage service with an owner name of 'messages'.
 
-Add a new card to the team dashboard that is useful links.  For normal users this will be a set of links that are useful for a member of the team.  The team administrator should be able to add or remove links from this set.  Each link should be a title that is linked to a provided link.
+
 
 Add the ability to store and retreive a set of files.  The file storeages should be located at ../storage relative to the server directory.  User's should be able to provide a title and either browse or drag and drop a file (or set of files) to upload these files to the site.  User's should be able browse the set of uploaded files.  The uploaded files can be deleted by the team adminstrator, or by the user that uploaded the files.  When browsing files, there should be a text input box that can be used to filter the set of titles.
 
@@ -305,3 +322,5 @@ Create a team view that shows the team info at the top and the various subteams 
 Update the user's guide to reflect features added single the last update to the user's guide.
 
 Calendar server for calendar subscription.
+
+Add a time zone selection per user, with the option to have a time zone unspecified.  If the time zone is specified it should be used in all interactions with the calendar.  If the time zone i sunspecified, the timezone should default to the time zone of the team.

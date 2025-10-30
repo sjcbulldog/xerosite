@@ -109,4 +109,5 @@ export class EventResponseDto {
   createdAt: Date;
   updatedAt: Date;
   excludedDates?: Date[];
+  teamTimezone?: string; // Add timezone so frontend knows how to display
 }

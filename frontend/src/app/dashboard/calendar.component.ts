@@ -20,6 +20,7 @@ import { UserGroupsService, UserGroup } from './user-groups.service';
 import { Subteam } from './subteam.types';
 import { VisibilitySelectorComponent } from './visibility-selector.component';
 import { VisibilityRuleSet } from './visibility-selector.types';
+import { formatInTimezone, parseInTimezone, getTimezoneAbbreviation } from './timezone.utils';
 
 type CalendarView = 'day' | 'week' | 'month' | 'year';
 
@@ -53,6 +54,20 @@ export class CalendarComponent implements OnInit {
   protected readonly events = signal<TeamEvent[]>([]);
   protected readonly attendance = signal<EventAttendance[]>([]);
   protected readonly isLoadingEvents = signal(false);
+  
+  // Get team timezone from events (all events should have the same timezone)
+  protected readonly teamTimezone = computed(() => {
+    const eventList = this.events();
+    if (eventList.length > 0 && eventList[0].teamTimezone) {
+      return eventList[0].teamTimezone;
+    }
+    return 'America/New_York'; // Default fallback
+  });
+  
+  // Get timezone abbreviation for display
+  protected readonly timezoneAbbr = computed(() => {
+    return getTimezoneAbbreviation(this.teamTimezone());
+  });
   
   // Computed permission check
   protected readonly canScheduleEvents = computed(() => {
@@ -338,34 +353,33 @@ export class CalendarComponent implements OnInit {
     this.eventDescription.set(event.description || '');
     this.eventLocation.set(event.location || '');
     
-    const startDate = new Date(event.startDateTime);
-    // Format date in local timezone to avoid timezone shift
-    const startYear = startDate.getFullYear();
-    const startMonth = String(startDate.getMonth() + 1).padStart(2, '0');
-    const startDay = String(startDate.getDate()).padStart(2, '0');
-    this.eventStartDate.set(`${startYear}-${startMonth}-${startDay}`);
-    this.eventStartTime.set(startDate.toTimeString().slice(0, 5));
+    // Format dates in team timezone
+    const timezone = this.teamTimezone();
+    const startDateString = typeof event.startDateTime === 'string' 
+      ? event.startDateTime 
+      : event.startDateTime.toISOString();
+    const startFormatted = formatInTimezone(startDateString, timezone);
+    this.eventStartDate.set(startFormatted.date);
+    this.eventStartTime.set(startFormatted.time);
     
     if (event.endDateTime) {
-      const endDate = new Date(event.endDateTime);
-      // Format date in local timezone to avoid timezone shift
-      const endYear = endDate.getFullYear();
-      const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
-      const endDay = String(endDate.getDate()).padStart(2, '0');
-      this.eventEndDate.set(`${endYear}-${endMonth}-${endDay}`);
-      this.eventEndTime.set(endDate.toTimeString().slice(0, 5));
+      const endDateString = typeof event.endDateTime === 'string'
+        ? event.endDateTime
+        : event.endDateTime.toISOString();
+      const endFormatted = formatInTimezone(endDateString, timezone);
+      this.eventEndDate.set(endFormatted.date);
+      this.eventEndTime.set(endFormatted.time);
     }
     
     this.recurrenceType.set(event.recurrenceType);
     this.selectedUserGroupId.set(event.userGroupId || null);
     
     if (event.recurrenceEndDate) {
-      const recEndDate = new Date(event.recurrenceEndDate);
-      // Format date in local timezone to avoid timezone shift
-      const recYear = recEndDate.getFullYear();
-      const recMonth = String(recEndDate.getMonth() + 1).padStart(2, '0');
-      const recDay = String(recEndDate.getDate()).padStart(2, '0');
-      this.recurrenceEndDate.set(`${recYear}-${recMonth}-${recDay}`);
+      const recEndDateString = typeof event.recurrenceEndDate === 'string'
+        ? event.recurrenceEndDate
+        : event.recurrenceEndDate.toISOString();
+      const recEndFormatted = formatInTimezone(recEndDateString, timezone);
+      this.recurrenceEndDate.set(recEndFormatted.date);
     }
     
     this.showEventDialog.set(true);
@@ -390,6 +404,9 @@ export class CalendarComponent implements OnInit {
     this.eventError.set(null);
     
     try {
+      // Parse dates in team timezone and convert to ISO strings
+      // The backend will interpret these as already being in the team timezone
+      const timezone = this.teamTimezone();
       const startDateTime = `${this.eventStartDate()}T${this.eventStartTime()}:00`;
       const endDateTime = this.eventEndDate() && this.eventEndTime() 
         ? `${this.eventEndDate()}T${this.eventEndTime()}:00`
@@ -736,17 +753,20 @@ export class CalendarComponent implements OnInit {
   }
   
   private eventOccursOnDate(event: TeamEvent, targetDate: Date): boolean {
-    const eventStartDate = new Date(event.startDateTime);
-    eventStartDate.setUTCHours(0, 0, 0, 0);
+    const timezone = this.teamTimezone();
+    
+    // Convert the UTC event start time to the team's timezone
+    const eventStartParts = formatInTimezone(event.startDateTime.toISOString(), timezone);
+    const eventStartDate = new Date(`${eventStartParts.date}T00:00:00`);
     
     const targetDateOnly = new Date(targetDate);
-    targetDateOnly.setUTCHours(0, 0, 0, 0);
+    targetDateOnly.setHours(0, 0, 0, 0);
     
     // Check if this date is excluded
     if (event.excludedDates && event.excludedDates.length > 0) {
       const isExcluded = event.excludedDates.some(excludedDate => {
-        const excluded = new Date(excludedDate);
-        excluded.setUTCHours(0, 0, 0, 0);
+        const excludedParts = formatInTimezone(excludedDate.toISOString(), timezone);
+        const excluded = new Date(`${excludedParts.date}T00:00:00`);
         return excluded.getTime() === targetDateOnly.getTime();
       });
       if (isExcluded) {
@@ -761,8 +781,8 @@ export class CalendarComponent implements OnInit {
     
     // Check if event has ended (for recurring events)
     if (event.recurrenceEndDate) {
-      const recEndDate = new Date(event.recurrenceEndDate);
-      recEndDate.setHours(23, 59, 59, 999);
+      const recEndParts = formatInTimezone(event.recurrenceEndDate.toISOString(), timezone);
+      const recEndDate = new Date(`${recEndParts.date}T23:59:59`);
       if (targetDateOnly > recEndDate) {
         return false;
       }

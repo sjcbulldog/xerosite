@@ -45,6 +45,13 @@ export class Team {
   })
   visibility: TeamVisibility;
 
+  @Column({
+    type: 'varchar',
+    length: 100,
+    default: 'America/New_York',
+  })
+  timezone: string;
+
   @OneToMany(() => UserTeam, (userTeam) => userTeam.team, {
     cascade: true,
   })

@@ -5,24 +5,26 @@ import { TeamEvent } from '../entities/team-event.entity';
  * @param event The team event to generate ICS for
  * @param method REQUEST for new events, CANCEL for cancellations
  * @param sequence Sequence number (should be 0 for new events, 1+ for updates/cancellations)
+ * @param timezone The IANA timezone identifier (e.g., 'America/Los_Angeles')
  */
 export function generateICS(
   event: TeamEvent,
   method: 'REQUEST' | 'CANCEL' = 'REQUEST',
   sequence: number = 0,
+  timezone: string = 'America/New_York',
 ): string {
   const now = new Date();
-  const timestamp = formatICSDateTime(now);
+  const timestamp = formatICSDateTime(now, timezone);
   const uid = `${event.id}@xerosite-frc-teams`;
   
   // For cancellations, ensure sequence is at least 1
   const effectiveSequence = method === 'CANCEL' ? Math.max(sequence, 1) : sequence;
   
-  // Format dates
-  const dtStart = formatICSDateTime(event.startDateTime);
+  // Format dates with timezone
+  const dtStart = formatICSDateTime(event.startDateTime, timezone);
   const dtEnd = event.endDateTime 
-    ? formatICSDateTime(event.endDateTime)
-    : formatICSDateTime(new Date(event.startDateTime.getTime() + 60 * 60 * 1000)); // Default 1 hour duration
+    ? formatICSDateTime(event.endDateTime, timezone)
+    : formatICSDateTime(new Date(event.startDateTime.getTime() + 60 * 60 * 1000), timezone); // Default 1 hour duration
 
   // Build the ICS content
   let icsContent = [
@@ -31,14 +33,21 @@ export function generateICS(
     'PRODID:-//FRC Teams//Event Calendar//EN',
     'CALSCALE:GREGORIAN',
     `METHOD:${method}`,
+  ];
+
+  // Add VTIMEZONE component
+  icsContent.push(...generateVTimezone(timezone));
+
+  // Start VEVENT
+  icsContent.push(
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${timestamp}`,
-    `DTSTART:${dtStart}`,
-    `DTEND:${dtEnd}`,
+    `DTSTART;TZID=${timezone}:${dtStart}`,
+    `DTEND;TZID=${timezone}:${dtEnd}`,
     `SUMMARY:${escapeICSText(event.name)}`,
     `SEQUENCE:${effectiveSequence}`,
-  ];
+  );
 
   // Add description if present (not required for CANCEL but helpful)
   if (event.description) {
@@ -55,7 +64,7 @@ export function generateICS(
 
   // Add recurrence rule if applicable
   if (event.recurrenceType && event.recurrenceType !== 'none') {
-    const rrule = generateRRule(event);
+    const rrule = generateRRule(event, timezone);
     if (rrule) {
       icsContent.push(`RRULE:${rrule}`);
     }
@@ -69,19 +78,72 @@ export function generateICS(
 }
 
 /**
- * Format a date for ICS format (YYYYMMDDTHHMMSSZ in UTC)
+ * Format a date for ICS format in local timezone (YYYYMMDDTHHMMSS without Z)
+ * The date comes in as UTC from the database, we format it in the specified timezone
  */
-function formatICSDateTime(date: Date): string {
-  const pad = (num: number) => String(num).padStart(2, '0');
+function formatICSDateTime(date: Date, timezone: string): string {
+  // Convert UTC date to timezone-specific date parts
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
   
-  const year = date.getUTCFullYear();
-  const month = pad(date.getUTCMonth() + 1);
-  const day = pad(date.getUTCDate());
-  const hours = pad(date.getUTCHours());
-  const minutes = pad(date.getUTCMinutes());
-  const seconds = pad(date.getUTCSeconds());
+  const parts = formatter.formatToParts(date);
+  const getValue = (type: string) => parts.find((p) => p.type === type)?.value || '00';
   
-  return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+  const year = getValue('year');
+  const month = getValue('month');
+  const day = getValue('day');
+  const hours = getValue('hour');
+  const minutes = getValue('minute');
+  const seconds = getValue('second');
+  
+  return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+}
+
+/**
+ * Generate VTIMEZONE component for the ICS file
+ * This provides timezone information including DST rules
+ */
+function generateVTimezone(timezone: string): string[] {
+  // Map common timezones to their TZID
+  const timezoneComponents: string[] = [
+    'BEGIN:VTIMEZONE',
+    `TZID:${timezone}`,
+  ];
+
+  // Add timezone components based on timezone
+  // For US timezones, include DST rules
+  if (timezone.startsWith('America/')) {
+    // Standard time (fall/winter)
+    timezoneComponents.push(
+      'BEGIN:STANDARD',
+      'DTSTART:20241103T020000',  // First Sunday in November at 2 AM
+      'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
+      'TZOFFSETFROM:-0700',       // PDT offset (will be adjusted)
+      'TZOFFSETTO:-0800',          // PST offset (will be adjusted)
+      'END:STANDARD',
+    );
+
+    // Daylight time (spring/summer)
+    timezoneComponents.push(
+      'BEGIN:DAYLIGHT',
+      'DTSTART:20240310T020000',  // Second Sunday in March at 2 AM
+      'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
+      'TZOFFSETFROM:-0800',       // PST offset (will be adjusted)
+      'TZOFFSETTO:-0700',          // PDT offset (will be adjusted)
+      'END:DAYLIGHT',
+    );
+  }
+
+  timezoneComponents.push('END:VTIMEZONE');
+  return timezoneComponents;
 }
 
 /**
@@ -99,7 +161,7 @@ function escapeICSText(text: string): string {
 /**
  * Generate RRULE (recurrence rule) for ICS format
  */
-function generateRRule(event: TeamEvent): string | null {
+function generateRRule(event: TeamEvent, timezone: string): string | null {
   if (!event.recurrenceType || event.recurrenceType === 'none') {
     return null;
   }
@@ -195,7 +257,7 @@ function generateRRule(event: TeamEvent): string | null {
 
   // Add end date if specified
   if (event.recurrenceEndDate) {
-    const until = formatICSDateTime(event.recurrenceEndDate);
+    const until = formatICSDateTime(event.recurrenceEndDate, timezone);
     parts.push(`UNTIL=${until}`);
   }
 

@@ -460,7 +460,7 @@
   <div class="dialog-overlay" (click)="closeDescriptionEditor()">
     <div class="dialog-content description-editor" (click)="$event.stopPropagation()">
       <div class="dialog-header">
-        <h2>Edit Team Description</h2>
+        <h2>Edit Team Information</h2>
         <button class="close-button" (click)="closeDescriptionEditor()">×</button>
       </div>
 
@@ -1545,6 +1545,76 @@
     [canCreatePublic]="canCreatePublicGroups()"
     (close)="closeUserGroupsManager()">
   </app-user-groups-manager>
+}
+
+<!-- Edit Team Information Dialog -->
+@if (showDescriptionEditor()) {
+  <div class="dialog-overlay" (click)="closeDescriptionEditor()">
+    <div class="dialog-content description-editor-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Edit Team Information</h2>
+        <button class="close-button" (click)="closeDescriptionEditor()">×</button>
+      </div>
+
+      <div class="description-editor-content">
+        <div class="form-group">
+          <label for="teamDescription">Description</label>
+          <textarea 
+            id="teamDescription"
+            [(ngModel)]="editingDescription"
+            placeholder="Enter team description..."
+            rows="4"
+            [disabled]="isSavingDescription()">
+          </textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="teamVisibility">Visibility</label>
+          <select 
+            id="teamVisibility"
+            [(ngModel)]="editingVisibility"
+            [disabled]="isSavingDescription()">
+            <option value="private">Private</option>
+            <option value="public">Public</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="teamTimezone">Default Timezone</label>
+          <p class="field-help">Calendar events will be displayed in this timezone</p>
+          <select 
+            id="teamTimezone"
+            [(ngModel)]="editingTimezone"
+            [disabled]="isSavingDescription()">
+            @for (tz of COMMON_TIMEZONES; track tz.value) {
+              <option [value]="tz.value">{{ tz.label }}</option>
+            }
+          </select>
+        </div>
+
+        @if (descriptionEditorError()) {
+          <div class="alert-error">
+            {{ descriptionEditorError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            class="cancel-button"
+            (click)="closeDescriptionEditor()"
+            [disabled]="isSavingDescription()">
+            Cancel
+          </button>
+          <button 
+            class="save-button"
+            (click)="saveDescription()"
+            [disabled]="isSavingDescription()">
+            {{ isSavingDescription() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 }
 
 <!-- Export Users Dialog -->
