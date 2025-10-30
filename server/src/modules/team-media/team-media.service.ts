@@ -31,7 +31,7 @@ export class TeamMediaService {
   async uploadFile(
     teamId: string,
     userId: string,
-    file: Express.Multer.File,
+    file: any,
     createDto: CreateTeamMediaDto,
   ): Promise<TeamMediaResponseDto> {
     // Verify user is a team member

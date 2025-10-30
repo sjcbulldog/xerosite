@@ -33,7 +33,7 @@ export class TeamMediaController {
   async uploadFile(
     @Param('teamId') teamId: string,
     @CurrentUser() user: any,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body() createDto: CreateTeamMediaDto,
   ): Promise<TeamMediaResponseDto> {
     if (!file) {
