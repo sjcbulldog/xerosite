@@ -223,6 +223,7 @@ export class EventAttendanceReportComponent implements OnInit {
     const allEvents = this.events();
     const eventInstances: CalendarEventInstance[] = [];
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Start of today
     
     // Generate instances for all events (including recurring ones) for the next year
     const endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
@@ -232,8 +233,15 @@ export class EventAttendanceReportComponent implements OnInit {
       eventInstances.push(...instances);
     }
     
-    // Sort by date (most recent first, but include past events)
-    return eventInstances.sort((a, b) => b.instanceDate.getTime() - a.instanceDate.getTime());
+    // Filter out past events (only include today and future events)
+    const futureEvents = eventInstances.filter(event => {
+      const eventDate = new Date(event.instanceDate);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate.getTime() >= now.getTime();
+    });
+    
+    // Sort by date (soonest first - most recent to furthest out)
+    return futureEvents.sort((a, b) => a.instanceDate.getTime() - b.instanceDate.getTime());
   });
 
   protected readonly attendanceSummary = computed(() => {

@@ -15,11 +15,12 @@ import { ExportUsersDialogComponent } from './export-users-dialog.component';
 import { SendMessageDialogComponent } from './send-message-dialog.component';
 import { ReviewMessagesDialogComponent } from './review-messages-dialog.component';
 import { TeamLinksComponent } from './team-links.component';
+import { TeamMediaComponent } from './team-media.component';
 import { COMMON_TIMEZONES } from './timezones';
 
 @Component({
   selector: 'app-team-detail',
-  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, EventAttendanceReportComponent, UserGroupsManagerComponent, ExportUsersDialogComponent, SendMessageDialogComponent, ReviewMessagesDialogComponent, TeamLinksComponent],
+  imports: [TitleCasePipe, DatePipe, FormsModule, CalendarComponent, EventAttendanceReportComponent, UserGroupsManagerComponent, ExportUsersDialogComponent, SendMessageDialogComponent, ReviewMessagesDialogComponent, TeamLinksComponent, TeamMediaComponent],
   templateUrl: './team-detail.component.html',
   styleUrl: './team-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

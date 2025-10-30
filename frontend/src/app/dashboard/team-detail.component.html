@@ -99,6 +99,13 @@
         [isAdmin]="isTeamAdmin()">
       </app-team-links>
 
+      <!-- Team Media Card -->
+      <app-team-media
+        [teamId]="team()!.id"
+        [isAdmin]="isTeamAdmin()"
+        [currentUserId]="authService.currentUser()!.id">
+      </app-team-media>
+
       @if (pendingMembers().length > 0) {
         <div class="members-card">
           <button 

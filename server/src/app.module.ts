@@ -18,6 +18,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { FileStorageModule } from './modules/file-storage/file-storage.module';
 import { TeamLinksModule } from './modules/team-links/team-links.module';
+import { TeamMediaModule } from './modules/team-media/team-media.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { TeamLinksModule } from './modules/team-links/team-links.module';
     MessagesModule,
     FileStorageModule,
     TeamLinksModule,
+    TeamMediaModule,
   ],
   controllers: [AppController],
 })

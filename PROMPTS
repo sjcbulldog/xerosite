@@ -285,18 +285,21 @@ Handle recurring event generation with timezone awareness
 
 Add a new file storage service in the backend.  The location for storing files should be given by the FILE_STORAGE_PATH in the .env file.  This path should be an absolute path or it is an error.  Each file stored in the storage directory should have a unique file name.  Each file stored in the storage directory should have an entry in an associated database table that has a unique ID, its original file name, its unique name in the storage area, the date when it was created, the user that owns the file, and a subsystem (string) that created the file. The send message attachment support should change to remove attachement file data from the mysql database and have the data be stored in this storage service with an owner name of 'messages'.
 
-In Progress
-===========
+In the Event Attendance Report, sort the events in the select pulldown from most recent to furtherest out.
 
 Add a new card to the team dashboard that is useful links.  For normal users this will be a set of links that are useful for a member of the team.  The team administrator should be able to add or remove links from this set.  Each link should be a title that is linked to a provided link.
 
+On attendance report do not include past events.
+
+In Progress
+===========
+
+Add the ability to select, download, store and retreive a set of files, usually media files but could be anything.  The file storeage should be through the File Storage Service.  User's should be able to provide a title and either browse or drag and drop a file (or set of files) to upload these files to the site. These files would be assocaited with a team. All users on a team should be able browse the set of uploaded files.  The uploaded files can be deleted by the team adminstrator, or by the user that uploaded the files.  When browsing files, there should be a text input box that can be used to filter the set of titles.  Media should be another card on the team dashboard just below the useful links.
 
 Pending
 =======
 
-
-
---- Calendar
+Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.  It should be a popup that is triggered by a button on the team dashboard top most summary card.  It should be labeled team overview.
 
 When an event is canceled, the ICS attachment is processed correctlyy by google calendar, but fails in outlook calendar with the message 'Couldn't import calendar.  Try again later.'
 
@@ -312,14 +315,7 @@ When a new user joins a team, send calendar invites for all active and future ca
 
 Calendar server for calendar subscription.
 
---- Link farm
 
-
---- Attachments & File Stores
-
-Add the ability to store and retreive a set of files.  The file storeages should be located at ../storage relative to the server directory.  User's should be able to provide a title and either browse or drag and drop a file (or set of files) to upload these files to the site.  User's should be able browse the set of uploaded files.  The uploaded files can be deleted by the team adminstrator, or by the user that uploaded the files.  When browsing files, there should be a text input box that can be used to filter the set of titles.
-
-Create a team view that shows the team info at the top and the various subteams with lead positions and members in subteams.
 
 Continous
 ---------
