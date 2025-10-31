@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsInt, Min, Max, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, Min, Max, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateTeamMediaDto {
   @IsString()
@@ -9,6 +9,10 @@ export class CreateTeamMediaDto {
   @Min(1900)
   @Max(2100)
   year: number;
+
+  @IsOptional()
+  @IsUUID()
+  userGroupId?: string;
 }
 
 export class UpdateTeamMediaDto {
@@ -21,6 +25,10 @@ export class UpdateTeamMediaDto {
   @Min(1900)
   @Max(2100)
   year?: number;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'User group ID must be a valid UUID' })
+  userGroupId?: string | null;
 }
 
 export class TeamMediaResponseDto {
@@ -30,6 +38,8 @@ export class TeamMediaResponseDto {
   fileId: string;
   title: string;
   year: number | null;
+  userGroupId: string | null;
+  userGroupName: string | null;
   originalFilename: string;
   fileSize: number;
   mimeType: string;

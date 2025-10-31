@@ -19,11 +19,15 @@ import { validate } from 'class-validator';
 import { MessagesService } from './messages.service';
 import { SendMessageDto, MessageResponseDto, GetMessagesQueryDto } from './dto/message.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { DownloadTokenService } from './download-token.service';
 
 @Controller('teams/:teamId/messages')
 @UseGuards(JwtAuthGuard)
 export class MessagesController {
-  constructor(private readonly messagesService: MessagesService) {}
+  constructor(
+    private readonly messagesService: MessagesService,
+    private readonly downloadTokenService: DownloadTokenService,
+  ) {}
 
   @Post()
   @UseInterceptors(FilesInterceptor('attachments', 10)) // Max 10 files
@@ -86,6 +90,38 @@ export class MessagesController {
   ): Promise<void> {
     const { data, filename, mimeType } = await this.messagesService.downloadAttachment(
       req.user.id,
+      teamId,
+      messageId,
+      fileId,
+    );
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(data);
+  }
+}
+
+/**
+ * Public download controller for token-based attachment downloads
+ * This is separate from the authenticated controller to allow public access
+ */
+@Controller('public/download')
+export class PublicDownloadController {
+  constructor(
+    private readonly messagesService: MessagesService,
+    private readonly downloadTokenService: DownloadTokenService,
+  ) {}
+
+  @Get(':token')
+  async downloadWithToken(
+    @Param('token') token: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    // Validate token and get file information
+    const { messageId, fileId, teamId } = await this.downloadTokenService.validateToken(token);
+
+    // Download the file (without user authentication check)
+    const { data, filename, mimeType } = await this.messagesService.downloadAttachmentByToken(
       teamId,
       messageId,
       fileId,

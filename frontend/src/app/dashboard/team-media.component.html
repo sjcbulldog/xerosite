@@ -29,11 +29,11 @@
           }
         </div>
         <div class="filter-buttons">
-          <button (click)="expandAll()" class="expand-collapse-button" title="Expand All Years">
-            Expand All
+          <button (click)="expandAll()" class="expand-collapse-button" title="Expand All">
+            ⤵
           </button>
-          <button (click)="collapseAll()" class="expand-collapse-button" title="Collapse All Years">
-            Collapse All
+          <button (click)="collapseAll()" class="expand-collapse-button" title="Collapse All">
+            ⤴
           </button>
         </div>
       </div>
@@ -93,6 +93,16 @@
                                   max="2100"
                                   class="edit-input year-input"
                                 />
+                                <select
+                                  [ngModel]="editUserGroupId() || ''"
+                                  (ngModelChange)="editUserGroupId.set($event || null)"
+                                  class="edit-input"
+                                >
+                                  <option value="">All Team Members</option>
+                                  @for (group of userGroups(); track group.id) {
+                                    <option [value]="group.id">{{ group.name }}</option>
+                                  }
+                                </select>
                                 <div class="edit-actions">
                                   <button (click)="saveEdit()" class="save-button">Save</button>
                                   <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
@@ -128,6 +138,10 @@
                                       <span class="uploader">{{ media.uploaderName }}</span>
                                       <span class="separator">•</span>
                                       <span class="upload-date">{{ media.createdAt | date:'MMM d, y' }}</span>
+                                      @if (media.userGroupName) {
+                                        <span class="separator">•</span>
+                                        <span class="user-group" title="Visible to: {{ media.userGroupName }}">👥 {{ media.userGroupName }}</span>
+                                      }
                                     </div>
                                   </div>
                                 </div>
@@ -186,6 +200,16 @@
                                   max="2100"
                                   class="edit-input year-input"
                                 />
+                                <select
+                                  [ngModel]="editUserGroupId() || ''"
+                                  (ngModelChange)="editUserGroupId.set($event || null)"
+                                  class="edit-input"
+                                >
+                                  <option value="">All Team Members</option>
+                                  @for (group of userGroups(); track group.id) {
+                                    <option [value]="group.id">{{ group.name }}</option>
+                                  }
+                                </select>
                                 <div class="edit-actions">
                                   <button (click)="saveEdit()" class="save-button">Save</button>
                                   <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
@@ -222,6 +246,10 @@
                                       <span class="uploader">{{ media.uploaderName }}</span>
                                       <span class="separator">•</span>
                                       <span class="upload-date">{{ media.createdAt | date:'MMM d, y' }}</span>
+                                      @if (media.userGroupName) {
+                                        <span class="separator">•</span>
+                                        <span class="user-group" title="Visible to: {{ media.userGroupName }}">👥 {{ media.userGroupName }}</span>
+                                      }
                                     </div>
                                   </div>
                                 </div>
@@ -280,6 +308,16 @@
                                   max="2100"
                                   class="edit-input year-input"
                                 />
+                                <select
+                                  [ngModel]="editUserGroupId() || ''"
+                                  (ngModelChange)="editUserGroupId.set($event || null)"
+                                  class="edit-input"
+                                >
+                                  <option value="">All Team Members</option>
+                                  @for (group of userGroups(); track group.id) {
+                                    <option [value]="group.id">{{ group.name }}</option>
+                                  }
+                                </select>
                                 <div class="edit-actions">
                                   <button (click)="saveEdit()" class="save-button">Save</button>
                                   <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
@@ -299,6 +337,10 @@
                                       <span class="uploader">{{ media.uploaderName }}</span>
                                       <span class="separator">•</span>
                                       <span class="upload-date">{{ media.createdAt | date:'MMM d, y' }}</span>
+                                      @if (media.userGroupName) {
+                                        <span class="separator">•</span>
+                                        <span class="user-group" title="Visible to: {{ media.userGroupName }}">👥 {{ media.userGroupName }}</span>
+                                      }
                                     </div>
                                   </div>
                                 </div>
@@ -364,6 +406,21 @@
           class="form-input"
           required
         />
+      </div>
+
+      <div class="form-group">
+        <label for="media-user-group">Visible To</label>
+        <select
+          id="media-user-group"
+          [ngModel]="uploadUserGroupId() || ''"
+          (ngModelChange)="uploadUserGroupId.set($event || null)"
+          class="form-input"
+        >
+          <option value="">All Team Members</option>
+          @for (group of userGroups(); track group.id) {
+            <option [value]="group.id">{{ group.name }}</option>
+          }
+        </select>
       </div>
 
       <div class="form-group">

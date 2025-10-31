@@ -31,6 +31,9 @@ export class TeamMedia {
   @Column({ type: 'int', nullable: true })
   year: number | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  userGroupId: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

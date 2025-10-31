@@ -420,9 +420,12 @@ import { CommonModule } from '@angular/common';
                 <li>Open the email notification</li>
                 <li>Look for the "Large Attachments" section</li>
                 <li>Click the download link for each file</li>
-                <li>Log in if prompted (download links are secured)</li>
-                <li>File will download to your computer</li>
+                <li>File will download immediately - no login required</li>
+                <li>Download links expire after 72 hours or after one use (whichever comes first)</li>
               </ol>
+              <div class="note">
+                <strong>Security Note:</strong> Download links are single-use and time-limited for your protection. If a link has expired or been used, contact the message sender to request a new copy.
+              </div>
             </section>
 
             <section id="profile" class="section">

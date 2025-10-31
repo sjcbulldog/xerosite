@@ -14,6 +14,7 @@ import { SubteamLeadPosition } from '../teams/entities/subteam-lead-position.ent
 import { MembershipStatus } from '../teams/enums/membership-status.enum';
 import { EmailService } from '../email/email.service';
 import { FileStorageService } from '../file-storage/file-storage.service';
+import { DownloadTokenService } from './download-token.service';
 
 @Injectable()
 export class MessagesService {
@@ -37,6 +38,7 @@ export class MessagesService {
     private readonly emailService: EmailService,
     private readonly fileStorageService: FileStorageService,
     private readonly configService: ConfigService,
+    private readonly downloadTokenService: DownloadTokenService,
   ) {}
 
   async sendMessage(
@@ -222,10 +224,57 @@ export class MessagesService {
       throw new NotFoundException('User group not found');
     }
 
-    // This is a simplified implementation
-    // In a real implementation, you would need to evaluate the user group's visibility rules
-    // to determine which users are included
-    return this.getAllTeamMembers(teamId);
+    console.log('='.repeat(80));
+    console.log('[UserGroupMessage] User Group Selected:', {
+      id: userGroup.id,
+      name: userGroup.name,
+      teamId: userGroup.teamId,
+    });
+
+    // Get all active team members
+    const allMembers = await this.getAllTeamMembers(teamId);
+    console.log(`[UserGroupMessage] Total active team members: ${allMembers.length}`);
+    
+    // Handle both formats: direct rows or nested ruleSet.rows
+    const rows = userGroup.visibilityRules?.rows || userGroup.visibilityRules?.ruleSet?.rows;
+    
+    // If no visibility rules, return all members
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      console.log('[UserGroupMessage] No visibility rules found - including all team members');
+      console.log('='.repeat(80));
+      return allMembers;
+    }
+
+    console.log(`[UserGroupMessage] Visibility rules found with ${rows.length} row(s)`);
+
+    // Get all active UserTeam records for this team (for role lookup)
+    const userTeams = await this.userTeamRepository.find({
+      where: { teamId, status: MembershipStatus.ACTIVE },
+    });
+    
+    // Create a map for quick lookup
+    const userTeamMap = new Map<string, UserTeam>();
+    userTeams.forEach(ut => userTeamMap.set(ut.userId, ut));
+
+    // Filter members based on visibility rules
+    const matchingMembers = [];
+    for (const user of allMembers) {
+      const userTeam = userTeamMap.get(user.id) || null;
+      const matches = await this.isUserInVisibilityRules(user.id, userGroup.visibilityRules, userTeam, teamId);
+      if (matches) {
+        matchingMembers.push(user);
+      }
+    }
+
+    console.log(`[UserGroupMessage] Users matching visibility rules: ${matchingMembers.length}`);
+    matchingMembers.forEach((user, idx) => {
+      const userTeam = userTeamMap.get(user.id);
+      const roles = userTeam ? userTeam.getRolesArray() : [];
+      console.log(`[UserGroupMessage]   ${idx + 1}. ${user.firstName} ${user.lastName} (${user.primaryEmail || 'no email'}) - Roles: [${roles.join(', ')}]`);
+    });
+    console.log('='.repeat(80));
+
+    return matchingMembers;
   }
 
   private async sendEmailsToRecipients(
@@ -250,8 +299,15 @@ export class MessagesService {
             
             // Check file size
             if (file.fileSize > MAX_ATTACHMENT_SIZE) {
-              // Large file - generate download link
-              const downloadUrl = `${apiUrl}/api/teams/${message.teamId}/messages/${message.id}/attachments/${fileId}/download`;
+              // Large file - generate download token (valid for 72 hours)
+              const token = await this.downloadTokenService.generateToken(
+                message.id,
+                fileId,
+                message.teamId,
+                72, // expires in 72 hours
+              );
+              
+              const downloadUrl = `${apiUrl}/api/public/download/${token}`;
               largeAttachments.push({
                 filename: file.originalFilename,
                 downloadUrl,
@@ -321,11 +377,14 @@ export class MessagesService {
         <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
           <h4 style="color: #333; margin: 0 0 10px 0;">Large Attachments (Download Required)</h4>
           <p style="color: #666; font-size: 0.9em; margin: 0 0 10px 0;">
-            The following attachments exceed 1 MB and must be downloaded:
+            The following attachments exceed 1 MB and must be downloaded. Click on each link to download:
           </p>
-          <ul style="color: #333; margin: 0;">
+          <ul style="color: #333; margin: 0 0 10px 0;">
             ${attachmentLinks}
           </ul>
+          <p style="color: #999; font-size: 0.85em; margin: 0; font-style: italic;">
+            Note: Download links are valid for 72 hours and expire after one use for security.
+          </p>
         </div>
       `;
     }
@@ -417,12 +476,18 @@ export class MessagesService {
     userTeam: UserTeam | null,
     teamId: string,
   ): Promise<boolean> {
-    if (!visibilityRules || !visibilityRules.rows) {
+    if (!visibilityRules) {
+      return false;
+    }
+
+    // Handle both formats: direct rows or nested ruleSet.rows
+    const rows = visibilityRules.rows || visibilityRules.ruleSet?.rows;
+    if (!rows || !Array.isArray(rows)) {
       return false;
     }
 
     // Check each visibility row (OR logic between rows)
-    for (const row of visibilityRules.rows) {
+    for (const row of rows) {
       if (!row.criteria) continue;
 
       // All criteria in a row must match (AND logic within row)
@@ -518,6 +583,40 @@ export class MessagesService {
       throw new ForbiddenException('User is not a member of this team');
     }
 
+    // Verify the message exists and belongs to the team
+    const message = await this.messageRepository.findOne({
+      where: { id: messageId, teamId },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    // Verify the file is attached to this message
+    const attachmentFileIds = message.attachmentFileIds || [];
+    if (!attachmentFileIds.includes(fileId)) {
+      throw new ForbiddenException('File is not attached to this message');
+    }
+
+    // Retrieve the file
+    const { file, data } = await this.fileStorageService.getFile(fileId);
+    
+    return {
+      data,
+      filename: file.originalFilename,
+      mimeType: file.mimeType,
+    };
+  }
+
+  /**
+   * Download an attachment using a token (no user authentication required)
+   * Used for email links with temporary download tokens
+   */
+  async downloadAttachmentByToken(
+    teamId: string,
+    messageId: string,
+    fileId: string,
+  ): Promise<{ data: Buffer; filename: string; mimeType: string }> {
     // Verify the message exists and belongs to the team
     const message = await this.messageRepository.findOne({
       where: { id: messageId, teamId },

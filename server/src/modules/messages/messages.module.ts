@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
-import { MessagesController } from './messages.controller';
+import { MessagesController, PublicDownloadController } from './messages.controller';
 import { MessagesService } from './messages.service';
+import { DownloadTokenService } from './download-token.service';
 import { TeamMessage } from './entities/team-message.entity';
+import { DownloadToken } from './entities/download-token.entity';
 import { Team } from '../teams/entities/team.entity';
 import { User } from '../users/entities/user.entity';
 import { UserTeam } from '../teams/entities/user-team.entity';
@@ -18,6 +20,7 @@ import { FileStorageModule } from '../file-storage/file-storage.module';
   imports: [
     TypeOrmModule.forFeature([
       TeamMessage,
+      DownloadToken,
       Team,
       User,
       UserTeam,
@@ -35,8 +38,8 @@ import { FileStorageModule } from '../file-storage/file-storage.module';
     EmailModule,
     FileStorageModule,
   ],
-  controllers: [MessagesController],
-  providers: [MessagesService],
+  controllers: [MessagesController, PublicDownloadController],
+  providers: [MessagesService, DownloadTokenService],
   exports: [MessagesService],
 })
 export class MessagesModule {}

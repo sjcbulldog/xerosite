@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
+import { firstValueFrom, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export enum MessageRecipientType {
   ALL_TEAM_MEMBERS = 'ALL_TEAM_MEMBERS',
@@ -76,6 +77,59 @@ export class MessagesService {
       console.error('Error sending message:', error);
       throw new Error(error.error?.message || 'Failed to send message');
     }
+  }
+
+  /**
+   * Send message with progress reporting for file uploads
+   */
+  sendMessageWithProgress(
+    teamId: string,
+    request: SendMessageRequest,
+    files?: File[]
+  ): Observable<{ type: 'progress' | 'response'; progress?: number; response?: MessageResponse }> {
+    if (!files || files.length === 0) {
+      // No files, just send normally
+      return new Observable(observer => {
+        this.sendMessage(teamId, request).then(
+          response => {
+            observer.next({ type: 'response', response });
+            observer.complete();
+          },
+          error => observer.error(error)
+        );
+      });
+    }
+
+    const formData = new FormData();
+    formData.append('subject', request.subject);
+    formData.append('content', request.content);
+    formData.append('recipientType', request.recipientType);
+    if (request.userGroupId) {
+      formData.append('userGroupId', request.userGroupId);
+    }
+
+    files.forEach(file => {
+      formData.append('attachments', file);
+    });
+
+    return this.http.post<MessageResponse>(
+      `${this.apiUrl}/${teamId}/messages`,
+      formData,
+      {
+        reportProgress: true,
+        observe: 'events'
+      }
+    ).pipe(
+      map((event: HttpEvent<any>) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          const progress = event.total ? Math.round((100 * event.loaded) / event.total) : 0;
+          return { type: 'progress' as const, progress };
+        } else if (event.type === HttpEventType.Response) {
+          return { type: 'response' as const, response: event.body };
+        }
+        return { type: 'progress' as const, progress: 0 };
+      })
+    );
   }
 
   async getTeamMessages(teamId: string, query?: GetMessagesQuery): Promise<MessageResponse[]> {

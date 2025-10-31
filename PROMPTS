@@ -362,21 +362,39 @@ On the team dashboard, when the team members is being filtered, have the number 
 
 When I add a year for a piece of media without a year, I get a failed to update media message.
 
-In Progress
-===========
+When media is uploaded for a team, be sure that only members of the team and view or download that media.
 
 I would like to reverse the order of the hierarchy in the media display.  At the top should be media.  Below that should be year and at the lowest level should be media type.
+
+When I start the server, I get the error 'QueryFailedError: Duplicate key name 'IDX_2085b7881a9a50f002dc0f0166'
+    at Query.onResult (C:\cygwin64\home\butch\src\xerosite\server\node_modules\typeorm\src\driver\mysql\MysqlQueryRunner.ts:248:33)
+    at Query.execute (C:\cygwin64\home\butch\src\xerosite\server\node_modules\mysql2\lib\commands\command.js:36:14)
+    at PoolConnection.handlePacket (C:\cygwin64\home\butch\src\xerosite\server\node_modules\mysql2\lib\base\connection.js:477:34)
+    at PacketParser.onPacket (C:\cygwin64\home\butch\src\xerosite\server\node_modules\mysql2\lib\base\connection.js:93:12)
+    at PacketParser.executeStart (C:\cygwin64\home\butch\src\xerosite\server\node_modules\mysql2\lib\packet_parser.js:75:16)
+    at Socket.<anonymous> (C:\cygwin64\home\butch\src\xerosite\server\node_modules\mysql2\lib\base\connection.js:100:25)
+    at Socket.emit (node:events:519:28)
+    at Socket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+
+The media section is still not showing the media that should be there based on the user groups.
+
+In Progress
+===========
+When a message contains an attachment that exceeds the 1 MB limit, the attachment is stored on the server and a link is provided in the email.  However, clicking on the link leads to a message about a lack of permission because the link is not useful unless the user is logged into the site.
 
 Pending
 =======
 
-When downloading an attachment in a message, I get a permissions denied message.  Since the link is in email, I don't seem to have permissions to download the file.
-
 When sending a message with an attachments provide a progress bar for the upload of each attachment.
+
+Add a sign out link to the team dashboard page.
 
 For users, there should be an optional set of parent.  These are setup.
 
 For a team, there should be a system for adding a requirement (e.g. First Consent Form) for a given time period and user group.  If a user has not completed a requirement when they log in, they get a popup saying they have unfulfilled requirements.  The system should periodically email them to remind them of the outstanding requirement.
+
 
 --- calendar
 

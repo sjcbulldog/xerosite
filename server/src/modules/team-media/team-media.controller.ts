@@ -36,10 +36,36 @@ export class TeamMediaController {
     @Param('teamId') teamId: string,
     @CurrentUser() user: any,
     @UploadedFile() file: any,
-    @Body() createDto: CreateTeamMediaDto,
+    @Body() body: any,
   ): Promise<TeamMediaResponseDto> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
+    }
+
+    // Transform FormData fields to proper types
+    const createDto: CreateTeamMediaDto = {
+      title: body.title,
+      year: parseInt(body.year, 10),
+    };
+
+    // Add userGroupId if provided
+    if (body.userGroupId) {
+      createDto.userGroupId = body.userGroupId;
+    }
+
+    // Validate the transformed DTO
+    if (!createDto.title || !createDto.title.trim()) {
+      throw new BadRequestException('Title is required');
+    }
+
+    if (
+      isNaN(createDto.year) ||
+      createDto.year < 1900 ||
+      createDto.year > 2100
+    ) {
+      throw new BadRequestException(
+        'Year must be a valid number between 1900 and 2100',
+      );
     }
 
     return this.teamMediaService.uploadFile(teamId, user.id, file, createDto);
@@ -49,8 +75,9 @@ export class TeamMediaController {
   @UseGuards(JwtAuthGuard)
   async findAll(
     @Param('teamId') teamId: string,
+    @CurrentUser() user: any,
   ): Promise<TeamMediaResponseDto[]> {
-    return this.teamMediaService.findAllForTeam(teamId);
+    return this.teamMediaService.findAllForTeam(teamId, user.id);
   }
 
   @Patch(':id')
@@ -76,10 +103,11 @@ export class TeamMediaController {
   @UseGuards(JwtAuthGuard)
   async downloadFile(
     @Param('id') id: string,
+    @CurrentUser() user: any,
     @Res() res: Response,
   ): Promise<void> {
     const { data, filename, mimeType } =
-      await this.teamMediaService.downloadFile(id);
+      await this.teamMediaService.downloadFile(id, user.id);
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -90,11 +118,12 @@ export class TeamMediaController {
   @UseGuards(JwtOrQueryAuthGuard)
   async previewFile(
     @Param('id') id: string,
+    @CurrentUser() user: any,
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
     const { data, filename, mimeType, fileSize } =
-      await this.teamMediaService.downloadFile(id);
+      await this.teamMediaService.downloadFile(id, user.id);
 
     // Support for HTTP Range requests (needed for video streaming)
     const range = req.headers.range;

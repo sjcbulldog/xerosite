@@ -13,6 +13,7 @@ import { HttpClient, HttpEventType } from '@angular/common/http';
 import { TeamMediaService } from './team-media.service';
 import { TeamMedia } from './team-media.types';
 import { AuthService } from '../auth/auth.service';
+import { UserGroupsService, UserGroup } from './user-groups.service';
 
 @Component({
   selector: 'app-team-media',
@@ -28,6 +29,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   readonly teamMediaService = inject(TeamMediaService);
   private readonly authService = inject(AuthService);
   private readonly http = inject(HttpClient);
+  private readonly userGroupsService = inject(UserGroupsService);
 
   readonly showSection = signal(false);
   readonly showUploadDialog = signal(false);
@@ -40,10 +42,13 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   readonly selectedFile = signal<File | null>(null);
   readonly uploadTitle = signal('');
   readonly uploadYear = signal(new Date().getFullYear());
+  readonly uploadUserGroupId = signal<string | null>(null);
   readonly editTitle = signal('');
   readonly editYear = signal(new Date().getFullYear());
+  readonly editUserGroupId = signal<string | null>(null);
   readonly isUploading = signal(false);
   readonly uploadProgress = signal(0);
+  readonly userGroups = signal<UserGroup[]>([]);
 
   // Track which year sections and media type sections are expanded
   readonly expandedYears = signal<Set<number>>(new Set());
@@ -110,6 +115,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadMedia();
+    this.loadUserGroups();
   }
 
   ngOnDestroy(): void {
@@ -126,6 +132,15 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
       await this.loadThumbnails();
     } catch (error) {
       console.error('Failed to load team media:', error);
+    }
+  }
+
+  async loadUserGroups(): Promise<void> {
+    try {
+      const groups = await this.userGroupsService.getUserGroups(this.teamId());
+      this.userGroups.set(groups);
+    } catch (error) {
+      console.error('Failed to load user groups:', error);
     }
   }
 
@@ -387,6 +402,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     this.selectedFile.set(null);
     this.uploadTitle.set('');
     this.uploadYear.set(new Date().getFullYear());
+    this.uploadUserGroupId.set(null);
     this.showUploadDialog.set(true);
   }
 
@@ -395,6 +411,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     this.selectedFile.set(null);
     this.uploadTitle.set('');
     this.uploadYear.set(new Date().getFullYear());
+    this.uploadUserGroupId.set(null);
   }
 
   onFileSelected(event: Event): void {
@@ -444,6 +461,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     const file = this.selectedFile();
     const title = this.uploadTitle().trim();
     const year = this.uploadYear();
+    const userGroupId = this.uploadUserGroupId();
 
     if (!file) {
       alert('Please select a file');
@@ -468,40 +486,36 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
       let uploadedMedia: TeamMedia | null = null;
 
       await new Promise<void>((resolve, reject) => {
-        this.teamMediaService.uploadFile(this.teamId(), file, title, year).subscribe({
-          next: (event) => {
-            if (event.type === HttpEventType.UploadProgress) {
-              // Calculate and update progress percentage
-              if (event.total) {
-                const progress = Math.round((100 * event.loaded) / event.total);
-                this.uploadProgress.set(progress);
+        this.teamMediaService
+          .uploadFile(
+            this.teamId(),
+            file,
+            title,
+            year,
+            userGroupId || undefined
+          )
+          .subscribe({
+            next: (event) => {
+              if (event.type === HttpEventType.UploadProgress) {
+                // Calculate and update progress percentage
+                if (event.total) {
+                  const progress = Math.round((100 * event.loaded) / event.total);
+                  this.uploadProgress.set(progress);
+                }
+              } else if (event.type === HttpEventType.Response) {
+                // Upload complete, store the response
+                uploadedMedia = event.body;
+                resolve();
               }
-            } else if (event.type === HttpEventType.Response) {
-              // Upload complete, store the response
-              uploadedMedia = event.body;
-              const currentMedia = this.teamMediaService.mediaFiles();
-              if (uploadedMedia) {
-                this.teamMediaService.mediaFiles.set([
-                  uploadedMedia,
-                  ...currentMedia,
-                ]);
-              }
-              resolve();
-            }
-          },
-          error: (error) => reject(error),
-        });
+            },
+            error: (error) => reject(error),
+          });
       });
 
       this.closeUploadDialog();
 
-      // Load thumbnail for newly uploaded media if it's an image or video
-      if (uploadedMedia) {
-        const media = uploadedMedia as TeamMedia;
-        if (this.canPreview(media.mimeType)) {
-          await this.loadMediaBlob(media);
-        }
-      }
+      // Reload media list from server to apply proper visibility filtering
+      await this.loadMedia();
     } catch (error) {
       console.error('Failed to upload file:', error);
       alert('Failed to upload file. Please try again.');
@@ -512,10 +526,19 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   }
 
   startEdit(media: TeamMedia): void {
+    console.log('Starting edit for media:', {
+      id: media.id,
+      title: media.title,
+      userGroupId: media.userGroupId,
+      userGroupName: media.userGroupName
+    });
     this.editingMedia.set(media);
     this.editTitle.set(media.title);
     // If year is null, default to current year for editing
     this.editYear.set(media.year ?? new Date().getFullYear());
+    // Set userGroupId - convert null to null (will be handled by ngModel as empty string)
+    this.editUserGroupId.set(media.userGroupId || null);
+    console.log('Edit form initialized with userGroupId:', this.editUserGroupId());
   }
 
   cancelEdit(): void {
@@ -528,6 +551,9 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
 
     const title = this.editTitle().trim();
     const year = this.editYear();
+    const userGroupId = this.editUserGroupId();
+
+    console.log('Saving edit with:', { title, year, userGroupId });
 
     if (!title) {
       alert('Please provide a title');
@@ -540,7 +566,13 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     }
 
     try {
-      await this.teamMediaService.updateTitle(this.teamId(), media.id, title, year);
+      await this.teamMediaService.updateTitle(
+        this.teamId(),
+        media.id,
+        title,
+        year,
+        userGroupId // Pass as-is (null means "All Team Members")
+      );
       this.cancelEdit();
     } catch (error) {
       console.error('Failed to update media:', error);

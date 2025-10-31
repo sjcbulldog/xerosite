@@ -27,6 +27,21 @@ export class TeamMediaService {
         .get<TeamMedia[]>(`${this.apiUrl}/${teamId}/media`)
         .toPromise();
 
+      console.log('Loaded media from backend:', media);
+      
+      // Log each item's userGroup info specifically
+      if (media && media.length > 0) {
+        console.log('User group details for each media item:');
+        media.forEach((item, index) => {
+          console.log(`  [${index}] ${item.title}:`, {
+            userGroupId: item.userGroupId,
+            userGroupName: item.userGroupName,
+            hasUserGroupId: item.userGroupId != null,
+            hasUserGroupName: item.userGroupName != null
+          });
+        });
+      }
+      
       this.mediaFiles.set(media || []);
     } catch (err: unknown) {
       const errorMessage =
@@ -43,11 +58,15 @@ export class TeamMediaService {
     file: File,
     title: string,
     year: number,
+    userGroupId?: string,
   ): Observable<HttpEvent<TeamMedia>> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', title);
     formData.append('year', year.toString());
+    if (userGroupId) {
+      formData.append('userGroupId', userGroupId);
+    }
 
     return this.http.post<TeamMedia>(
       `${this.apiUrl}/${teamId}/media`,
@@ -64,11 +83,15 @@ export class TeamMediaService {
     file: File,
     title: string,
     year: number,
+    userGroupId?: string,
   ): Promise<TeamMedia> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', title);
     formData.append('year', year.toString());
+    if (userGroupId) {
+      formData.append('userGroupId', userGroupId);
+    }
 
     const media = await this.http
       .post<TeamMedia>(`${this.apiUrl}/${teamId}/media`, formData)
@@ -87,15 +110,23 @@ export class TeamMediaService {
     teamId: string,
     mediaId: string,
     title: string,
-    year?: number
+    year?: number,
+    userGroupId?: string | null,
   ): Promise<TeamMedia> {
-    const dto: UpdateTeamMediaDto = { title };
+    const dto: UpdateTeamMediaDto = { 
+      title,
+      userGroupId: userGroupId || null // Always include userGroupId (null means "All Team Members")
+    };
     if (year !== undefined) {
       dto.year = year;
     }
+    console.log('Sending update with DTO:', dto);
+    
     const updatedMedia = await this.http
       .patch<TeamMedia>(`${this.apiUrl}/${teamId}/media/${mediaId}`, dto)
       .toPromise();
+
+    console.log('Received updated media from backend:', updatedMedia);
 
     if (updatedMedia) {
       const currentMedia = this.mediaFiles();
@@ -104,6 +135,7 @@ export class TeamMediaService {
         const newMedia = [...currentMedia];
         newMedia[index] = updatedMedia;
         this.mediaFiles.set(newMedia);
+        console.log('Updated local media list, item at index', index, ':', updatedMedia);
       }
       return updatedMedia;
     }

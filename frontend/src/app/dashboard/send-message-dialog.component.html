@@ -7,42 +7,21 @@
 
     <form [formGroup]="sendMessageForm" (ngSubmit)="onSendMessage()" class="send-message-form">
       <div class="form-group">
-        <label for="recipientType">Send To *</label>
-        <select id="recipientType" formControlName="recipientType" [class.error]="getFieldError('recipientType')">
-          <option [value]="MessageRecipientType.ALL_TEAM_MEMBERS">
-            {{ getRecipientTypeDisplayName(MessageRecipientType.ALL_TEAM_MEMBERS) }}
-          </option>
-          <option [value]="MessageRecipientType.USER_GROUP">
-            {{ getRecipientTypeDisplayName(MessageRecipientType.USER_GROUP) }}
-          </option>
-        </select>
-        @if (getFieldError('recipientType')) {
-          <span class="error-message">{{ getFieldError('recipientType') }}</span>
+        <label for="userGroupId">Send To *</label>
+        @if (isLoadingUserGroups()) {
+          <div class="loading-select">Loading recipients...</div>
+        } @else {
+          <select id="userGroupId" formControlName="userGroupId" [class.error]="getFieldError('userGroupId')">
+            <option value="">All Team Members</option>
+            @for (group of userGroups(); track group.id) {
+              <option [value]="group.id">{{ group.name }}</option>
+            }
+          </select>
+        }
+        @if (getFieldError('userGroupId')) {
+          <span class="error-message">{{ getFieldError('userGroupId') }}</span>
         }
       </div>
-
-      @if (showUserGroupSelect()) {
-        <div class="form-group">
-          <label for="userGroupId">User Group *</label>
-          @if (isLoadingUserGroups()) {
-            <div class="loading-select">Loading user groups...</div>
-          } @else if (userGroups().length === 0) {
-            <div class="no-groups-message">
-              No user groups available. Contact a team administrator to create user groups.
-            </div>
-          } @else {
-            <select id="userGroupId" formControlName="userGroupId" [class.error]="getFieldError('userGroupId')">
-              <option value="">Select a user group...</option>
-              @for (group of userGroups(); track group.id) {
-                <option [value]="group.id">{{ group.name }}</option>
-              }
-            </select>
-          }
-          @if (getFieldError('userGroupId')) {
-            <span class="error-message">{{ getFieldError('userGroupId') }}</span>
-          }
-        </div>
-      }
 
       <div class="form-group">
         <label for="subject">Subject *</label>
@@ -144,6 +123,20 @@
       @if (success()) {
         <div class="alert-success">
           {{ success() }}
+        </div>
+      }
+
+      @if (isUploading() && uploadProgress() !== null) {
+        <div class="upload-progress-container">
+          <div class="upload-progress-label">
+            Uploading attachments... {{ uploadProgress() }}%
+          </div>
+          <div class="upload-progress-bar">
+            <div 
+              class="upload-progress-fill" 
+              [style.width.%]="uploadProgress()">
+            </div>
+          </div>
         </div>
       }
 

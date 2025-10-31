@@ -30,31 +30,16 @@ export class SendMessageDialogComponent implements OnInit {
   protected readonly isLoadingUserGroups = signal(false);
   protected readonly attachedFiles = signal<File[]>([]);
   protected readonly isDraggingOver = signal(false);
+  protected readonly uploadProgress = signal<number | null>(null);
+  protected readonly isUploading = signal(false);
 
   protected sendMessageForm: FormGroup;
 
-  protected readonly showUserGroupSelect = computed(() => {
-    return this.sendMessageForm?.get('recipientType')?.value === MessageRecipientType.USER_GROUP;
-  });
-
   constructor() {
     this.sendMessageForm = this.fb.group({
-      recipientType: [MessageRecipientType.ALL_TEAM_MEMBERS, [Validators.required]],
-      userGroupId: [''],
+      userGroupId: [''], // Empty string means all team members
       subject: ['', [Validators.required, Validators.maxLength(255)]],
       content: ['', [Validators.required, Validators.maxLength(5000)]]
-    });
-
-    // Add conditional validator for userGroupId
-    this.sendMessageForm.get('recipientType')?.valueChanges.subscribe(value => {
-      const userGroupControl = this.sendMessageForm.get('userGroupId');
-      if (value === MessageRecipientType.USER_GROUP) {
-        userGroupControl?.setValidators([Validators.required]);
-      } else {
-        userGroupControl?.clearValidators();
-        userGroupControl?.setValue('');
-      }
-      userGroupControl?.updateValueAndValidity();
     });
   }
 
@@ -84,18 +69,48 @@ export class SendMessageDialogComponent implements OnInit {
     this.isSending.set(true);
     this.error.set(null);
     this.success.set(null);
+    this.uploadProgress.set(null);
 
     try {
       const formValue = this.sendMessageForm.value;
+      const userGroupId = formValue.userGroupId || undefined;
+      
       const request: SendMessageRequest = {
         teamId: this.teamId,
         subject: formValue.subject,
         content: formValue.content,
-        recipientType: formValue.recipientType,
-        userGroupId: formValue.userGroupId || undefined
+        recipientType: userGroupId ? MessageRecipientType.USER_GROUP : MessageRecipientType.ALL_TEAM_MEMBERS,
+        userGroupId: userGroupId
       };
 
-      await this.messagesService.sendMessage(this.teamId, request, this.attachedFiles());
+      const files = this.attachedFiles();
+      
+      // If there are attachments, use progress reporting
+      if (files.length > 0) {
+        this.isUploading.set(true);
+        
+        await new Promise<void>((resolve, reject) => {
+          this.messagesService.sendMessageWithProgress(this.teamId, request, files).subscribe({
+            next: (event) => {
+              if (event.type === 'progress' && event.progress !== undefined) {
+                this.uploadProgress.set(event.progress);
+              } else if (event.type === 'response') {
+                this.uploadProgress.set(100);
+                this.isUploading.set(false);
+                resolve();
+              }
+            },
+            error: (error) => {
+              this.isUploading.set(false);
+              this.uploadProgress.set(null);
+              reject(error);
+            }
+          });
+        });
+      } else {
+        // No attachments, send normally
+        await this.messagesService.sendMessage(this.teamId, request);
+      }
       
       this.success.set('Message sent successfully!');
       this.messageSent.emit();
@@ -110,6 +125,8 @@ export class SendMessageDialogComponent implements OnInit {
       this.error.set(error.message || 'Failed to send message. Please try again.');
     } finally {
       this.isSending.set(false);
+      this.uploadProgress.set(null);
+      this.isUploading.set(false);
     }
   }
 
@@ -222,8 +239,7 @@ export class SendMessageDialogComponent implements OnInit {
 
   private getFieldDisplayName(fieldName: string): string {
     const displayNames: { [key: string]: string } = {
-      recipientType: 'Recipient type',
-      userGroupId: 'User group',
+      userGroupId: 'Recipient',
       subject: 'Subject',
       content: 'Message content'
     };
@@ -235,16 +251,5 @@ export class SendMessageDialogComponent implements OnInit {
       const control = this.sendMessageForm.get(key);
       control?.markAsTouched();
     });
-  }
-
-  protected getRecipientTypeDisplayName(type: MessageRecipientType): string {
-    switch (type) {
-      case MessageRecipientType.ALL_TEAM_MEMBERS:
-        return 'All Team Members';
-      case MessageRecipientType.USER_GROUP:
-        return 'User Group';
-      default:
-        return type;
-    }
   }
 }

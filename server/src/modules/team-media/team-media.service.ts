@@ -15,6 +15,9 @@ import {
 import { FileStorageService } from '../file-storage/file-storage.service';
 import { UserTeam } from '../teams/entities/user-team.entity';
 import { User } from '../users/entities/user.entity';
+import { UserGroup } from '../teams/entities/user-group.entity';
+import { SubteamMember } from '../teams/entities/subteam-member.entity';
+import { SubteamLeadPosition } from '../teams/entities/subteam-lead-position.entity';
 
 @Injectable()
 export class TeamMediaService {
@@ -25,6 +28,12 @@ export class TeamMediaService {
     private readonly userTeamRepository: Repository<UserTeam>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserGroup)
+    private readonly userGroupRepository: Repository<UserGroup>,
+    @InjectRepository(SubteamMember)
+    private readonly subteamMemberRepository: Repository<SubteamMember>,
+    @InjectRepository(SubteamLeadPosition)
+    private readonly subteamLeadPositionRepository: Repository<SubteamLeadPosition>,
     private readonly fileStorageService: FileStorageService,
   ) {}
 
@@ -53,20 +62,63 @@ export class TeamMediaService {
       fileId: storedFile.id,
       title: createDto.title,
       year: createDto.year,
+      userGroupId: createDto.userGroupId || null,
     });
 
     const saved = await this.teamMediaRepository.save(teamMedia);
     return this.transformToResponse(saved);
   }
 
-  async findAllForTeam(teamId: string): Promise<TeamMediaResponseDto[]> {
-    const mediaFiles = await this.teamMediaRepository.find({
-      where: { teamId },
-      relations: ['file', 'user'],
-      order: { createdAt: 'DESC' },
-    });
+  async findAllForTeam(
+    teamId: string,
+    userId: string,
+  ): Promise<TeamMediaResponseDto[]> {
+    try {
+      console.log(`[findAllForTeam] Loading media for team ${teamId}, user ${userId}`);
+      
+      // Verify user is a team member before showing media
+      await this.verifyTeamMembership(userId, teamId);
 
-    return mediaFiles.map((media) => this.transformToResponse(media));
+      // Get all media for the team
+      const mediaFiles = await this.teamMediaRepository.find({
+        where: { teamId },
+        relations: ['file', 'user'],
+        order: { createdAt: 'DESC' },
+      });
+
+      console.log(`[findAllForTeam] Found ${mediaFiles.length} total media files`);
+
+      // Get user's group memberships for filtering
+      let userGroupIds: string[] = [];
+      try {
+        userGroupIds = await this.getUserGroupIds(userId, teamId);
+      } catch (error) {
+        console.error('Error getting user group IDs:', error);
+        // Continue with empty userGroupIds - user will only see non-restricted media
+      }
+
+      // Filter media based on user group visibility
+      const visibleMedia = mediaFiles.filter((media) => {
+        // If no userGroupId set, visible to all team members
+        if (!media.userGroupId) {
+          return true;
+        }
+        // If userGroupId set, check if user is in that group
+        return userGroupIds.includes(media.userGroupId);
+      });
+
+      console.log(`[findAllForTeam] User can see ${visibleMedia.length} media files after visibility filtering`);
+
+      const responses = await Promise.all(
+        visibleMedia.map((media) => this.transformToResponse(media)),
+      );
+      
+      console.log(`[findAllForTeam] Returning ${responses.length} responses`);
+      return responses;
+    } catch (error) {
+      console.error('Error in findAllForTeam:', error);
+      throw error;
+    }
   }
 
   async findOne(id: string): Promise<TeamMedia> {
@@ -96,6 +148,9 @@ export class TeamMediaService {
     if (updateDto.year !== undefined) {
       media.year = updateDto.year;
     }
+    if (updateDto.userGroupId !== undefined) {
+      media.userGroupId = updateDto.userGroupId || null;
+    }
     const saved = await this.teamMediaRepository.save(media);
     return this.transformToResponse(saved);
   }
@@ -113,13 +168,22 @@ export class TeamMediaService {
     await this.teamMediaRepository.remove(media);
   }
 
-  async downloadFile(id: string): Promise<{
+  async downloadFile(
+    id: string,
+    userId: string,
+  ): Promise<{
     data: Buffer;
     filename: string;
     mimeType: string;
     fileSize: number;
   }> {
     const media = await this.findOne(id);
+
+    // Verify user is a team member before allowing download
+    await this.verifyTeamMembership(userId, media.teamId);
+
+    // Verify user group visibility
+    await this.verifyUserGroupAccess(userId, media.teamId, media.userGroupId);
 
     const { file, data } = await this.fileStorageService.getFile(media.fileId);
     return {
@@ -171,8 +235,20 @@ export class TeamMediaService {
     }
   }
 
-  private transformToResponse(media: TeamMedia): TeamMediaResponseDto {
-    return {
+  private async transformToResponse(
+    media: TeamMedia,
+  ): Promise<TeamMediaResponseDto> {
+    let userGroupName: string | null = null;
+
+    if (media.userGroupId) {
+      const userGroup = await this.userGroupRepository.findOne({
+        where: { id: media.userGroupId },
+      });
+      userGroupName = userGroup?.name || null;
+      console.log(`[transformToResponse] Media ${media.id} has userGroupId ${media.userGroupId}, resolved name: ${userGroupName}`);
+    }
+
+    const response = {
       id: media.id,
       teamId: media.teamId,
       userId: media.userId,
@@ -185,6 +261,186 @@ export class TeamMediaService {
       uploaderName: media.user?.fullName || 'Unknown User',
       createdAt: media.createdAt,
       updatedAt: media.updatedAt,
+      userGroupId: media.userGroupId,
+      userGroupName,
     };
+    
+    console.log(`[transformToResponse] Returning response for ${media.id}:`, {
+      userGroupId: response.userGroupId,
+      userGroupName: response.userGroupName
+    });
+    
+    return response;
+  }
+
+  /**
+   * Get all user group IDs that a user belongs to within a team
+   */
+  private async getUserGroupIds(
+    userId: string,
+    teamId: string,
+  ): Promise<string[]> {
+    try {
+      // Get user's team membership for role lookup
+      const userTeam = await this.userTeamRepository.findOne({
+        where: { userId, teamId },
+      });
+
+      if (!userTeam) {
+        console.log(`[getUserGroupIds] User ${userId} not found in team ${teamId}`);
+        return [];
+      }
+
+      // Get all user groups for the team
+      const allUserGroups = await this.userGroupRepository.find({
+        where: { teamId },
+      });
+
+      console.log(`[getUserGroupIds] Found ${allUserGroups.length} user groups for team ${teamId}`);
+
+      const matchingGroupIds: string[] = [];
+
+      for (const group of allUserGroups) {
+        try {
+          const matches = await this.isUserInVisibilityRules(
+            userId,
+            group.visibilityRules,
+            userTeam,
+            teamId,
+          );
+          if (matches) {
+            matchingGroupIds.push(group.id);
+            console.log(`[getUserGroupIds] User ${userId} matches group ${group.name} (${group.id})`);
+          }
+        } catch (error) {
+          console.error(`[getUserGroupIds] Error checking visibility rules for group ${group.id}:`, error);
+          // Continue checking other groups
+        }
+      }
+
+      console.log(`[getUserGroupIds] User ${userId} belongs to ${matchingGroupIds.length} groups`);
+      return matchingGroupIds;
+    } catch (error) {
+      console.error('[getUserGroupIds] Error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Check if a user matches the visibility rules
+   */
+  private async isUserInVisibilityRules(
+    userId: string,
+    visibilityRules: any,
+    userTeam: UserTeam | null,
+    teamId: string,
+  ): Promise<boolean> {
+    if (!visibilityRules) {
+      return false;
+    }
+
+    // Handle both formats: direct rows or nested ruleSet.rows
+    const rows = visibilityRules.rows || visibilityRules.ruleSet?.rows;
+    if (!rows || !Array.isArray(rows)) {
+      return false;
+    }
+
+    // Check each visibility row (OR logic between rows)
+    for (const row of rows) {
+      if (!row.criteria) continue;
+
+      // All criteria in a row must match (AND logic within row)
+      let rowMatches = true;
+
+      for (const criterion of row.criteria) {
+        let criterionMatches = false;
+
+        switch (criterion.type) {
+          case 'all_users':
+            criterionMatches = true;
+            break;
+          case 'select_users':
+            criterionMatches = criterion.userIds?.includes(userId) || false;
+            break;
+          case 'roles':
+            if (userTeam) {
+              const userRoles = userTeam.getRolesArray();
+
+              if (!criterion.roles || criterion.roles.length === 0) {
+                criterionMatches = userRoles.length === 0;
+              } else {
+                criterionMatches = criterion.roles.some((role: string) =>
+                  userRoles.includes(role),
+                );
+              }
+            } else {
+              criterionMatches = false;
+            }
+            break;
+          case 'subteam_members':
+            if (criterion.subteamIds && criterion.subteamIds.length > 0) {
+              const membershipCount = await this.subteamMemberRepository.count({
+                where: {
+                  userId,
+                  subteamId: criterion.subteamIds,
+                },
+              });
+              criterionMatches = membershipCount > 0;
+            } else {
+              criterionMatches = false;
+            }
+            break;
+          case 'subteam_leads':
+            if (criterion.subteamIds && criterion.subteamIds.length > 0) {
+              const leadCount = await this.subteamLeadPositionRepository.count({
+                where: {
+                  userId,
+                  subteamId: criterion.subteamIds,
+                },
+              });
+              criterionMatches = leadCount > 0;
+            } else {
+              criterionMatches = false;
+            }
+            break;
+          default:
+            criterionMatches = false;
+            break;
+        }
+
+        if (!criterionMatches) {
+          rowMatches = false;
+          break;
+        }
+      }
+
+      if (rowMatches) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Verify that a user has access to media based on user group restrictions
+   */
+  private async verifyUserGroupAccess(
+    userId: string,
+    teamId: string,
+    userGroupId: string | null,
+  ): Promise<void> {
+    // If no user group restriction, all team members can access
+    if (!userGroupId) {
+      return;
+    }
+
+    // Check if user is in the required user group
+    const userGroupIds = await this.getUserGroupIds(userId, teamId);
+    if (!userGroupIds.includes(userGroupId)) {
+      throw new ForbiddenException(
+        'You do not have access to this media file',
+      );
+    }
   }
 }
