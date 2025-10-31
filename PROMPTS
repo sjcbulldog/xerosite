@@ -282,7 +282,6 @@ Use the teamTimezone field when displaying event times
 Show times in the team's timezone rather than the user's local timezone
 Handle recurring event generation with timezone awareness
 
-
 Add a new file storage service in the backend.  The location for storing files should be given by the FILE_STORAGE_PATH in the .env file.  This path should be an absolute path or it is an error.  Each file stored in the storage directory should have a unique file name.  Each file stored in the storage directory should have an entry in an associated database table that has a unique ID, its original file name, its unique name in the storage area, the date when it was created, the user that owns the file, and a subsystem (string) that created the file. The send message attachment support should change to remove attachement file data from the mysql database and have the data be stored in this storage service with an owner name of 'messages'.
 
 In the Event Attendance Report, sort the events in the select pulldown from most recent to furtherest out.
@@ -295,9 +294,10 @@ Add the ability to select, download, store and retreive a set of files, usually 
 
 For files stored in the media storage area, if their extension indicates a video or image file, show a thumbnail of their contents and allow them to be displayed directly on the site via a popup.
 
+When displaying the event in the monthly calendar, include its name on a first line and the start and end time on a second line.  Hovering over an event should give all of the event information.
+
 In Progress
 ===========
-
 
 Pending
 =======
@@ -308,7 +308,7 @@ When an event is canceled, the ICS attachment is processed correctlyy by google 
 
 When a single instance of an event is canceled, google calendar does not process the ICS file correctly and just delete that instance.
 
-When displaying the event in the monthly calendar, include its name on a first line and the start and end time on a second line.  
+
 
 The webcal protocol does not seem to be working with various calendar applications (outlook or google calendar).
 

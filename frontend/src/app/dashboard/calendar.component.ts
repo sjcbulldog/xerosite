@@ -958,5 +958,60 @@ export class CalendarComponent implements OnInit {
     await this.updateAttendance(eventInstance, newStatus);
   }
 
+  protected formatEventTime(event: CalendarEventInstance): string {
+    const timezone = this.teamTimezone();
+    const startFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    
+    const startTime = startFormatter.format(new Date(event.startDateTime));
+    
+    if (event.endDateTime) {
+      const endTime = startFormatter.format(new Date(event.endDateTime));
+      return `${startTime} - ${endTime}`;
+    }
+    
+    return startTime;
+  }
+
+  protected formatEventTooltip(event: CalendarEventInstance): string {
+    const timezone = this.teamTimezone();
+    const parts: string[] = [];
+    
+    // Event name
+    parts.push(event.name);
+    
+    // Date and time
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const date = dateFormatter.format(event.instanceDate);
+    const time = this.formatEventTime(event);
+    parts.push(`${date} at ${time}`);
+    
+    // Location
+    if (event.location) {
+      parts.push(`Location: ${event.location}`);
+    }
+    
+    // Description
+    if (event.description) {
+      parts.push(`Description: ${event.description}`);
+    }
+    
+    // Recurrence info
+    if (event.recurrenceType !== RecurrenceType.NONE) {
+      parts.push(`Recurring: ${event.recurrenceType}`);
+    }
+    
+    return parts.join('\n');
+  }
+
   protected readonly AttendanceStatus = AttendanceStatus;
 }

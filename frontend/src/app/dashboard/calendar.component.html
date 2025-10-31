@@ -78,10 +78,11 @@
                   @for (event of day.events; track event.id + event.instanceDate.getTime()) {
                     <div 
                       class="event-chip"
-                      [title]="event.name">
-                      <span class="event-name" (click)="openEditEventDialog(event)">
-                        {{ event.name }}
-                      </span>
+                      [title]="formatEventTooltip(event)">
+                      <div class="event-content" (click)="openEditEventDialog(event)">
+                        <div class="event-name">{{ event.name }}</div>
+                        <div class="event-time">{{ formatEventTime(event) }}</div>
+                      </div>
                       <div class="event-actions">
                         <span 
                           class="attendance-icon"

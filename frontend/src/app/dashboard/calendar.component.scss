@@ -196,14 +196,11 @@
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
   gap: 0.25rem;
 
   &:hover {
@@ -211,10 +208,30 @@
     box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
   }
 
-  .event-name {
+  .event-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .event-name {
+    font-weight: 600;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+
+  .event-time {
+    font-size: 0.65rem;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
   }
 
   .event-actions {

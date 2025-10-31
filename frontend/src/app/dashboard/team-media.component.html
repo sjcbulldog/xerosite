@@ -63,19 +63,23 @@
                         (click)="openPreview(media)"
                         [class.clickable]="canPreview(media.mimeType)"
                         title="Click to preview">
-                        @if (isImage(media.mimeType)) {
+                        @if (getPreviewUrl(media)) {
                           <img 
                             [src]="getPreviewUrl(media)" 
                             [alt]="media.title"
                             class="thumbnail-image"
                           />
-                        } @else if (isVideo(media.mimeType)) {
-                          <video 
-                            [src]="getPreviewUrl(media)"
-                            class="thumbnail-video"
-                            preload="metadata"
-                          ></video>
-                          <div class="video-play-overlay">▶️</div>
+                          @if (isVideo(media.mimeType)) {
+                            <div class="video-play-overlay">▶️</div>
+                          }
+                        } @else {
+                          <div class="thumbnail-loading">
+                            @if (isVideo(media.mimeType)) {
+                              <span>🎥</span>
+                            } @else {
+                              <span>🖼️</span>
+                            }
+                          </div>
                         }
                       </div>
                     } @else {
@@ -213,7 +217,7 @@
           />
         } @else if (isVideo(previewingMedia()!.mimeType)) {
           <video 
-            [src]="getPreviewUrl(previewingMedia()!)"
+            [src]="getVideoUrl(previewingMedia()!)"
             class="preview-video"
             controls
             autoplay

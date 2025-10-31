@@ -182,6 +182,17 @@
   object-fit: cover;
 }
 
+.thumbnail-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  background: #f0f0f0;
+  color: #999;
+}
+
 .video-play-overlay {
   position: absolute;
   top: 50%;
