@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { TeamMessage, MessageRecipientType } from './entities/team-message.entity';
 import { SendMessageDto, MessageResponseDto, GetMessagesQueryDto } from './dto/message.dto';
 import { Team } from '../teams/entities/team.entity';
@@ -29,6 +30,7 @@ export class MessagesService {
     private readonly userGroupRepository: Repository<UserGroup>,
     private readonly emailService: EmailService,
     private readonly fileStorageService: FileStorageService,
+    private readonly configService: ConfigService,
   ) {}
 
   async sendMessage(
@@ -80,26 +82,17 @@ export class MessagesService {
       content: sendMessageDto.content,
       recipientType: sendMessageDto.recipientType,
       userGroupId: sendMessageDto.userGroupId || null,
-      attachmentFileIds:
-        attachmentFileIds.length > 0 ? attachmentFileIds : undefined,
+      attachmentFileIds: attachmentFileIds.length > 0 ? attachmentFileIds : undefined,
       recipientDetails: {
         recipientCount: recipients.length,
-        recipientEmails: recipients.map(
-          (r) => r.primaryEmail || r.emails?.[0]?.email || 'unknown',
-        ),
+        recipientEmails: recipients.map((r) => r.primaryEmail || r.emails?.[0]?.email || 'unknown'),
       },
     });
 
     const savedMessage = await this.messageRepository.save(message);
 
     // Send emails asynchronously with attachments
-    this.sendEmailsToRecipients(
-      savedMessage,
-      sender,
-      team,
-      recipients,
-      attachmentFileIds,
-    );
+    this.sendEmailsToRecipients(savedMessage, sender, team, recipients, attachmentFileIds);
 
     return this.transformToResponse(savedMessage, sender);
   }
@@ -237,22 +230,42 @@ export class MessagesService {
     attachmentFileIds?: string[],
   ): Promise<void> {
     try {
-      // Fetch attachment files from storage
-      let emailAttachments: any[] = [];
+      const MAX_ATTACHMENT_SIZE = 1 * 1024 * 1024; // 1 MB
+      const apiUrl = this.configService.get('email.apiUrl');
+      
+      // Separate small and large attachments
+      const emailAttachments: any[] = [];
+      const largeAttachments: Array<{ filename: string; downloadUrl: string }> = [];
+
       if (attachmentFileIds && attachmentFileIds.length > 0) {
         for (const fileId of attachmentFileIds) {
           try {
             const { file, data } = await this.fileStorageService.getFile(fileId);
-            emailAttachments.push({
-              filename: file.originalFilename,
-              content: data.toString('base64'),
-              contentType: file.mimeType || 'application/octet-stream',
-            });
+            
+            // Check file size
+            if (file.fileSize > MAX_ATTACHMENT_SIZE) {
+              // Large file - generate download link
+              const downloadUrl = `${apiUrl}/api/teams/${message.teamId}/messages/${message.id}/attachments/${fileId}/download`;
+              largeAttachments.push({
+                filename: file.originalFilename,
+                downloadUrl,
+              });
+            } else {
+              // Small file - attach to email
+              emailAttachments.push({
+                filename: file.originalFilename,
+                content: data.toString('base64'),
+                contentType: file.mimeType || 'application/octet-stream',
+              });
+            }
           } catch (error) {
             console.error(`Failed to fetch attachment ${fileId}:`, error);
           }
         }
       }
+
+      // Generate email content with download links for large files
+      const emailContent = this.generateEmailContent(message, sender, team, largeAttachments);
 
       const emailPromises = recipients.map((recipient) => {
         const recipientEmail = recipient.primaryEmail || recipient.emails?.[0]?.email;
@@ -263,7 +276,7 @@ export class MessagesService {
         return this.emailService.sendEmailWithAttachments({
           to: recipientEmail,
           subject: `[${team.name}] ${message.subject}`,
-          html: this.generateEmailContent(message, sender, team),
+          html: emailContent,
           attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
         });
       });
@@ -282,7 +295,35 @@ export class MessagesService {
     }
   }
 
-  private generateEmailContent(message: TeamMessage, sender: User, team: Team): string {
+  private generateEmailContent(
+    message: TeamMessage,
+    sender: User,
+    team: Team,
+    largeAttachments?: Array<{ filename: string; downloadUrl: string }>,
+  ): string {
+    let attachmentSection = '';
+    
+    if (largeAttachments && largeAttachments.length > 0) {
+      const attachmentLinks = largeAttachments
+        .map(
+          (att) =>
+            `<li><a href="${att.downloadUrl}" style="color: #667eea; text-decoration: none;">${att.filename}</a></li>`,
+        )
+        .join('');
+      
+      attachmentSection = `
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+          <h4 style="color: #333; margin: 0 0 10px 0;">Large Attachments (Download Required)</h4>
+          <p style="color: #666; font-size: 0.9em; margin: 0 0 10px 0;">
+            The following attachments exceed 1 MB and must be downloaded:
+          </p>
+          <ul style="color: #333; margin: 0;">
+            ${attachmentLinks}
+          </ul>
+        </div>
+      `;
+    }
+
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -298,6 +339,8 @@ export class MessagesService {
             ${message.content.replace(/\n/g, '<br>')}
           </div>
         </div>
+        
+        ${attachmentSection}
         
         <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
           <p style="color: #666; font-size: 0.9em; margin: 0;">
@@ -397,6 +440,46 @@ export class MessagesService {
     }
 
     return false; // No rows matched
+  }
+
+  async downloadAttachment(
+    userId: string,
+    teamId: string,
+    messageId: string,
+    fileId: string,
+  ): Promise<{ data: Buffer; filename: string; mimeType: string }> {
+    // Verify user is a team member
+    const userTeam = await this.userTeamRepository.findOne({
+      where: { userId, teamId, status: MembershipStatus.ACTIVE },
+    });
+
+    if (!userTeam) {
+      throw new ForbiddenException('User is not a member of this team');
+    }
+
+    // Verify the message exists and belongs to the team
+    const message = await this.messageRepository.findOne({
+      where: { id: messageId, teamId },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    // Verify the file is attached to this message
+    const attachmentFileIds = message.attachmentFileIds || [];
+    if (!attachmentFileIds.includes(fileId)) {
+      throw new ForbiddenException('File is not attached to this message');
+    }
+
+    // Retrieve the file
+    const { file, data } = await this.fileStorageService.getFile(fileId);
+    
+    return {
+      data,
+      filename: file.originalFilename,
+      mimeType: file.mimeType,
+    };
   }
 
   private transformToResponse(

@@ -25,6 +25,7 @@ export class SendMessageDialogComponent implements OnInit {
   protected readonly isSending = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly success = signal<string | null>(null);
+  protected readonly info = signal<string | null>(null);
   protected readonly userGroups = signal<UserGroup[]>([]);
   protected readonly isLoadingUserGroups = signal(false);
   protected readonly attachedFiles = signal<File[]>([]);
@@ -146,6 +147,16 @@ export class SendMessageDialogComponent implements OnInit {
     const files = this.attachedFiles();
     files.splice(index, 1);
     this.attachedFiles.set([...files]);
+    
+    // Re-check if any remaining files are large
+    const largeFileThreshold = 1 * 1024 * 1024; // 1MB
+    const largeFiles = files.filter(f => f.size > largeFileThreshold);
+    if (largeFiles.length > 0) {
+      const fileList = largeFiles.map(f => `"${f.name}" (${this.formatFileSize(f.size)})`).join(', ');
+      this.info.set(`Note: ${fileList} exceed${largeFiles.length === 1 ? 's' : ''} 1MB and will be stored on the server. Recipients will receive download links in the email.`);
+    } else {
+      this.info.set(null);
+    }
   }
 
   protected formatFileSize(bytes: number): string {
@@ -159,21 +170,13 @@ export class SendMessageDialogComponent implements OnInit {
   private addFiles(files: File[]): void {
     const currentFiles = this.attachedFiles();
     const maxFiles = 10;
-    const maxFileSize = 1 * 1024 * 1024; // 1MB per file
-    const maxTotalSize = 4 * 1024 * 1024; // 4MB total
+    const maxTotalSize = 50 * 1024 * 1024; // 50MB total
+    const largeFileThreshold = 1 * 1024 * 1024; // 1MB
 
     // Check total file count
     if (currentFiles.length + files.length > maxFiles) {
       this.error.set(`You can only attach up to ${maxFiles} files.`);
       return;
-    }
-
-    // Check individual file sizes
-    for (const file of files) {
-      if (file.size > maxFileSize) {
-        this.error.set(`File "${file.name}" is too large. Maximum file size is 1MB.`);
-        return;
-      }
     }
 
     // Check total size
@@ -182,8 +185,17 @@ export class SendMessageDialogComponent implements OnInit {
     const totalSize = currentTotalSize + newFilesSize;
 
     if (totalSize > maxTotalSize) {
-      this.error.set(`Total attachment size exceeds 4MB limit. Current: ${this.formatFileSize(currentTotalSize)}, Adding: ${this.formatFileSize(newFilesSize)}`);
+      this.error.set(`Total attachment size exceeds 50MB limit. Current: ${this.formatFileSize(currentTotalSize)}, Adding: ${this.formatFileSize(newFilesSize)}`);
       return;
+    }
+
+    // Check if any files are larger than 1MB and show info message
+    const largeFiles = files.filter(f => f.size > largeFileThreshold);
+    if (largeFiles.length > 0) {
+      const fileList = largeFiles.map(f => `"${f.name}" (${this.formatFileSize(f.size)})`).join(', ');
+      this.info.set(`Note: ${fileList} exceed${largeFiles.length === 1 ? 's' : ''} 1MB and will be stored on the server. Recipients will receive download links in the email.`);
+    } else {
+      this.info.set(null);
     }
 
     this.attachedFiles.set([...currentFiles, ...files]);

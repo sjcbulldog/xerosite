@@ -358,8 +358,22 @@ export class TeamsService {
       throw new NotFoundException('User is not a member of this team');
     }
 
+    const previousStatus = userTeam.status;
     userTeam.status = updateStatusDto.status;
     const updatedUserTeam = await this.userTeamRepository.save(userTeam);
+
+    // Send notification email if status changed from pending to active or disabled
+    if (previousStatus === MembershipStatus.PENDING) {
+      const team = await this.teamRepository.findOne({ where: { id: teamId } });
+      if (team && userTeam.user) {
+        if (updateStatusDto.status === MembershipStatus.ACTIVE) {
+          await this.notifyUserOfApproval(team, userTeam.user);
+        } else if (updateStatusDto.status === MembershipStatus.DISABLED) {
+          await this.notifyUserOfRejection(team, userTeam.user);
+        }
+      }
+    }
+
     return this.transformToMemberDto(updatedUserTeam);
   }
 
@@ -379,6 +393,16 @@ export class TeamsService {
       throw new BadRequestException('You have already requested to join this team or are already a member');
     }
 
+    // Get the user who is requesting to join
+    const requestingUser = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['emails'],
+    });
+
+    if (!requestingUser) {
+      throw new NotFoundException('User not found');
+    }
+
     // Create pending membership with default Student role
     const teamRoles = team.getRolesArray();
     const defaultRole = teamRoles.includes('Student') ? 'Student' : teamRoles[0];
@@ -391,7 +415,177 @@ export class TeamsService {
     });
 
     const savedUserTeam = await this.userTeamRepository.save(userTeam);
+
+    // Send notification emails to all administrators
+    await this.notifyAdministratorsOfJoinRequest(team, requestingUser);
+
     return this.transformToMemberDto(savedUserTeam);
+  }
+
+  private async notifyAdministratorsOfJoinRequest(team: Team, requestingUser: User): Promise<void> {
+    try {
+      // Get all team members with Administrator role
+      const adminMembers = await this.userTeamRepository.find({
+        where: { teamId: team.id, status: MembershipStatus.ACTIVE },
+        relations: ['user', 'user.emails'],
+      });
+
+      // Filter to only administrators
+      const administrators = adminMembers.filter(member => 
+        member.getRolesArray().includes('Administrator')
+      );
+
+      if (administrators.length === 0) {
+        console.warn(`No administrators found for team ${team.name} (${team.id})`);
+        return;
+      }
+
+      const requestingUserEmail = requestingUser.primaryEmail || requestingUser.emails?.[0]?.email || 'Unknown';
+      const requestingUserName = `${requestingUser.firstName} ${requestingUser.lastName}`;
+
+      // Send email to each administrator
+      for (const adminMember of administrators) {
+        const adminEmail = adminMember.user?.primaryEmail || adminMember.user?.emails?.[0]?.email;
+        
+        if (adminEmail) {
+          await this.emailService.sendEmail({
+            to: adminEmail,
+            subject: `New Join Request for Team: ${team.name}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                  <h2 style="color: #333; margin: 0 0 10px 0;">New Team Join Request</h2>
+                  <p style="color: #666; margin: 0;">
+                    Team: <strong>${team.name}</strong> (Team #${team.teamNumber})
+                  </p>
+                </div>
+                
+                <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                  <h3 style="color: #333; margin: 0 0 15px 0;">Request Details</h3>
+                  <p style="color: #333; line-height: 1.6;">
+                    <strong>${requestingUserName}</strong> (${requestingUserEmail}) has requested to join your team.
+                  </p>
+                  <p style="color: #666; line-height: 1.6; margin-top: 15px;">
+                    Please log in to your dashboard to review and approve or decline this request.
+                  </p>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                  <p style="color: #666; font-size: 0.9em; margin: 0;">
+                    This is an automated notification from the team management system.
+                  </p>
+                </div>
+              </div>
+            `,
+          });
+        }
+      }
+    } catch (error) {
+      // Log the error but don't fail the join request
+      console.error('Error notifying administrators of join request:', error);
+    }
+  }
+
+  private async notifyUserOfApproval(team: Team, user: User): Promise<void> {
+    try {
+      const userEmail = user.primaryEmail || user.emails?.[0]?.email;
+      
+      if (!userEmail) {
+        console.warn(`No email found for user ${user.id} to notify of approval`);
+        return;
+      }
+
+      const userName = `${user.firstName} ${user.lastName}`;
+
+      await this.emailService.sendEmail({
+        to: userEmail,
+        subject: `Your Request to Join ${team.name} Has Been Approved`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745;">
+              <h2 style="color: #155724; margin: 0 0 10px 0;">✓ Request Approved</h2>
+              <p style="color: #155724; margin: 0;">
+                Team: <strong>${team.name}</strong> (Team #${team.teamNumber})
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+              <p style="color: #333; line-height: 1.6;">
+                Hi ${userName},
+              </p>
+              <p style="color: #333; line-height: 1.6;">
+                Good news! Your request to join <strong>${team.name}</strong> has been approved by a team administrator.
+              </p>
+              <p style="color: #333; line-height: 1.6;">
+                You can now access the team dashboard, view team information, and participate in team activities.
+              </p>
+              <p style="color: #666; line-height: 1.6; margin-top: 15px;">
+                Log in to your dashboard to get started!
+              </p>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+              <p style="color: #666; font-size: 0.9em; margin: 0;">
+                This is an automated notification from the team management system.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+    } catch (error) {
+      console.error('Error notifying user of approval:', error);
+    }
+  }
+
+  private async notifyUserOfRejection(team: Team, user: User): Promise<void> {
+    try {
+      const userEmail = user.primaryEmail || user.emails?.[0]?.email;
+      
+      if (!userEmail) {
+        console.warn(`No email found for user ${user.id} to notify of rejection`);
+        return;
+      }
+
+      const userName = `${user.firstName} ${user.lastName}`;
+
+      await this.emailService.sendEmail({
+        to: userEmail,
+        subject: `Update on Your Request to Join ${team.name}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+              <h2 style="color: #856404; margin: 0 0 10px 0;">Request Update</h2>
+              <p style="color: #856404; margin: 0;">
+                Team: <strong>${team.name}</strong> (Team #${team.teamNumber})
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+              <p style="color: #333; line-height: 1.6;">
+                Hi ${userName},
+              </p>
+              <p style="color: #333; line-height: 1.6;">
+                Thank you for your interest in joining <strong>${team.name}</strong>.
+              </p>
+              <p style="color: #333; line-height: 1.6;">
+                Unfortunately, your request to join the team has not been approved at this time.
+              </p>
+              <p style="color: #666; line-height: 1.6; margin-top: 15px;">
+                If you have questions about this decision, please contact a team administrator directly.
+              </p>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+              <p style="color: #666; font-size: 0.9em; margin: 0;">
+                This is an automated notification from the team management system.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+    } catch (error) {
+      console.error('Error notifying user of rejection:', error);
+    }
   }
 
   private transformToResponse(team: Team): TeamResponseDto {

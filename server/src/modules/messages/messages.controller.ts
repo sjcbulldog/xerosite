@@ -10,7 +10,9 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -33,23 +35,13 @@ export class MessagesController {
   ): Promise<MessageResponseDto> {
     // Validate file attachments
     if (files && files.length > 0) {
-      const maxFileSize = 1 * 1024 * 1024; // 1MB per file
-      const maxTotalSize = 4 * 1024 * 1024; // 4MB total
-
-      // Check individual file sizes
-      for (const file of files) {
-        if (file.size > maxFileSize) {
-          throw new BadRequestException(
-            `File "${file.originalname}" exceeds the maximum size of 1MB`,
-          );
-        }
-      }
+      const maxTotalSize = 50 * 1024 * 1024; // 50MB total (reasonable limit for uploads)
 
       // Check total size
       const totalSize = files.reduce((sum, file) => sum + file.size, 0);
       if (totalSize > maxTotalSize) {
         throw new BadRequestException(
-          `Total attachment size (${(totalSize / 1024 / 1024).toFixed(2)}MB) exceeds the maximum of 4MB`,
+          `Total attachment size (${(totalSize / 1024 / 1024).toFixed(2)}MB) exceeds the maximum of 50MB`,
         );
       }
     }
@@ -82,5 +74,25 @@ export class MessagesController {
     @Query() query: GetMessagesQueryDto,
   ): Promise<MessageResponseDto[]> {
     return this.messagesService.getTeamMessages(req.user.id, teamId, query);
+  }
+
+  @Get(':messageId/attachments/:fileId/download')
+  async downloadAttachment(
+    @Request() req: any,
+    @Param('teamId') teamId: string,
+    @Param('messageId') messageId: string,
+    @Param('fileId') fileId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { data, filename, mimeType } = await this.messagesService.downloadAttachment(
+      req.user.id,
+      teamId,
+      messageId,
+      fileId,
+    );
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(data);
   }
 }

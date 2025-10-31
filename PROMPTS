@@ -298,6 +298,16 @@ When displaying the event in the monthly calendar, include its name on a first l
 
 If it is possible when uploading media files to know the actual amount of data that has been uploaded, provide a progress bar showing upload progress.
 
+When sending messages with attachments, if the attachments exceed the 1 MB size limt, store the attachment in the File Storage service and append a link to the attachment to the email message.
+
+I sent a message with a too large attachment.  I expected a message saying the attachment will be stored and a link to the attachment provided, but I get an error message with no attachment provided in any way.
+
+I still get the message that an attachement to a messag exceeds 1 MB.  I would have expected a message saying the attachment exceeds 1MB and therefore will be stored on the server and a link provided to the recipents to download the attachment.
+
+When a request to join a public team comes in, all adminstrators should get an email identifying who wants to join the team.
+
+When a user that asked to join a public team gets approved or rejected, an email should go to that user indicating the outcome.
+
 In Progress
 ===========
 

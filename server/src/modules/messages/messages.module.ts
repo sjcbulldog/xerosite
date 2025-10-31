@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MulterModule } from '@nestjs/platform-express';
 import { MessagesController } from './messages.controller';
 import { MessagesService } from './messages.service';
 import { TeamMessage } from './entities/team-message.entity';
@@ -21,6 +22,12 @@ import { FileStorageModule } from '../file-storage/file-storage.module';
       UserPermission,
       UserGroup,
     ]),
+    MulterModule.register({
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB per file
+        files: 10, // Max 10 files
+      },
+    }),
     EmailModule,
     FileStorageModule,
   ],
