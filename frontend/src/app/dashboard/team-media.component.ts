@@ -542,7 +542,11 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   getVideoUrl(media: TeamMedia): string {
     // For video playback, use direct server URL for streaming
     // This allows the video to start playing immediately without downloading the entire file
-    return this.teamMediaService.getPreviewUrl(this.teamId(), media.id);
+    const baseUrl = this.teamMediaService.getPreviewUrl(this.teamId(), media.id);
+    
+    // Add JWT token as query parameter for authentication
+    const token = this.authService.getToken();
+    return token ? `${baseUrl}?token=${token}` : baseUrl;
   }
 
   async openPreview(media: TeamMedia): Promise<void> {

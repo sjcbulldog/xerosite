@@ -350,8 +350,14 @@ When new calendar entries are added the count at the top level section in the te
 
 Change the rate limit for outgoing emails to be from 12 per minute to one every 5 seconds.
 
+When clicking on a video link in the Media section, it takes a while for the video to start playing.  Can this be sped up?
+
+When I click on a media video, it does not play.
+
 In Progress
 ===========
+
+When a video is selected under the Media section of the team dashboard, it still does not play.
 
 Pending
 =======
@@ -360,7 +366,7 @@ When downloading an attachment in a message, I get a permissions denied message.
 
 When sending a message with an attachments provide a progress bar for the upload of each attachment.
 
-For users, there should be an optional set of parent.  In the ma
+For users, there should be an optional set of parent.  These are setup.
 
 For a team, there should be a system for adding a requirement (e.g. First Consent Form) for a given time period and user group.  If a user has not completed a requirement when they log in, they get a popup saying they have unfulfilled requirements.  The system should periodically email them to remind them of the outstanding requirement.
 
@@ -386,3 +392,4 @@ Update the API document to reflect changes in the rest APIs: 10/29/2025
 Notes
 -----
 Be sure I can export roster and then import same roster
+

@@ -16,6 +16,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response, Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtOrQueryAuthGuard } from '../auth/guards/jwt-or-query-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { TeamMediaService } from './team-media.service';
 import {
@@ -25,11 +26,11 @@ import {
 } from './dto/team-media.dto';
 
 @Controller('teams/:teamId/media')
-@UseGuards(JwtAuthGuard)
 export class TeamMediaController {
   constructor(private readonly teamMediaService: TeamMediaService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @Param('teamId') teamId: string,
@@ -45,6 +46,7 @@ export class TeamMediaController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async findAll(
     @Param('teamId') teamId: string,
   ): Promise<TeamMediaResponseDto[]> {
@@ -52,6 +54,7 @@ export class TeamMediaController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   async updateTitle(
     @Param('id') id: string,
     @CurrentUser() user: any,
@@ -61,6 +64,7 @@ export class TeamMediaController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   async remove(
     @Param('id') id: string,
     @CurrentUser() user: any,
@@ -69,6 +73,7 @@ export class TeamMediaController {
   }
 
   @Get(':id/download')
+  @UseGuards(JwtAuthGuard)
   async downloadFile(
     @Param('id') id: string,
     @Res() res: Response,
@@ -82,6 +87,7 @@ export class TeamMediaController {
   }
 
   @Get(':id/preview')
+  @UseGuards(JwtOrQueryAuthGuard)
   async previewFile(
     @Param('id') id: string,
     @Req() req: Request,
