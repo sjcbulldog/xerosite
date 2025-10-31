@@ -156,12 +156,23 @@ export class TeamsService {
     return this.transformToResponse(updatedTeam);
   }
 
-  async remove(id: string): Promise<void> {
-    const result = await this.teamRepository.delete(id);
+  async remove(id: string, userId: string): Promise<void> {
+    const team = await this.teamRepository.findOne({ where: { id } });
 
-    if (result.affected === 0) {
+    if (!team) {
       throw new NotFoundException(`Team with ID ${id} not found`);
     }
+
+    // Check if user is a site administrator
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user || user.state !== UserState.ADMIN) {
+      throw new BadRequestException(
+        'Only site administrators can delete teams',
+      );
+    }
+
+    // Delete the team (cascade will handle related records)
+    await this.teamRepository.remove(team);
   }
 
   async addMember(teamId: string, addMemberDto: AddTeamMemberDto): Promise<TeamMemberDto> {
@@ -857,7 +868,7 @@ export class TeamsService {
       existing: [],
     };
 
-    const defaultRoles = ['Student']; // Default role for imported members
+    const defaultRoles: string[] = []; // No default roles for imported members
 
     for (let i = 0; i < importData.members.length; i++) {
       const member = importData.members[i];
@@ -1011,8 +1022,10 @@ export class TeamsService {
 
         await this.userTeamRepository.save(userTeam);
 
-        // Send notification email to primary email address
-        await this.emailService.sendTeamInvitationEmail(primaryEmail, team.name, team.teamNumber);
+        // Send notification email to primary email address (if sendEmails is not explicitly false)
+        if (importData.sendEmails !== false) {
+          await this.emailService.sendTeamInvitationEmail(primaryEmail, team.name, team.teamNumber);
+        }
 
         result.successful++;
       } catch (error: any) {

@@ -16,7 +16,7 @@
   <main class="dashboard-content">
     <div class="dashboard-card">
       <div class="dashboard-card-header-with-menu">
-        <h2>Dashboard</h2>
+        <h2>FRC Teams Dashboard</h2>
         <div class="user-menu-container">
           <button (click)="toggleUserMenu()" class="user-menu-button">
             <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -55,12 +55,10 @@
         </div>
       </div>
       @if (isLoadingStatistics()) {
-        <p class="statistics-text">Loading statistics...</p>
+        <p class="statistics-subtitle">Loading statistics...</p>
       } @else {
-        <p class="statistics-text">
-          <strong>Public Teams:</strong> {{ publicTeamsCount() }} | 
-          <strong>Private Teams:</strong> {{ privateTeamsCount() }} | 
-          <strong>Total Users:</strong> {{ totalUsersCount() }}
+        <p class="statistics-subtitle">
+          Serving {{ publicTeamsCount() + privateTeamsCount() }} Teams and {{ totalUsersCount() }} Users
         </p>
       }
       <div class="user-info">
@@ -121,6 +119,14 @@
                       <span class="pending-count">{{ team.pendingCount }} pending</span>
                     }
                   </div>
+                  @if (isAdmin()) {
+                    <button 
+                      class="delete-team-button"
+                      (click)="openDeleteTeamDialog(team, $event)"
+                      title="Delete Team">
+                      🗑️
+                    </button>
+                  }
                 </div>
               }
             </div>
@@ -328,8 +334,8 @@
 </div>
 
 @if (showCreateTeamDialog()) {
-  <div class="dialog-overlay" (click)="closeCreateTeamDialog()">
-    <div class="dialog-content" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content">
       <div class="dialog-header">
         <h2>Create New Team</h2>
         <button class="close-button" (click)="closeCreateTeamDialog()">×</button>
@@ -421,8 +427,8 @@
 }
 
 @if (showInvitationNotification()) {
-  <div class="dialog-overlay" (click)="closeInvitationNotification()">
-    <div class="dialog-content invitation-notification" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content invitation-notification">
       <div class="dialog-header">
         <h2>Team Invitations</h2>
         <button class="close-button" (click)="closeInvitationNotification()">×</button>
@@ -470,8 +476,8 @@
 }
 
 @if (showChangePasswordDialog()) {
-  <div class="dialog-overlay" (click)="closeChangePasswordDialog()">
-    <div class="dialog-content" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content">
       <div class="dialog-header">
         <h2>Change Password</h2>
         <button class="close-button" (click)="closeChangePasswordDialog()">×</button>
@@ -580,8 +586,8 @@
 
 <!-- Admin Change User Password Dialog -->
 @if (showChangeUserPasswordDialog()) {
-  <div class="dialog-overlay" (click)="closeChangeUserPasswordDialog()">
-    <div class="dialog-content" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content">
       <div class="dialog-header">
         <h2>Change Password for {{ selectedUser()?.fullName }}</h2>
         <button class="close-button" (click)="closeChangeUserPasswordDialog()">×</button>
@@ -660,8 +666,8 @@
 
 <!-- Delete User Confirmation Dialog -->
 @if (showDeleteUserDialog()) {
-  <div class="dialog-overlay" (click)="closeDeleteUserDialog()">
-    <div class="dialog-content delete-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content delete-dialog">
       <div class="dialog-header">
         <h2>Delete User</h2>
         <button class="close-button" (click)="closeDeleteUserDialog()">×</button>
@@ -714,4 +720,81 @@
 
 @if (showHelpDialog()) {
   <app-help-dialog (close)="closeHelpDialog()" />
+}
+
+<!-- Delete Team Confirmation Dialog -->
+@if (showDeleteTeamDialog()) {
+  <div class="dialog-overlay">
+    <div class="dialog-content delete-dialog">
+      <div class="dialog-header">
+        <h2>Delete Team</h2>
+        <button class="close-button" (click)="closeDeleteTeamDialog()">×</button>
+      </div>
+
+      <div class="dialog-body">
+        @if (deleteTeamConfirmCount() === 0) {
+          <div class="warning-message">
+            <strong>⚠️ Warning: This action cannot be undone!</strong>
+            <p>
+              You are about to permanently delete the team 
+              <strong>{{ teamToDelete()?.name }}</strong> 
+              (Team #{{ teamToDelete()?.teamNumber }}).
+            </p>
+            <p>
+              This will remove:
+            </p>
+            <ul>
+              <li>The team and all its settings</li>
+              <li>All team member associations</li>
+              <li>All subteams and their members</li>
+              <li>All team events and calendar data</li>
+              <li>All team messages</li>
+              <li>All team media files</li>
+              <li>All team links</li>
+            </ul>
+            <p><strong>Are you absolutely sure you want to continue?</strong></p>
+          </div>
+        } @else {
+          <div class="warning-message critical">
+            <strong>🛑 FINAL CONFIRMATION</strong>
+            <p>
+              This is your last chance to cancel. Deleting 
+              <strong>{{ teamToDelete()?.name }}</strong> 
+              will permanently destroy all team data.
+            </p>
+            <p class="emphasis">Click "Permanently Delete Team" to confirm deletion.</p>
+          </div>
+        }
+
+        @if (deleteTeamError()) {
+          <div class="alert-error">
+            {{ deleteTeamError() }}
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button 
+            type="button" 
+            class="cancel-button"
+            (click)="closeDeleteTeamDialog()"
+            [disabled]="isDeletingTeam()">
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="delete-button"
+            (click)="deleteTeam()"
+            [disabled]="isDeletingTeam()">
+            @if (isDeletingTeam()) {
+              Deleting...
+            } @else if (deleteTeamConfirmCount() === 0) {
+              Yes, I Want to Delete
+            } @else {
+              Permanently Delete Team
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 }

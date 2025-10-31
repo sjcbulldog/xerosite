@@ -115,6 +115,7 @@ export class TeamDetailComponent implements OnInit {
   protected readonly importFile = signal<File | null>(null);
   protected readonly importStatus = signal<'pending' | 'active'>('pending');
   protected readonly importDefaultPassword = signal('');
+  protected readonly importSendEmails = signal(true);
   protected readonly isImporting = signal(false);
   protected readonly importProgress = signal(0);
   protected readonly importTotal = signal(0);
@@ -961,6 +962,7 @@ export class TeamDetailComponent implements OnInit {
     this.importFile.set(null);
     this.importStatus.set('pending');
     this.importDefaultPassword.set('');
+    this.importSendEmails.set(true);
     this.importProgress.set(0);
     this.importTotal.set(0);
     this.importError.set(null);
@@ -1104,6 +1106,7 @@ export class TeamDetailComponent implements OnInit {
       this.importProgress.set(50);
       const defaultPassword = this.importDefaultPassword().trim() || undefined;
       const defaultStatus = this.importStatus();
+      const sendEmails = this.importSendEmails();
       
       // Simulate incremental progress while server processes
       // Target: ~25 seconds from 50% to 95% (allowing ~5 seconds for initial parsing and final completion)
@@ -1115,7 +1118,7 @@ export class TeamDetailComponent implements OnInit {
         }
       }, 500); // Update every 500ms
 
-      const result = await this.teamsService.importRoster(teamId, members, defaultPassword, defaultStatus);
+      const result = await this.teamsService.importRoster(teamId, members, defaultPassword, defaultStatus, sendEmails);
       
       clearInterval(progressInterval);
       this.importProgress.set(100);

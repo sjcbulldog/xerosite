@@ -73,8 +73,8 @@
 
 <!-- Add Link Dialog -->
 @if (showAddDialog()) {
-  <div class="dialog-overlay" (click)="closeAddDialog()">
-    <div class="dialog-content" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content">
       <h3>Add New Link</h3>
       <form (submit)="addLink(); $event.preventDefault()">
         <div class="form-group">

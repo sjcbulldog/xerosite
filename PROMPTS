@@ -308,19 +308,49 @@ When a request to join a public team comes in, all adminstrators should get an e
 
 When a user that asked to join a public team gets approved or rejected, an email should go to that user indicating the outcome.
 
+On the main dashboard, if a user is an adminstrator, add a trash can icon at the bottom right of each team card that can be used to delete the team.  The system should confirm twice that this is what is really desired as it is permanent.  If the user confirms, that team and all connected database records should be removed.
+
+The newly added trash can on the teams cards in the dashboard, has a red background.  This should be transparent.
+
+On the main dashboard, change the title from Dashbaord to FRC Teams Dashboard.  Change the information about Public Teams, Private Team, and Total Users to a sentence in smaller text below the title that says 'Server # Teams and # Users' where the # is replace with the total number of teams and the total number of users as fit.
+
+The hamburger menu on the team dashboard should include the arrow like the hamburger menu on the main dashboard.
+
+On the team dashboard, move the public/private banner to be just to the right of the team name.  Move the Team Overview button into a menu item in the hamburger menu.
+
+When importing a roster via a CSV file, provide the option NOT send an email to each users as they are added to the system and to the target team.
+
+When a new users is added via the CSV import, they should have no team roles.
+
+One the team dashboard, The Useful Links and Media headers are bigger than Team Members, Subteams, and Calendar.  Please make Useful Links and Media the same as the other three.
+
+For all popups, clicking on the page outside the popup should not close the popup.
+
 In Progress
 ===========
+
 
 Pending
 =======
 
-Add a delete team that is a big deal big and red.
+When in the Import Team Roster popup, when a file has been added to the file selection part of the popup, the red X to delete the file should be the trashcan icon with a transparent background.
+
+When importing a team roster from CSV, replace the progress bar with a spinning wheel indicating that action is in progress.
+
+When editing a subteam in the Edit Subteam popup, the title of that popup should include the name of the subteam.
+
+When downloading an attachment in a message, I get a permissions denied message.  Since the link is in email it must take me to a place where I can log into the site first and then get access to the link.
+
+When clicking on a video link in the Media section, it takes a while for the video to start playing.  Can this be sped up?
+
+When sending a message with an attachments provide a progress bar for the upload of each attachment.
+
+
+--- calendar
 
 When an event is canceled, the ICS attachment is processed correctlyy by google calendar, but fails in outlook calendar with the message 'Couldn't import calendar.  Try again later.'
 
 When a single instance of an event is canceled, google calendar does not process the ICS file correctly and just delete that instance.
-
-
 
 The webcal protocol does not seem to be working with various calendar applications (outlook or google calendar).
 
@@ -328,5 +358,5 @@ When a new user joins a team, send calendar invites for all active and future ca
 
 Continous
 ---------
-Update the user's guide to reflect features added single the last update to the user's guide.
-Update the API document to reflect changes in the rest APIs
+Update the user's guide to reflect features added single the last update to the user's guide: 10/29/2025, 10/31/2025
+Update the API document to reflect changes in the rest APIs: 10/29/2025

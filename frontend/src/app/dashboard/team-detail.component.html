@@ -7,17 +7,13 @@
     <main class="team-detail-content">
       <div class="team-info-card">
         <div class="team-info-header">
-          <div>
+          <div class="team-title-section">
             <h1>{{ team()?.name }}</h1>
-            <p class="team-number">Team #{{ team()?.teamNumber }}</p>
-          </div>
-          <div class="header-actions">
-            <button (click)="openTeamOverview()" class="team-overview-button">
-              Team Overview
-            </button>
             <span class="visibility-badge {{ team()?.visibility }}">
               {{ team()?.visibility | titlecase }}
             </span>
+          </div>
+          <div class="header-actions">
             @if (isTeamAdmin()) {
               <div class="admin-menu-container">
                 <button (click)="toggleAdminMenu()" class="hamburger-button" [class.active]="showAdminMenu()">
@@ -26,9 +22,14 @@
                     <line x1="3" y1="6" x2="21" y2="6"></line>
                     <line x1="3" y1="18" x2="21" y2="18"></line>
                   </svg>
+                  <span class="chevron-down">▼</span>
                 </button>
                 @if (showAdminMenu()) {
                   <div class="admin-menu-dropdown">
+                    <button (click)="openTeamOverview()" class="menu-item">
+                      <span class="menu-icon">📊</span>
+                      Team Overview
+                    </button>
                     @if (canSendMessages()) {
                       <button (click)="openSendMessageDialog()" class="menu-item">
                         <span class="menu-icon">📧</span>
@@ -61,7 +62,7 @@
                     </button>
                     <button (click)="openExportDialog()" class="menu-item">
                       <span class="menu-icon">📊</span>
-                      Export Users to CSV
+                      Export Roster
                     </button>
                     @if (canCreateUserGroups()) {
                       <button (click)="openUserGroupsManager()" class="menu-item">
@@ -75,6 +76,8 @@
             }
           </div>
         </div>
+
+        <p class="team-number">Team #{{ team()?.teamNumber }}</p>
         
         <div class="team-description-section">
           @if (team()?.description) {
@@ -395,8 +398,8 @@
 </div>
 
 @if (showRoleEditor()) {
-  <div class="dialog-overlay" (click)="closeRoleEditor()">
-    <div class="dialog-content role-editor" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content role-editor">
       <div class="dialog-header">
         <h2>Edit Roles</h2>
         <button class="close-button" (click)="closeRoleEditor()">×</button>
@@ -473,8 +476,8 @@
 }
 
 @if (showDescriptionEditor()) {
-  <div class="dialog-overlay" (click)="closeDescriptionEditor()">
-    <div class="dialog-content description-editor" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content description-editor">
       <div class="dialog-header">
         <h2>Edit Team Information</h2>
         <button class="close-button" (click)="closeDescriptionEditor()">×</button>
@@ -533,8 +536,8 @@
 }
 
 @if (showInviteDialog()) {
-  <div class="dialog-overlay" (click)="closeInviteDialog()">
-    <div class="dialog-content invite-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content invite-dialog">
       <div class="dialog-header">
         <h2>Invite Member to Team</h2>
         <button class="close-button" (click)="closeInviteDialog()">×</button>
@@ -600,8 +603,8 @@
 }
 
 @if (showEditMemberDialog() && editingMember()) {
-  <div class="dialog-overlay" (click)="closeEditMemberDialog()">
-    <div class="dialog-content edit-member-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content edit-member-dialog">
       <div class="dialog-header">
         <h2>Edit Member: {{ editingMember()!.user?.fullName }}</h2>
         <button class="close-button" (click)="closeEditMemberDialog()">×</button>
@@ -692,8 +695,8 @@
 }
 
 @if (showConstraintsEditor()) {
-  <div class="dialog-overlay" (click)="closeConstraintsEditor()">
-    <div class="dialog-content constraints-editor" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content constraints-editor">
       <div class="dialog-header">
         <h2>
           Edit Role Constraints
@@ -796,8 +799,8 @@
 }
 
 @if (showImportDialog()) {
-  <div class="dialog-overlay" (click)="closeImportDialog()">
-    <div class="dialog-content import-roster-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content import-roster-dialog">
       <div class="dialog-header">
         <h2>Import Team Roster</h2>
         <button class="close-button" (click)="closeImportDialog()">×</button>
@@ -850,6 +853,19 @@
             class="password-input"
           />
           <p class="field-hint">If provided, all new users will be created with this password. Leave empty to generate random passwords.</p>
+        </div>
+
+        <div class="send-emails-option">
+          <label class="checkbox-option">
+            <input 
+              type="checkbox" 
+              [checked]="importSendEmails()"
+              (change)="importSendEmails.set($any($event.target).checked)"
+              [disabled]="isImporting()"
+            />
+            <span>Send email notifications to imported users</span>
+          </label>
+          <p class="field-hint">When checked, users will receive email notifications about being added to the team. Uncheck to add users silently without sending emails.</p>
         </div>
 
         <div 
@@ -988,8 +1004,8 @@
 
 <!-- Create Subteam Dialog -->
 @if (showCreateSubteamDialog()) {
-  <div class="dialog-overlay" (click)="closeCreateSubteamDialog()">
-    <div class="dialog-content subteam-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content subteam-dialog">
       <div class="dialog-header">
         <h2>Create Subteam</h2>
         <button class="close-button" (click)="closeCreateSubteamDialog()">×</button>
@@ -1108,8 +1124,8 @@
 
 <!-- Edit Subteam Dialog -->
 @if (showEditSubteamDialog() && selectedSubteam()) {
-  <div class="dialog-overlay" (click)="closeEditSubteamDialog()">
-    <div class="dialog-content subteam-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content subteam-dialog">
       <div class="dialog-header">
         <h2>Edit Subteam</h2>
         <button class="close-button" (click)="closeEditSubteamDialog()">×</button>
@@ -1263,8 +1279,8 @@
 
 <!-- Manage Members Dialog -->
 @if (showManageMembersDialog() && selectedSubteam()) {
-  <div class="dialog-overlay" (click)="closeManageMembersDialog()">
-    <div class="dialog-content manage-members-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content manage-members-dialog">
       <div class="dialog-header">
         <h2>Manage Members: {{ selectedSubteam()?.name }}</h2>
         <button class="close-button" (click)="closeManageMembersDialog()">×</button>
@@ -1366,8 +1382,8 @@
 
 <!-- Subteam Detail Dialog -->
 @if (showSubteamDetailDialog() && selectedSubteamForDetail()) {
-  <div class="dialog-overlay" (click)="closeSubteamDetailDialog()">
-    <div class="dialog-content subteam-detail-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content subteam-detail-dialog">
       <div class="dialog-header">
         <h2>{{ selectedSubteamForDetail()!.name }}</h2>
         <button class="close-button" (click)="closeSubteamDetailDialog()">×</button>
@@ -1444,8 +1460,8 @@
 
 <!-- Edit Member Dialog -->
 @if (showEditMemberDialog() && editingMember()) {
-  <div class="dialog-overlay" (click)="closeEditMemberDialog()">
-    <div class="dialog-content edit-member-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content edit-member-dialog">
       <div class="dialog-header">
         <h2>Edit Member: {{ editingMember()!.user?.fullName }}</h2>
         <button class="close-button" (click)="closeEditMemberDialog()">×</button>
@@ -1565,8 +1581,8 @@
 
 <!-- Edit Team Information Dialog -->
 @if (showDescriptionEditor()) {
-  <div class="dialog-overlay" (click)="closeDescriptionEditor()">
-    <div class="dialog-content description-editor-dialog" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content description-editor-dialog">
       <div class="dialog-header">
         <h2>Edit Team Information</h2>
         <button class="close-button" (click)="closeDescriptionEditor()">×</button>

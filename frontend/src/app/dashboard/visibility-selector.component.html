@@ -112,8 +112,8 @@
 
 <!-- User Selector Dialog -->
 @if (showUserSelector()) {
-  <div class="modal-overlay" (click)="cancelSelection()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+  <div class="modal-overlay">
+    <div class="modal-content">
       <div class="modal-header">
         <h3>Select Users</h3>
         <button class="close-button" (click)="cancelSelection()">×</button>
@@ -148,8 +148,8 @@
 
 <!-- Role Selector Dialog -->
 @if (showRoleSelector()) {
-  <div class="modal-overlay" (click)="cancelSelection()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+  <div class="modal-overlay">
+    <div class="modal-content">
       <div class="modal-header">
         <h3>Select Roles</h3>
         <button class="close-button" (click)="cancelSelection()">×</button>
@@ -179,8 +179,8 @@
 
 <!-- Subteam Selector Dialog -->
 @if (showSubteamSelector()) {
-  <div class="modal-overlay" (click)="cancelSelection()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+  <div class="modal-overlay">
+    <div class="modal-content">
       <div class="modal-header">
         <h3>Select Subteams</h3>
         <button class="close-button" (click)="cancelSelection()">×</button>

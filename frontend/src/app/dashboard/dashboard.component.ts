@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { TitleCasePipe, DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { TeamsService, TeamInvitation } from './teams.service';
+import { TeamsService, TeamInvitation, Team } from './teams.service';
 import { UsersService, UserProfile } from '../profile/users.service';
 import { PreferencesDialogComponent } from '../preferences/preferences-dialog.component';
 import { TestMessageDialogComponent } from './test-message-dialog.component';
@@ -130,6 +130,13 @@ export class DashboardComponent implements OnInit {
   protected readonly userToDelete = signal<UserProfile | null>(null);
   protected readonly isDeletingUser = signal(false);
   protected readonly deleteUserError = signal<string | null>(null);
+
+  // Delete team confirmation dialog signals
+  protected readonly showDeleteTeamDialog = signal(false);
+  protected readonly teamToDelete = signal<Team | null>(null);
+  protected readonly isDeletingTeam = signal(false);
+  protected readonly deleteTeamError = signal<string | null>(null);
+  protected readonly deleteTeamConfirmCount = signal(0);
   
   // Computed signal for sorted users
   protected readonly sortedUsers = computed(() => {
@@ -768,5 +775,56 @@ export class DashboardComponent implements OnInit {
       }
     }
     return null;
+  }
+
+  // Delete Team Methods
+  protected openDeleteTeamDialog(team: Team, event: Event): void {
+    event.stopPropagation(); // Prevent navigation to team detail
+    this.teamToDelete.set(team);
+    this.deleteTeamError.set(null);
+    this.deleteTeamConfirmCount.set(0);
+    this.showDeleteTeamDialog.set(true);
+  }
+
+  protected closeDeleteTeamDialog(): void {
+    this.showDeleteTeamDialog.set(false);
+    this.teamToDelete.set(null);
+    this.deleteTeamError.set(null);
+    this.deleteTeamConfirmCount.set(0);
+  }
+
+  protected async deleteTeam(): Promise<void> {
+    const confirmCount = this.deleteTeamConfirmCount();
+    
+    // First confirmation
+    if (confirmCount === 0) {
+      this.deleteTeamConfirmCount.set(1);
+      return;
+    }
+
+    // Second confirmation - actually delete
+    const team = this.teamToDelete();
+    if (!team) return;
+
+    this.isDeletingTeam.set(true);
+    this.deleteTeamError.set(null);
+
+    try {
+      await this.teamsService.deleteTeam(team.id);
+      this.closeDeleteTeamDialog();
+      
+      // Reload teams and statistics
+      const userId = this.authService.currentUser()?.id;
+      if (userId) {
+        await this.loadTeams();
+      }
+      await this.loadSiteStatistics();
+    } catch (error: any) {
+      this.deleteTeamError.set(
+        error.message || 'Failed to delete team. Please try again.'
+      );
+    } finally {
+      this.isDeletingTeam.set(false);
+    }
   }
 }

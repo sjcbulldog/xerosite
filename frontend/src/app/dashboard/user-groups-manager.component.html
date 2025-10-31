@@ -1,5 +1,5 @@
-<div class="modal-overlay" (click)="onClose()">
-  <div class="modal-container" (click)="$event.stopPropagation()">
+<div class="modal-overlay">
+  <div class="modal-container">
     <div class="modal-header">
       <h2>Manage User Groups</h2>
       <button class="close-button" (click)="onClose()">×</button>
@@ -61,8 +61,8 @@
 
 <!-- Group Editor Dialog -->
 @if (showEditor()) {
-  <div class="modal-overlay" (click)="closeEditor()">
-    <div class="modal-container editor-container" (click)="$event.stopPropagation()">
+  <div class="modal-overlay">
+    <div class="modal-container editor-container">
       <div class="modal-header">
         <h2>{{ editingGroup() ? 'Edit User Group' : 'Create User Group' }}</h2>
         <button class="close-button" (click)="closeEditor()">×</button>

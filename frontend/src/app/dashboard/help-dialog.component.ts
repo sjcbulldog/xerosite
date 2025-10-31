@@ -26,10 +26,12 @@ import { CommonModule } from '@angular/common';
                 <li><a href="#dashboard">3. Dashboard Overview</a></li>
                 <li><a href="#teams">4. Team Management</a></li>
                 <li><a href="#calendar">5. Calendar & Events</a></li>
-                <li><a href="#profile">6. Profile Management</a></li>
-                <li><a href="#preferences">7. User Preferences</a></li>
-                <li><a href="#admin">8. Administrator Features</a></li>
-                <li><a href="#troubleshooting">9. Troubleshooting</a></li>
+                <li><a href="#media">6. Team Media & Files</a></li>
+                <li><a href="#messaging">7. Team Messaging</a></li>
+                <li><a href="#profile">8. Profile Management</a></li>
+                <li><a href="#preferences">9. User Preferences</a></li>
+                <li><a href="#admin">10. Administrator Features</a></li>
+                <li><a href="#troubleshooting">11. Troubleshooting</a></li>
               </ul>
             </div>
 
@@ -222,6 +224,15 @@ import { CommonModule } from '@angular/common';
                 <li>Define lead positions within subteams</li>
                 <li>Manage subteam-specific roles and responsibilities</li>
               </ul>
+
+              <h4>Join Request Notifications</h4>
+              <p>When users request to join public teams:</p>
+              <ul>
+                <li>All team administrators receive an email notification</li>
+                <li>Email includes the requestor's name and email address</li>
+                <li>Administrators can approve or reject requests from the team management page</li>
+                <li>Users receive email notifications when their requests are approved or rejected</li>
+              </ul>
             </section>
 
             <section id="calendar" class="section">
@@ -263,9 +274,159 @@ import { CommonModule } from '@angular/common';
                 <li><strong>Not Sure:</strong> Uncertain (gray indicator)</li>
               </ul>
               <p>Click the attendance icon next to any event to cycle through these options.</p>
+
+              <h3>Calendar Subscription</h3>
+              <p>Subscribe to team calendars in your personal calendar application:</p>
+              <ol class="step-list">
+                <li>Open your preferred calendar app (Google Calendar, Apple Calendar, Outlook, etc.)</li>
+                <li>Look for "Add Calendar" or "Subscribe to Calendar" option</li>
+                <li>Use the team's calendar feed URL: <code>webcal://yourdomain.com/calendar/[team-id]</code></li>
+                <li>The calendar will automatically sync and update with team events</li>
+              </ol>
+              <div class="note">
+                <strong>Note:</strong> Calendar subscriptions support recurring events, event updates, and timezone conversions automatically.
+              </div>
+            </section>
+
+            <section id="media" class="section">
+              <h2>6. Team Media & Files</h2>
+              <p>Share images, videos, documents, and other files with your team members.</p>
+
+              <h3>Accessing Team Media</h3>
+              <p>From any team detail page, find the "Media" section with a collapsible header. Click to expand and view all team media files.</p>
+
+              <h3>Uploading Files</h3>
+              <ol class="step-list">
+                <li>Click the "+" button in the Media section header</li>
+                <li>In the upload dialog, enter a descriptive title for your file</li>
+                <li>Choose a file by either:
+                  <ul>
+                    <li>Clicking "Browse Files" to select from your computer</li>
+                    <li>Dragging and dropping a file into the upload area</li>
+                  </ul>
+                </li>
+                <li>Watch the real-time progress bar as your file uploads</li>
+                <li>Click "Upload" to complete</li>
+              </ol>
+
+              <div class="note">
+                <strong>Note:</strong> The title will automatically populate from the filename, but you can change it to something more descriptive.
+              </div>
+
+              <h3>Supported File Types</h3>
+              <ul>
+                <li><strong>Images:</strong> JPG, PNG, GIF (with preview support)</li>
+                <li><strong>Videos:</strong> MP4, MOV, AVI (with thumbnail generation)</li>
+                <li><strong>Documents:</strong> PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX</li>
+                <li><strong>Archives:</strong> ZIP</li>
+                <li><strong>Text:</strong> TXT, CSV</li>
+              </ul>
+
+              <h3>Viewing Media</h3>
+              <p>In the media list, you can:</p>
+              <ul>
+                <li><strong>Preview:</strong> Click on images or videos to view them in a full-screen preview dialog</li>
+                <li><strong>Filter:</strong> Use the search box to filter by title, filename, or uploader name</li>
+                <li><strong>View Details:</strong> See file size, upload date, and uploader information</li>
+              </ul>
+
+              <h3>Media Actions</h3>
+              <p>For each file, you can:</p>
+              <ul>
+                <li><strong>Download:</strong> Save the file to your computer (⬇️ button)</li>
+                <li><strong>Edit Title:</strong> Rename the file's display title (✏️ button - if you're the uploader or team admin)</li>
+                <li><strong>Delete:</strong> Remove the file from team media (🗑️ button - if you're the uploader or team admin)</li>
+              </ul>
+
+              <h3>Image & Video Previews</h3>
+              <ul>
+                <li><strong>Images:</strong> Display automatically with thumbnail in the list, click to view full-size</li>
+                <li><strong>Videos:</strong> Show generated thumbnails, click to play in full-screen viewer</li>
+                <li><strong>Close Preview:</strong> Click the × button or outside the preview area</li>
+              </ul>
+            </section>
+
+            <section id="messaging" class="section">
+              <h2>7. Team Messaging</h2>
+              <p>Send messages and announcements to team members with optional file attachments.</p>
+
+              <h3>Sending Messages</h3>
+              <ol class="step-list">
+                <li>From the team detail page, click "Send Message" in the admin menu (⋮)</li>
+                <li>Fill in the message form:
+                  <ul>
+                    <li><strong>Recipients:</strong> Choose who receives the message</li>
+                    <li><strong>Subject:</strong> Brief description of the message</li>
+                    <li><strong>Content:</strong> Full message text</li>
+                  </ul>
+                </li>
+                <li>Optionally add file attachments (see below)</li>
+                <li>Click "Send Message"</li>
+              </ol>
+
+              <h3>Recipient Options</h3>
+              <ul>
+                <li><strong>All Team Members:</strong> Everyone on the team receives the message</li>
+                <li><strong>User Group:</strong> Target specific groups you've defined (e.g., by role, subteam, or custom criteria)</li>
+              </ul>
+
+              <h3>Message Attachments</h3>
+              <p>Add files to your messages using drag-and-drop or file browsing:</p>
+              
+              <h4>Adding Attachments</h4>
+              <ol class="step-list">
+                <li>In the Send Message dialog, locate the attachment area</li>
+                <li>Either:
+                  <ul>
+                    <li>Drag files from your computer onto the drop zone</li>
+                    <li>Click "Browse Files" to select files</li>
+                  </ul>
+                </li>
+                <li>Multiple files can be added (up to 10 files)</li>
+                <li>Remove unwanted files by clicking the × next to each filename</li>
+              </ol>
+
+              <h4>Attachment Size Limits</h4>
+              <ul>
+                <li><strong>Maximum per file:</strong> 50 MB</li>
+                <li><strong>Maximum total:</strong> 50 MB across all attachments</li>
+                <li>You'll receive an error if limits are exceeded</li>
+              </ul>
+
+              <h4>Large File Handling</h4>
+              <div class="feature-card">
+                <h4>Smart Attachment Delivery</h4>
+                <p>The system automatically optimizes how attachments are delivered:</p>
+                <ul>
+                  <li><strong>Small files (≤1 MB):</strong> Attached directly to email messages</li>
+                  <li><strong>Large files (>1 MB):</strong> Stored on the server with download links in the email</li>
+                </ul>
+                <div class="note">
+                  <strong>Note:</strong> When you attach large files, recipients will see a notification in the email with download links instead of direct attachments. This ensures reliable email delivery.
+                </div>
+              </div>
+
+              <h3>Reviewing Sent Messages</h3>
+              <ol class="step-list">
+                <li>Click "Review Messages" in the admin menu</li>
+                <li>View all messages sent to the team</li>
+                <li>Filter by date range or search content</li>
+                <li>See delivery statistics and recipient information</li>
+              </ol>
+
+              <h3>Downloading Message Attachments</h3>
+              <p>If you receive an email with large file attachments:</p>
+              <ol class="step-list">
+                <li>Open the email notification</li>
+                <li>Look for the "Large Attachments" section</li>
+                <li>Click the download link for each file</li>
+                <li>Log in if prompted (download links are secured)</li>
+                <li>File will download to your computer</li>
+              </ol>
             </section>
 
             <section id="profile" class="section">
+              <h2>8. Profile Management</h2>
               <h2>6. Profile Management</h2>
               <p>Manage your personal information and contact details through the profile system.</p>
 
@@ -301,7 +462,7 @@ import { CommonModule } from '@angular/common';
             </section>
 
             <section id="preferences" class="section">
-              <h2>7. User Preferences</h2>
+              <h2>9. User Preferences</h2>
               <p>Customize your notification and communication preferences to control how and when you receive updates.</p>
 
               <h3>Accessing Preferences</h3>
@@ -334,7 +495,7 @@ import { CommonModule } from '@angular/common';
             </section>
 
             <section id="admin" class="section">
-              <h2>8. Administrator Features</h2>
+              <h2>10. Administrator Features</h2>
               <p>Site administrators have access to additional features for managing users and system operations.</p>
 
               <h3>User Management</h3>
@@ -361,7 +522,7 @@ import { CommonModule } from '@angular/common';
             </section>
 
             <section id="troubleshooting" class="section">
-              <h2>9. Troubleshooting</h2>
+              <h2>11. Troubleshooting</h2>
 
               <h3>Common Issues</h3>
 
@@ -392,6 +553,36 @@ import { CommonModule } from '@angular/common';
                   <li>Check if your join request is pending approval</li>
                   <li>Contact the team administrator for private teams</li>
                   <li>Ensure your account is in active status</li>
+                </ul>
+              </div>
+
+              <div class="feature-card">
+                <h4>File Upload Issues</h4>
+                <ul>
+                  <li>Verify file size doesn't exceed 50 MB</li>
+                  <li>Check your internet connection for large files</li>
+                  <li>Try uploading one file at a time if issues persist</li>
+                  <li>Ensure you have permission to upload to the team</li>
+                </ul>
+              </div>
+
+              <div class="feature-card">
+                <h4>Cannot Download Attachments</h4>
+                <ul>
+                  <li>Verify you're logged in to the system</li>
+                  <li>Check that you're a member of the team</li>
+                  <li>Ensure the download link hasn't expired (if applicable)</li>
+                  <li>Try copying the link to a new browser tab</li>
+                </ul>
+              </div>
+
+              <div class="feature-card">
+                <h4>Video Previews Not Working</h4>
+                <ul>
+                  <li>Check that your browser supports video playback</li>
+                  <li>Ensure the video format is supported (MP4, MOV, AVI)</li>
+                  <li>Try refreshing the page to reload thumbnails</li>
+                  <li>Download the video file to view locally if preview fails</li>
                 </ul>
               </div>
 

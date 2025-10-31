@@ -1,4 +1,4 @@
-import { IsArray, ValidateNested, IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsArray, ValidateNested, IsString, IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MembershipStatus } from '../enums/membership-status.enum';
 
@@ -49,6 +49,10 @@ export class ImportRosterDto {
   @IsOptional()
   @IsEnum(MembershipStatus)
   defaultStatus?: MembershipStatus;
+
+  @IsOptional()
+  @IsBoolean()
+  sendEmails?: boolean;
 }
 
 export class ImportRosterResultDto {

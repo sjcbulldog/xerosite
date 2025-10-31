@@ -123,8 +123,8 @@
 
 <!-- Upload Dialog -->
 @if (showUploadDialog()) {
-  <div class="dialog-overlay" (click)="closeUploadDialog()">
-    <div class="dialog-content" (click)="$event.stopPropagation()">
+  <div class="dialog-overlay">
+    <div class="dialog-content">
       <h3>Upload Media File</h3>
       
       <div class="form-group">
@@ -218,11 +218,11 @@
 
 <!-- Preview Dialog -->
 @if (showPreviewDialog() && previewingMedia()) {
-  <div class="preview-overlay" (click)="closePreview()">
+  <div class="preview-overlay">
     <div class="preview-container">
       <button class="preview-close" (click)="closePreview()" title="Close">×</button>
       
-      <div class="preview-content" (click)="$event.stopPropagation()">
+      <div class="preview-content">
         @if (isImage(previewingMedia()!.mimeType)) {
           <img 
             [src]="getPreviewUrl(previewingMedia()!)" 

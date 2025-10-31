@@ -220,6 +220,24 @@ export class TeamsService {
     }
   }
 
+  async deleteTeam(teamId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/${teamId}`)
+      );
+      
+      // Remove from local state
+      const updatedUserTeams = this.userTeamsSignal().filter(t => t.id !== teamId);
+      this.userTeamsSignal.set(updatedUserTeams);
+      
+      const updatedPublicTeams = this.publicTeamsSignal().filter(t => t.id !== teamId);
+      this.publicTeamsSignal.set(updatedPublicTeams);
+    } catch (error: any) {
+      console.error('Error deleting team:', error);
+      throw new Error(error.error?.message || 'Failed to delete team');
+    }
+  }
+
   async updateMemberStatus(teamId: string, userId: string, status: 'pending' | 'active' | 'disabled'): Promise<TeamMember> {
     try {
       return await firstValueFrom(
@@ -389,7 +407,7 @@ export class TeamsService {
     }
   }
 
-  async importRoster(teamId: string, members: any[], defaultPassword?: string, defaultStatus?: 'pending' | 'active'): Promise<any> {
+  async importRoster(teamId: string, members: any[], defaultPassword?: string, defaultStatus?: 'pending' | 'active', sendEmails?: boolean): Promise<any> {
     try {
       const body: any = { members };
       if (defaultPassword) {
@@ -397,6 +415,9 @@ export class TeamsService {
       }
       if (defaultStatus) {
         body.defaultStatus = defaultStatus;
+      }
+      if (sendEmails !== undefined) {
+        body.sendEmails = sendEmails;
       }
       const response = await firstValueFrom(
         this.http.post<any>(`${this.apiUrl}/${teamId}/import-roster`, body)

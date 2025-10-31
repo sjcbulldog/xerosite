@@ -81,8 +81,12 @@ export class TeamsController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.teamsService.remove(id);
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<{ message: string }> {
+    await this.teamsService.remove(id, user.id);
+    return { message: 'Team deleted successfully' };
   }
 
   @Post(':id/invitations')

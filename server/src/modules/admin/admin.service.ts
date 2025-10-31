@@ -12,7 +12,9 @@ export class AdminService {
     private readonly smsService: SmsService,
   ) {}
 
-  async sendTestMessage(testMessageDto: TestMessageDto): Promise<{ success: boolean; message: string }> {
+  async sendTestMessage(
+    testMessageDto: TestMessageDto,
+  ): Promise<{ success: boolean; message: string }> {
     const { deliveryMethod, recipient, message } = testMessageDto;
 
     try {
