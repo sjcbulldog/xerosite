@@ -358,8 +358,6 @@ Pending
 
 When downloading an attachment in a message, I get a permissions denied message.  Since the link is in email it must take me to a place where I can log into the site first and then get access to the link.
 
-
-
 When sending a message with an attachments provide a progress bar for the upload of each attachment.
 
 For users, there should be an optional set of parent.  In the ma
@@ -384,3 +382,7 @@ Continous
 ---------
 Update the user's guide to reflect features added single the last update to the user's guide: 10/29/2025, 10/31/2025
 Update the API document to reflect changes in the rest APIs: 10/29/2025
+
+Notes
+-----
+Be sure I can export roster and then import same roster
