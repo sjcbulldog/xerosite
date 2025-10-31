@@ -24,8 +24,7 @@ export class EmailService implements OnModuleInit {
   private readonly logger = new Logger(EmailService.name);
   private processingQueue = false;
   private lastProcessTime = 0;
-  private emailsSentThisMinute = 0;
-  private minuteStartTime = Date.now();
+  private lastEmailSentTime = 0;
 
   constructor(
     @InjectRepository(EmailQueue)
@@ -49,7 +48,7 @@ export class EmailService implements OnModuleInit {
     }
 
     if (rateLimit > 0) {
-      this.logger.log(`Rate limit: ${rateLimit} emails per minute`);
+      this.logger.log(`Rate limit: ${rateLimit} seconds between emails`);
     } else {
       this.logger.log('No rate limit configured');
     }
@@ -76,27 +75,11 @@ export class EmailService implements OnModuleInit {
         return;
       }
 
-      // Reset counter if we're in a new minute
-      const now = Date.now();
-      if (now - this.minuteStartTime >= 60000) {
-        this.emailsSentThisMinute = 0;
-        this.minuteStartTime = now;
-      }
-
-      // Calculate how many emails we can send
-      const availableSlots =
-        rateLimit > 0 ? Math.max(0, rateLimit - this.emailsSentThisMinute) : 100; // Process up to 100 at once if no rate limit
-
-      if (availableSlots === 0) {
-        this.processingQueue = false;
-        return; // Rate limit reached
-      }
-
       // Get pending emails
       const pendingEmails = await this.emailQueueRepository.find({
         where: { status: EmailStatus.PENDING },
         order: { createdAt: 'ASC' },
-        take: availableSlots,
+        take: 100, // Process up to 100 at once
       });
 
       if (pendingEmails.length === 0) {
@@ -104,7 +87,7 @@ export class EmailService implements OnModuleInit {
         const now = Date.now();
         if (now - this.lastProcessTime > 60000) {
           // Log once per minute
-          this.logger.debug('No pending emails in queue');
+          this.logger.log('No pending emails in queue');
           this.lastProcessTime = now;
         }
         this.processingQueue = false;
@@ -112,11 +95,24 @@ export class EmailService implements OnModuleInit {
       }
 
       this.logger.log(
-        `Processing ${pendingEmails.length} queued emails (rate limit: ${rateLimit}, sent this minute: ${this.emailsSentThisMinute})`,
+        `Processing ${pendingEmails.length} queued emails (rate limit: ${rateLimit} seconds between emails)`,
       );
 
       for (const emailItem of pendingEmails) {
         try {
+          // Check if we need to wait before sending (rate limiting)
+          if (rateLimit > 0 && this.lastEmailSentTime > 0) {
+            const timeSinceLastEmail = Date.now() - this.lastEmailSentTime;
+            const delayNeeded = rateLimit * 1000 - timeSinceLastEmail;
+
+            if (delayNeeded > 0) {
+              this.logger.log(
+                `Rate limit: waiting ${Math.ceil(delayNeeded / 1000)} seconds before sending next email`,
+              );
+              await new Promise((resolve) => setTimeout(resolve, delayNeeded));
+            }
+          }
+
           // Mark as processing
           emailItem.status = EmailStatus.PROCESSING;
           await this.emailQueueRepository.save(emailItem);
@@ -129,7 +125,7 @@ export class EmailService implements OnModuleInit {
           emailItem.sentAt = new Date();
           await this.emailQueueRepository.save(emailItem);
 
-          this.emailsSentThisMinute++;
+          this.lastEmailSentTime = Date.now();
           this.logger.log(`Email sent to ${emailItem.to} (${emailItem.subject})`);
         } catch (error) {
           this.logger.error(`Failed to send email ${emailItem.id}:`, error);
@@ -138,12 +134,6 @@ export class EmailService implements OnModuleInit {
           emailItem.attempts += 1;
           emailItem.lastError = error.message || 'Unknown error';
           await this.emailQueueRepository.save(emailItem);
-        }
-
-        // Check if we've hit the rate limit
-        if (rateLimit > 0 && this.emailsSentThisMinute >= rateLimit) {
-          this.logger.log('Rate limit reached, pausing queue processing');
-          break;
         }
       }
     } catch (error) {

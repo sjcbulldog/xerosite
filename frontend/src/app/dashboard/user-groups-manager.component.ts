@@ -30,6 +30,7 @@ export class UserGroupsManagerComponent implements OnInit {
 
   // Outputs
   readonly close = output<void>();
+  readonly groupsChanged = output<void>();
 
   // State
   protected readonly userGroups = signal<UserGroup[]>([]);
@@ -152,6 +153,7 @@ export class UserGroupsManagerComponent implements OnInit {
       }
 
       await this.loadUserGroups();
+      this.groupsChanged.emit();
       this.closeEditor();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to save user group';
@@ -169,6 +171,7 @@ export class UserGroupsManagerComponent implements OnInit {
     try {
       await this.userGroupsService.deleteUserGroup(this.teamId(), group.id);
       await this.loadUserGroups();
+      this.groupsChanged.emit();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete user group';
       this.error.set(message);

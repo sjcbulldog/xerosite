@@ -92,6 +92,12 @@ export class TeamLinksService {
         url: `https://www.statbotics.io/team/${teamNumber}`,
         displayOrder: 1,
       },
+      {
+        teamId,
+        title: 'Chief Delphi',
+        url: 'https://www.chiefdelphi.com/',
+        displayOrder: 2,
+      },
     ];
 
     const links = this.teamLinkRepository.create(defaultLinks);

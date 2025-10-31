@@ -109,7 +109,12 @@ export class TeamMediaService {
     await this.teamMediaRepository.remove(media);
   }
 
-  async downloadFile(id: string): Promise<{ data: Buffer; filename: string; mimeType: string }> {
+  async downloadFile(id: string): Promise<{
+    data: Buffer;
+    filename: string;
+    mimeType: string;
+    fileSize: number;
+  }> {
     const media = await this.findOne(id);
 
     const { file, data } = await this.fileStorageService.getFile(media.fileId);
@@ -117,6 +122,7 @@ export class TeamMediaService {
       data,
       filename: file.originalFilename,
       mimeType: file.mimeType,
+      fileSize: file.fileSize,
     };
   }
 

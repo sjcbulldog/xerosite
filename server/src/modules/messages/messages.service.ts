@@ -9,6 +9,8 @@ import { User } from '../users/entities/user.entity';
 import { UserTeam } from '../teams/entities/user-team.entity';
 import { UserPermission } from '../teams/entities/user-permission.entity';
 import { UserGroup } from '../teams/entities/user-group.entity';
+import { SubteamMember } from '../teams/entities/subteam-member.entity';
+import { SubteamLeadPosition } from '../teams/entities/subteam-lead-position.entity';
 import { MembershipStatus } from '../teams/enums/membership-status.enum';
 import { EmailService } from '../email/email.service';
 import { FileStorageService } from '../file-storage/file-storage.service';
@@ -28,6 +30,10 @@ export class MessagesService {
     private readonly userPermissionRepository: Repository<UserPermission>,
     @InjectRepository(UserGroup)
     private readonly userGroupRepository: Repository<UserGroup>,
+    @InjectRepository(SubteamMember)
+    private readonly subteamMemberRepository: Repository<SubteamMember>,
+    @InjectRepository(SubteamLeadPosition)
+    private readonly subteamLeadPositionRepository: Repository<SubteamLeadPosition>,
     private readonly emailService: EmailService,
     private readonly fileStorageService: FileStorageService,
     private readonly configService: ConfigService,
@@ -376,29 +382,41 @@ export class MessagesService {
           })
         : [];
 
-    return messages.filter((message) => {
+    const filteredMessages = [];
+    for (const message of messages) {
       // Include messages sent by the user
       if (message.senderId === userId) {
-        return true;
+        filteredMessages.push(message);
+        continue;
       }
 
       // Check if user is a recipient
       if (message.recipientType === MessageRecipientType.ALL_TEAM_MEMBERS) {
         // User receives message if they are an active team member
-        return userTeam !== null;
+        if (userTeam !== null) {
+          filteredMessages.push(message);
+        }
       } else if (message.recipientType === MessageRecipientType.USER_GROUP && message.userGroupId) {
         // Check if user is in the user group
         const userGroup = userGroups.find((ug) => ug.id === message.userGroupId);
-        if (!userGroup) return false;
-
-        return this.isUserInVisibilityRules(userId, userGroup.visibilityRules);
+        if (userGroup) {
+          const matches = await this.isUserInVisibilityRules(userId, userGroup.visibilityRules, userTeam, teamId);
+          if (matches) {
+            filteredMessages.push(message);
+          }
+        }
       }
+    }
 
-      return false;
-    });
+    return filteredMessages;
   }
 
-  private isUserInVisibilityRules(userId: string, visibilityRules: any): boolean {
+  private async isUserInVisibilityRules(
+    userId: string,
+    visibilityRules: any,
+    userTeam: UserTeam | null,
+    teamId: string,
+  ): Promise<boolean> {
     if (!visibilityRules || !visibilityRules.rows) {
       return false;
     }
@@ -420,9 +438,52 @@ export class MessagesService {
           case 'select_users':
             criterionMatches = criterion.userIds?.includes(userId) || false;
             break;
-          // Note: For subteam_leads, subteam_members, and roles criteria,
-          // we would need additional database queries to check membership.
-          // For now, we'll be conservative and not match these.
+          case 'roles':
+            // Get user's roles from userTeam
+            if (userTeam) {
+              const userRoles = userTeam.getRolesArray();
+              
+              // Special case: if no roles are selected in the criterion,
+              // match only users who have no roles assigned
+              if (!criterion.roles || criterion.roles.length === 0) {
+                criterionMatches = userRoles.length === 0;
+              } else {
+                // Match if user has at least one of the specified roles
+                criterionMatches = criterion.roles.some((role: string) => userRoles.includes(role));
+              }
+            } else {
+              // User is not a team member, so they don't match
+              criterionMatches = false;
+            }
+            break;
+          case 'subteam_members':
+            // Check if user is a member of any of the specified subteams
+            if (criterion.subteamIds && criterion.subteamIds.length > 0) {
+              const membershipCount = await this.subteamMemberRepository.count({
+                where: {
+                  userId,
+                  subteamId: In(criterion.subteamIds),
+                },
+              });
+              criterionMatches = membershipCount > 0;
+            } else {
+              criterionMatches = false;
+            }
+            break;
+          case 'subteam_leads':
+            // Check if user is assigned as a lead in any of the specified subteams
+            if (criterion.subteamIds && criterion.subteamIds.length > 0) {
+              const leadCount = await this.subteamLeadPositionRepository.count({
+                where: {
+                  userId,
+                  subteamId: In(criterion.subteamIds),
+                },
+              });
+              criterionMatches = leadCount > 0;
+            } else {
+              criterionMatches = false;
+            }
+            break;
           default:
             criterionMatches = false;
             break;

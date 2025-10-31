@@ -326,25 +326,45 @@ One the team dashboard, The Useful Links and Media headers are bigger than Team 
 
 For all popups, clicking on the page outside the popup should not close the popup.
 
+When importing a team roster from CSV, replace the progress bar with a spinning wheel indicating that action is in progress.
+
+When in the Import Team Roster popup, when a file has been added to the file selection part of the popup, the red X to delete the file should be the trashcan icon with a transparent background.
+
+When in the Import Team Roster popup, when a file has been added to the file selection part of the popup, the red X has been replaced by a trashcan but it has a red background.  The background should be transparent.
+
+When editing a subteam in the Edit Subteam popup, the title of that popup should include the name of the subteam.
+
+When new user groups are created, the Filter By User Group dropdown does not have the new groups unless the page is reloaded.
+
+On the team dashboard, in the team members section, above the text input for filtering, add the ability to select a User Group.  Users display will first be filtered by the User Group and then by the text in the text input.  Basically the displayed list will be the end of these two.
+
+When applying a User Group to select users, if the Roles criteria is used but no roles are selected, match only those users that have no roles defined.
+
+By default, when displaying the team dashboard, the Useful Links and Media sections should be collasped.
+
+The filtering based on user group in the team members section of the team dashboard is not working.  Specifically I have a user group defined as anyone with the 'Adminstrator' role, and despite having 1 user with this role, that user is not displayed.
+
+The Media section of the team dashboard, should contain the number of media entries in parenthesis like the Team Members section does. The Useful Links section of the team dashboard, should contain the number of link entries in parenthesis like the Team Members section does. The Calendar section of the team dashboard, should contain the number of calendar entries in parenthesis like the Team Members section does.  Recurring events should count as only a single event.
+
+When new calendar entries are added the count at the top level section in the team dashboard is not updated until the page is refereshed.
+
+Change the rate limit for outgoing emails to be from 12 per minute to one every 5 seconds.
+
 In Progress
 ===========
-
 
 Pending
 =======
 
-When in the Import Team Roster popup, when a file has been added to the file selection part of the popup, the red X to delete the file should be the trashcan icon with a transparent background.
-
-When importing a team roster from CSV, replace the progress bar with a spinning wheel indicating that action is in progress.
-
-When editing a subteam in the Edit Subteam popup, the title of that popup should include the name of the subteam.
-
 When downloading an attachment in a message, I get a permissions denied message.  Since the link is in email it must take me to a place where I can log into the site first and then get access to the link.
 
-When clicking on a video link in the Media section, it takes a while for the video to start playing.  Can this be sped up?
+
 
 When sending a message with an attachments provide a progress bar for the upload of each attachment.
 
+For users, there should be an optional set of parent.  In the ma
+
+For a team, there should be a system for adding a requirement (e.g. First Consent Form) for a given time period and user group.  If a user has not completed a requirement when they log in, they get a popup saying they have unfulfilled requirements.  The system should periodically email them to remind them of the outstanding requirement.
 
 --- calendar
 
@@ -355,6 +375,10 @@ When a single instance of an event is canceled, google calendar does not process
 The webcal protocol does not seem to be working with various calendar applications (outlook or google calendar).
 
 When a new user joins a team, send calendar invites for all active and future calendar events to that user.
+
+--- Testing
+
+Create a test plan to test all functionality for the application.
 
 Continous
 ---------

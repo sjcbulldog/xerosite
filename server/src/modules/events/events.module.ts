@@ -13,6 +13,8 @@ import { EventNotificationsService } from './event-notifications.service';
 import { Team } from '../teams/entities/team.entity';
 import { UserTeam } from '../teams/entities/user-team.entity';
 import { UserGroup } from '../teams/entities/user-group.entity';
+import { SubteamMember } from '../teams/entities/subteam-member.entity';
+import { SubteamLeadPosition } from '../teams/entities/subteam-lead-position.entity';
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../preferences/entities/user-preference.entity';
 import { EmailModule } from '../email/email.module';
@@ -28,6 +30,8 @@ import { SmsModule } from '../sms/sms.module';
       Team,
       UserTeam,
       UserGroup,
+      SubteamMember,
+      SubteamLeadPosition,
       User,
       UserPreference,
     ]),

@@ -16,7 +16,7 @@ export class TeamLinksComponent implements OnInit, OnDestroy {
 
   readonly teamLinksService = inject(TeamLinksService);
 
-  readonly showSection = signal(true);
+  readonly showSection = signal(false);
   readonly showAddDialog = signal(false);
   readonly editingLink = signal<TeamLink | null>(null);
 

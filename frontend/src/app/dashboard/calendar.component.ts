@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, input, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, input, output, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CalendarService } from './calendar.service';
@@ -48,6 +48,8 @@ export class CalendarComponent implements OnInit {
   readonly isAdmin = input.required<boolean>();
   readonly members = input.required<TeamMember[]>();
   readonly subteams = input.required<Subteam[]>();
+  
+  readonly eventsChanged = output<void>();
   
   protected readonly currentView = signal<CalendarView>('month');
   protected readonly currentDate = signal(new Date());
@@ -452,6 +454,7 @@ export class CalendarComponent implements OnInit {
       
       await this.loadEvents();
       this.closeEventDialog();
+      this.eventsChanged.emit();
     } catch (error: any) {
       this.eventError.set(error.message || 'Failed to save event');
     } finally {
@@ -496,6 +499,7 @@ export class CalendarComponent implements OnInit {
           );
           // Reload events to reflect the exclusion
           await this.loadEvents();
+          this.eventsChanged.emit();
         } else if (result === 'series') {
           // Delete entire series
           await this.calendarService.deleteEvent(
@@ -505,6 +509,7 @@ export class CalendarComponent implements OnInit {
           // Remove event from local state
           this.events.set(this.events().filter(e => e.id !== eventInstance.id));
           this.closeEventDialog();
+          this.eventsChanged.emit();
         }
       } catch (error: any) {
         console.error('Failed to delete event:', error);
@@ -521,6 +526,7 @@ export class CalendarComponent implements OnInit {
         await this.calendarService.deleteEvent(this.teamId(), eventData.id);
         this.events.set(this.events().filter(e => e.id !== eventData.id));
         this.closeEventDialog();
+        this.eventsChanged.emit();
       } catch (error: any) {
         alert(error.message || 'Failed to delete event');
       }

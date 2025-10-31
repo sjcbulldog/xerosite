@@ -9,6 +9,8 @@ import { User } from '../users/entities/user.entity';
 import { UserTeam } from '../teams/entities/user-team.entity';
 import { UserPermission } from '../teams/entities/user-permission.entity';
 import { UserGroup } from '../teams/entities/user-group.entity';
+import { SubteamMember } from '../teams/entities/subteam-member.entity';
+import { SubteamLeadPosition } from '../teams/entities/subteam-lead-position.entity';
 import { EmailModule } from '../email/email.module';
 import { FileStorageModule } from '../file-storage/file-storage.module';
 
@@ -21,6 +23,8 @@ import { FileStorageModule } from '../file-storage/file-storage.module';
       UserTeam,
       UserPermission,
       UserGroup,
+      SubteamMember,
+      SubteamLeadPosition,
     ]),
     MulterModule.register({
       limits: {

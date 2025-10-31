@@ -10,10 +10,11 @@ import {
   UseInterceptors,
   UploadedFile,
   Res,
+  Req,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { TeamMediaService } from './team-media.service';
@@ -83,14 +84,40 @@ export class TeamMediaController {
   @Get(':id/preview')
   async previewFile(
     @Param('id') id: string,
+    @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    const { data, filename, mimeType } =
+    const { data, filename, mimeType, fileSize } =
       await this.teamMediaService.downloadFile(id);
 
-    res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(data);
+    // Support for HTTP Range requests (needed for video streaming)
+    const range = req.headers.range;
+
+    if (range && mimeType.startsWith('video/')) {
+      // Parse range header (format: "bytes=start-end")
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunkSize = end - start + 1;
+
+      // Set 206 Partial Content status
+      res.status(206);
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Content-Length', chunkSize);
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+
+      // Send the requested chunk
+      res.send(data.slice(start, end + 1));
+    } else {
+      // Send entire file for non-video or non-range requests
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Content-Length', fileSize);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(data);
+    }
   }
 }

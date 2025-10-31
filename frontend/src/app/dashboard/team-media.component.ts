@@ -29,7 +29,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly http = inject(HttpClient);
 
-  readonly showSection = signal(true);
+  readonly showSection = signal(false);
   readonly showUploadDialog = signal(false);
   readonly editingMedia = signal<TeamMedia | null>(null);
   readonly isDragging = signal(false);
@@ -47,8 +47,6 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   private blobUrls = new Map<string, string>();
   // Signal to track loaded thumbnails
   readonly thumbnailUrls = signal<Map<string, string>>(new Map());
-  // Store full video URLs separately for preview playback
-  readonly videoBlobUrls = signal<Map<string, string>>(new Map());
   // Cache key prefix for localStorage
   private readonly THUMBNAIL_CACHE_PREFIX = 'video-thumbnail-';
 
@@ -74,7 +72,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.teamMediaService.clearMedia();
-    // Clean up all blob URLs (thumbnails and full videos)
+    // Clean up all blob URLs for thumbnails
     this.blobUrls.forEach(url => URL.revokeObjectURL(url));
     this.blobUrls.clear();
   }
@@ -123,13 +121,6 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
         
         // For videos, generate and cache thumbnail
         if (this.isVideo(media.mimeType)) {
-          const videoBlobUrl = URL.createObjectURL(blob);
-          // Store the full video URL for preview playback
-          this.blobUrls.set(media.id + '-video', videoBlobUrl);
-          const videoMap = new Map(this.videoBlobUrls());
-          videoMap.set(media.id, videoBlobUrl);
-          this.videoBlobUrls.set(videoMap);
-          
           // Generate thumbnail for display in grid
           blobUrl = await this.generateAndCacheVideoThumbnail(media.id, blob);
         } else {
@@ -466,17 +457,6 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
         this.thumbnailUrls.set(urls);
       }
       
-      // Clean up full video blob URL if it exists
-      const videoBlobUrl = this.blobUrls.get(media.id + '-video');
-      if (videoBlobUrl) {
-        URL.revokeObjectURL(videoBlobUrl);
-        this.blobUrls.delete(media.id + '-video');
-        
-        const videoUrls = new Map(this.videoBlobUrls());
-        videoUrls.delete(media.id);
-        this.videoBlobUrls.set(videoUrls);
-      }
-      
       // Clear cached video thumbnail if it's a video
       if (this.isVideo(media.mimeType)) {
         try {
@@ -560,36 +540,15 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   }
 
   getVideoUrl(media: TeamMedia): string {
-    // Return full video blob URL for playback
-    const urls = this.videoBlobUrls();
-    return urls.get(media.id) || '';
+    // For video playback, use direct server URL for streaming
+    // This allows the video to start playing immediately without downloading the entire file
+    return this.teamMediaService.getPreviewUrl(this.teamId(), media.id);
   }
 
   async openPreview(media: TeamMedia): Promise<void> {
-    // For videos, ensure we have the full video loaded
-    if (this.isVideo(media.mimeType) && !this.getVideoUrl(media)) {
-      await this.loadFullVideo(media);
-    }
+    // Open preview immediately - videos will stream from server
     this.previewingMedia.set(media);
     this.showPreviewDialog.set(true);
-  }
-
-  private async loadFullVideo(media: TeamMedia): Promise<void> {
-    try {
-      const url = this.teamMediaService.getPreviewUrl(this.teamId(), media.id);
-      const blob = await this.http.get(url, { responseType: 'blob' }).toPromise();
-      
-      if (blob) {
-        const videoBlobUrl = URL.createObjectURL(blob);
-        // Store the full video URL for preview playback
-        this.blobUrls.set(media.id + '-video', videoBlobUrl);
-        const videoMap = new Map(this.videoBlobUrls());
-        videoMap.set(media.id, videoBlobUrl);
-        this.videoBlobUrls.set(videoMap);
-      }
-    } catch (error) {
-      console.error(`Failed to load full video for ${media.id}:`, error);
-    }
   }
 
   closePreview(): void {

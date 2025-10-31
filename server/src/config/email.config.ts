@@ -13,5 +13,5 @@ export default registerAs('email', () => ({
   frontendUrl: process.env.API_URL || 'http://localhost:3000',
   dontSend: process.env.EMAIL_DONT_SEND === 'true',
   redirectTo: process.env.EMAIL_REDIRECT_TO || null,
-  rateLimit: parseInt(process.env.EMAIL_RATE_LIMIT, 10) || 0, // 0 means no limit
+  rateLimit: parseInt(process.env.EMAIL_RATE_LIMIT, 10) || 0, // Seconds to wait between emails (0 means no limit)
 }));

@@ -67,7 +67,7 @@
                     @if (canCreateUserGroups()) {
                       <button (click)="openUserGroupsManager()" class="menu-item">
                         <span class="menu-icon">👥</span>
-                        Manage User Groups
+                        User Groups
                       </button>
                     }
                   </div>
@@ -186,6 +186,22 @@
 
         @if (showActiveMembers()) {
           <div class="collapsible-content">
+            <!-- User Group Filter -->
+            <div class="user-group-filter-container">
+              <label for="userGroupFilter" class="filter-label">Filter by User Group:</label>
+              <select 
+                id="userGroupFilter"
+                class="user-group-filter-select"
+                [(ngModel)]="selectedUserGroupId"
+                [disabled]="isLoadingMembers()">
+                <option value="">All Members</option>
+                @for (group of userGroups(); track group.id) {
+                  <option [value]="group.id">{{ group.name }}</option>
+                }
+              </select>
+            </div>
+            
+            <!-- Text Filter -->
             <div class="member-filter-container">
               <input 
                 type="text"
@@ -363,7 +379,7 @@
         <div class="calendar-header-wrapper">
           <button class="collapsible-header" (click)="toggleCalendarSection()" [class.active]="showCalendarSection()">
             <span class="chevron">{{ showCalendarSection() ? '▼' : '▶' }}</span>
-            <h2>Calendar</h2>
+            <h2>Calendar ({{ uniqueCalendarEventsCount() }})</h2>
           </button>
         </div>
 
@@ -375,7 +391,8 @@
                 [teamRoles]="teamRoles()"
                 [isAdmin]="isTeamAdmin()"
                 [members]="members()"
-                [subteams]="subteams()">
+                [subteams]="subteams()"
+                (eventsChanged)="onCalendarEventsChanged()">
               </app-calendar>
             </div>
             
@@ -894,8 +911,9 @@
               <button 
                 class="remove-file-button"
                 (click)="importFile.set(null); $event.stopPropagation()"
-                [disabled]="isImporting()">
-                ×
+                [disabled]="isImporting()"
+                title="Remove file">
+                🗑️
               </button>
             </div>
           }
@@ -903,21 +921,15 @@
 
         @if (isImporting()) {
           <div class="progress-container">
-            <div class="progress-header">
+            <div class="spinner-container">
+              <div class="spinner"></div>
+            </div>
+            <div class="progress-message">
               <span class="progress-label">Importing roster...</span>
-              <span class="progress-percentage">{{ importProgress().toFixed(0) }}%</span>
+              @if (importTotal() > 0) {
+                <span class="progress-details">Processing {{ importTotal() }} members</span>
+              }
             </div>
-            <div class="progress-bar">
-              <div 
-                class="progress-fill" 
-                [style.width.%]="importProgress()">
-              </div>
-            </div>
-            @if (importTotal() > 0) {
-              <div class="progress-details">
-                Processing {{ importTotal() }} members
-              </div>
-            }
           </div>
         }
 
@@ -1007,7 +1019,7 @@
   <div class="dialog-overlay">
     <div class="dialog-content subteam-dialog">
       <div class="dialog-header">
-        <h2>Create Subteam</h2>
+        <h2>Create</h2>
         <button class="close-button" (click)="closeCreateSubteamDialog()">×</button>
       </div>
 
@@ -1015,6 +1027,7 @@
         <div class="form-group">
           <label for="subteamName">Subteam Name *</label>
           <input 
+            #subteamNameInput
             id="subteamName"
             type="text"
             [(ngModel)]="subteamName"
@@ -1127,7 +1140,7 @@
   <div class="dialog-overlay">
     <div class="dialog-content subteam-dialog">
       <div class="dialog-header">
-        <h2>Edit Subteam</h2>
+        <h2>Edit Subteam: {{ selectedSubteam()?.name }}</h2>
         <button class="close-button" (click)="closeEditSubteamDialog()">×</button>
       </div>
 
@@ -1575,7 +1588,8 @@
     [teamMembers]="activeMembers()"
     [subteams]="subteams()"
     [canCreatePublic]="canCreatePublicGroups()"
-    (close)="closeUserGroupsManager()">
+    (close)="closeUserGroupsManager()"
+    (groupsChanged)="onUserGroupsChanged()">
   </app-user-groups-manager>
 }
 

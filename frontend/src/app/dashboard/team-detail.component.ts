@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, signal, OnInit, computed, ViewChild } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, OnInit, computed, ViewChild, ElementRef } from '@angular/core';
 import { TeamsService, Team, TeamMember, TeamInvitation } from './teams.service';
 import { Subteam, CreateSubteamRequest } from './subteam.types';
 import { TitleCasePipe, DatePipe } from '@angular/common';
@@ -18,6 +18,8 @@ import { TeamLinksComponent } from './team-links.component';
 import { TeamMediaComponent } from './team-media.component';
 import { TeamOverviewDialogComponent } from './team-overview-dialog.component';
 import { COMMON_TIMEZONES } from './timezones';
+import { UserGroupsService, UserGroup } from './user-groups.service';
+import { CriteriaType } from './visibility-selector.types';
 
 @Component({
   selector: 'app-team-detail',
@@ -31,8 +33,12 @@ export class TeamDetailComponent implements OnInit {
   protected readonly authService = inject(AuthService);
   protected readonly usersService = inject(UsersService);
   protected readonly calendarService = inject(CalendarService);
+  protected readonly userGroupsService = inject(UserGroupsService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  // ViewChild references
+  @ViewChild('subteamNameInput') subteamNameInput?: ElementRef<HTMLInputElement>;
 
   // Expose Object for template use
   protected readonly Object = Object;
@@ -51,14 +57,30 @@ export class TeamDetailComponent implements OnInit {
   // Member filter
   protected readonly memberFilter = signal('');
   
-  // Filtered members based on search text
+  // User groups for filtering
+  protected readonly userGroups = signal<UserGroup[]>([]);
+  protected readonly selectedUserGroupId = signal<string>(''); // Empty string means "All Members"
+  
+  // Filtered members based on user group and search text
   protected readonly filteredActiveMembers = computed(() => {
-    const filter = this.memberFilter().toLowerCase().trim();
-    if (!filter) {
-      return this.activeMembers();
+    let members = this.activeMembers();
+    
+    // First filter by user group if one is selected
+    const selectedGroupId = this.selectedUserGroupId();
+    if (selectedGroupId) {
+      const selectedGroup = this.userGroups().find(g => g.id === selectedGroupId);
+      if (selectedGroup?.visibilityRules) {
+        members = members.filter(member => this.matchesVisibilityRules(member, selectedGroup.visibilityRules));
+      }
     }
     
-    return this.activeMembers().filter(member => {
+    // Then filter by search text
+    const filter = this.memberFilter().toLowerCase().trim();
+    if (!filter) {
+      return members;
+    }
+    
+    return members.filter(member => {
       const fullName = member.user?.fullName?.toLowerCase() || '';
       const firstName = member.user?.firstName?.toLowerCase() || '';
       const lastName = member.user?.lastName?.toLowerCase() || '';
@@ -152,6 +174,11 @@ export class TeamDetailComponent implements OnInit {
   // Calendar signals
   protected readonly showCalendarSection = signal(false);
   protected readonly calendarEvents = signal<TeamEvent[]>([]);
+  
+  // Computed: Count unique calendar events (recurring events count as 1)
+  protected readonly uniqueCalendarEventsCount = computed(() => {
+    return this.calendarEvents().length;
+  });
   
   // User Groups signals
   protected readonly showUserGroupsManager = signal(false);
@@ -326,6 +353,9 @@ export class TeamDetailComponent implements OnInit {
         await this.loadTeamRoles();
       }
       
+      // Load user groups for filtering
+      await this.loadUserGroups(teamId);
+      
       // Load subteams for count display
       await this.loadSubteams();
       
@@ -414,6 +444,91 @@ export class TeamDetailComponent implements OnInit {
     } catch (error: any) {
       console.error('Failed to load roles:', error);
     }
+  }
+  
+  private async loadUserGroups(teamId: string): Promise<void> {
+    try {
+      const groups = await this.userGroupsService.getUserGroups(teamId);
+      this.userGroups.set(groups);
+    } catch (error: any) {
+      console.error('Failed to load user groups:', error);
+    }
+  }
+  
+  /**
+   * Check if a member matches the visibility rules of a user group
+   */
+  private matchesVisibilityRules(member: TeamMember, visibilityRules: any): boolean {
+    if (!visibilityRules || !visibilityRules.ruleSet || !visibilityRules.ruleSet.rows) {
+      return false;
+    }
+
+    const team = this.team();
+    if (!team) return false;
+
+    // Check each visibility row (OR logic between rows)
+    for (const row of visibilityRules.ruleSet.rows) {
+      if (!row.criteria) continue;
+
+      // All criteria in a row must match (AND logic within row)
+      let rowMatches = true;
+      
+      for (const criterion of row.criteria) {
+        let criterionMatches = false;
+
+        switch (criterion.type) {
+          case CriteriaType.ALL_USERS:
+            criterionMatches = true;
+            break;
+          case CriteriaType.SELECT_USERS:
+            criterionMatches = criterion.userIds?.includes(member.userId) || false;
+            break;
+          case CriteriaType.ROLES:
+            // Special case: if no roles are selected, match only users with no roles
+            if (!criterion.roles || criterion.roles.length === 0) {
+              criterionMatches = member.roles.length === 0;
+            } else {
+              // Match if user has at least one of the specified roles
+              criterionMatches = criterion.roles.some((role: string) => member.roles.includes(role));
+            }
+            break;
+          case CriteriaType.SUBTEAM_MEMBERS:
+            // Check if user is a member of any of the specified subteams
+            if (criterion.subteamIds && criterion.subteamIds.length > 0) {
+              const allSubteams = this.subteams();
+              criterionMatches = allSubteams.some(subteam => 
+                criterion.subteamIds.includes(subteam.id) && 
+                subteam.members.some((m: any) => m.userId === member.userId)
+              );
+            }
+            break;
+          case CriteriaType.SUBTEAM_LEADS:
+            // Check if user is a lead in any of the specified subteams
+            if (criterion.subteamIds && criterion.subteamIds.length > 0) {
+              const allSubteams = this.subteams();
+              criterionMatches = allSubteams.some(subteam =>
+                criterion.subteamIds.includes(subteam.id) &&
+                subteam.leadPositions.some((lp: any) => lp.userId === member.userId)
+              );
+            }
+            break;
+          default:
+            criterionMatches = false;
+            break;
+        }
+
+        if (!criterionMatches) {
+          rowMatches = false;
+          break;
+        }
+      }
+
+      if (rowMatches) {
+        return true; // Found a matching row
+      }
+    }
+
+    return false; // No rows matched
   }
   
   // Member role management methods
@@ -1180,6 +1295,11 @@ export class TeamDetailComponent implements OnInit {
     this.subteamLeadPositions.set([]);
     this.subteamError.set(null);
     this.showCreateSubteamDialog.set(true);
+    
+    // Focus the subteam name input after the dialog is rendered
+    setTimeout(() => {
+      this.subteamNameInput?.nativeElement.focus();
+    }, 0);
   }
 
   protected closeCreateSubteamDialog(): void {
@@ -1386,6 +1506,22 @@ export class TeamDetailComponent implements OnInit {
       await this.loadSubteams();
       this.selectedMemberIds.set(new Set());
       
+      // Reload team members to update subteam tags
+      const allMembers = await this.teamsService.getTeamMembers(teamId);
+      this.members.set(allMembers);
+      
+      const currentUserId = this.authService.currentUser()?.id;
+      const userMembership = allMembers.find(m => m.userId === currentUserId);
+      const isAdmin = userMembership?.roles.includes('Administrator') || false;
+      
+      let active: TeamMember[];
+      if (isAdmin) {
+        active = allMembers.filter(m => m.status === 'active');
+      } else {
+        active = allMembers.filter(m => m.status === 'active' && m.user?.isActive !== false);
+      }
+      this.activeMembers.set(active);
+      
       // Update selected subteam
       const updatedSubteams = this.subteams();
       const updated = updatedSubteams.find(s => s.id === subteam.id);
@@ -1410,6 +1546,22 @@ export class TeamDetailComponent implements OnInit {
     try {
       await this.teamsService.removeSubteamMember(teamId, subteam.id, userId);
       await this.loadSubteams();
+      
+      // Reload team members to update subteam tags
+      const allMembers = await this.teamsService.getTeamMembers(teamId);
+      this.members.set(allMembers);
+      
+      const currentUserId = this.authService.currentUser()?.id;
+      const userMembership = allMembers.find(m => m.userId === currentUserId);
+      const isAdmin = userMembership?.roles.includes('Administrator') || false;
+      
+      let active: TeamMember[];
+      if (isAdmin) {
+        active = allMembers.filter(m => m.status === 'active');
+      } else {
+        active = allMembers.filter(m => m.status === 'active' && m.user?.isActive !== false);
+      }
+      this.activeMembers.set(active);
       
       // Update selected subteam if in manage dialog
       if (this.showManageMembersDialog()) {
@@ -1461,6 +1613,20 @@ export class TeamDetailComponent implements OnInit {
 
   protected closeUserGroupsManager(): void {
     this.showUserGroupsManager.set(false);
+  }
+
+  protected async onUserGroupsChanged(): Promise<void> {
+    const teamId = this.team()?.id;
+    if (teamId) {
+      await this.loadUserGroups(teamId);
+    }
+  }
+
+  protected async onCalendarEventsChanged(): Promise<void> {
+    const teamId = this.team()?.id;
+    if (teamId) {
+      await this.loadCalendarEvents(teamId);
+    }
   }
 
   protected openTeamOverview(): void {

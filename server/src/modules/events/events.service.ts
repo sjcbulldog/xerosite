@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual, LessThanOrEqual, In } from 'typeorm';
 import { TeamEvent } from './entities/team-event.entity';
 import { EventExclusion } from './entities/event-exclusion.entity';
 import { CreateEventDto, UpdateEventDto, EventResponseDto } from './dto/event.dto';
@@ -8,6 +8,8 @@ import { Team } from '../teams/entities/team.entity';
 import { User } from '../users/entities/user.entity';
 import { UserTeam } from '../teams/entities/user-team.entity';
 import { UserGroup } from '../teams/entities/user-group.entity';
+import { SubteamMember } from '../teams/entities/subteam-member.entity';
+import { SubteamLeadPosition } from '../teams/entities/subteam-lead-position.entity';
 import { MembershipStatus } from '../teams/enums/membership-status.enum';
 import { EmailService } from '../email/email.service';
 import { generateICS } from './utils/ics-generator';
@@ -28,6 +30,10 @@ export class EventsService {
     private readonly userTeamRepository: Repository<UserTeam>,
     @InjectRepository(UserGroup)
     private readonly userGroupRepository: Repository<UserGroup>,
+    @InjectRepository(SubteamMember)
+    private readonly subteamMemberRepository: Repository<SubteamMember>,
+    @InjectRepository(SubteamLeadPosition)
+    private readonly subteamLeadPositionRepository: Repository<SubteamLeadPosition>,
     private readonly emailService: EmailService,
   ) {}
 
@@ -537,9 +543,126 @@ export class EventsService {
       return [];
     }
 
-    // For now, return all team members
-    // In a full implementation, evaluate the user group's visibility rules
-    return this.getAllTeamMembers(teamId);
+    // Get all active team members
+    const allMembers = await this.getAllTeamMembers(teamId);
+    
+    // If no visibility rules, return all members
+    if (!userGroup.visibilityRules || !userGroup.visibilityRules.rows) {
+      return allMembers;
+    }
+
+    // Get all active UserTeam records for this team (for role lookup)
+    const userTeams = await this.userTeamRepository.find({
+      where: { teamId, status: MembershipStatus.ACTIVE },
+    });
+    
+    // Create a map for quick lookup
+    const userTeamMap = new Map<string, UserTeam>();
+    userTeams.forEach(ut => userTeamMap.set(ut.userId, ut));
+
+    // Filter members based on visibility rules
+    const matchingMembers = [];
+    for (const user of allMembers) {
+      const userTeam = userTeamMap.get(user.id) || null;
+      const matches = await this.isUserInVisibilityRules(user.id, userGroup.visibilityRules, userTeam, teamId);
+      if (matches) {
+        matchingMembers.push(user);
+      }
+    }
+
+    return matchingMembers;
+  }
+
+  private async isUserInVisibilityRules(
+    userId: string,
+    visibilityRules: any,
+    userTeam: UserTeam | null,
+    teamId: string,
+  ): Promise<boolean> {
+    if (!visibilityRules || !visibilityRules.rows) {
+      return false;
+    }
+
+    // Check each visibility row (OR logic between rows)
+    for (const row of visibilityRules.rows) {
+      if (!row.criteria) continue;
+
+      // All criteria in a row must match (AND logic within row)
+      let rowMatches = true;
+      
+      for (const criterion of row.criteria) {
+        let criterionMatches = false;
+
+        switch (criterion.type) {
+          case 'all_users':
+            criterionMatches = true; // User matches if it's "all users"
+            break;
+          case 'select_users':
+            criterionMatches = criterion.userIds?.includes(userId) || false;
+            break;
+          case 'roles':
+            // Get user's roles from userTeam
+            if (userTeam) {
+              const userRoles = userTeam.getRolesArray();
+              
+              // Special case: if no roles are selected in the criterion,
+              // match only users who have no roles assigned
+              if (!criterion.roles || criterion.roles.length === 0) {
+                criterionMatches = userRoles.length === 0;
+              } else {
+                // Match if user has at least one of the specified roles
+                criterionMatches = criterion.roles.some((role: string) => userRoles.includes(role));
+              }
+            } else {
+              // User is not a team member, so they don't match
+              criterionMatches = false;
+            }
+            break;
+          case 'subteam_members':
+            // Check if user is a member of any of the specified subteams
+            if (criterion.subteamIds && criterion.subteamIds.length > 0) {
+              const membershipCount = await this.subteamMemberRepository.count({
+                where: {
+                  userId,
+                  subteamId: In(criterion.subteamIds),
+                },
+              });
+              criterionMatches = membershipCount > 0;
+            } else {
+              criterionMatches = false;
+            }
+            break;
+          case 'subteam_leads':
+            // Check if user is assigned as a lead in any of the specified subteams
+            if (criterion.subteamIds && criterion.subteamIds.length > 0) {
+              const leadCount = await this.subteamLeadPositionRepository.count({
+                where: {
+                  userId,
+                  subteamId: In(criterion.subteamIds),
+                },
+              });
+              criterionMatches = leadCount > 0;
+            } else {
+              criterionMatches = false;
+            }
+            break;
+          default:
+            criterionMatches = false;
+            break;
+        }
+
+        if (!criterionMatches) {
+          rowMatches = false;
+          break;
+        }
+      }
+
+      if (rowMatches) {
+        return true; // Found a matching row
+      }
+    }
+
+    return false; // No rows matched
   }
 
   private generateEventEmailContent(

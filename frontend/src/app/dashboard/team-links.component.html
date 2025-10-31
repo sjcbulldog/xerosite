@@ -4,7 +4,7 @@
     (click)="toggleSection()"
     [class.active]="showSection()">
     <span class="chevron">{{ showSection() ? '▼' : '▶' }}</span>
-    <h2>Useful Links</h2>
+    <h2>Useful Links ({{ teamLinksService.links().length }})</h2>
   </button>
   @if (isAdmin()) {
     <button (click)="openAddDialog()" class="add-link-button" title="Add Link">
