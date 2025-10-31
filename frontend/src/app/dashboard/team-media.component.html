@@ -178,6 +178,20 @@
         </div>
       </div>
 
+      @if (isUploading()) {
+        <div class="upload-progress-container">
+          <div class="upload-progress-bar">
+            <div 
+              class="upload-progress-fill" 
+              [style.width.%]="uploadProgress()">
+            </div>
+          </div>
+          <div class="upload-progress-text">
+            {{ uploadProgress() }}%
+          </div>
+        </div>
+      }
+
       <div class="dialog-actions">
         <button 
           type="button" 

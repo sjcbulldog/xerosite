@@ -1,6 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { TeamMedia, CreateTeamMediaDto, UpdateTeamMediaDto } from './team-media.types';
+import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
+import { Observable, lastValueFrom } from 'rxjs';
+import {
+  TeamMedia,
+  CreateTeamMediaDto,
+  UpdateTeamMediaDto,
+} from './team-media.types';
 
 @Injectable({
   providedIn: 'root',
@@ -24,7 +29,8 @@ export class TeamMediaService {
 
       this.mediaFiles.set(media || []);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load media files';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to load media files';
       this.error.set(errorMessage);
       this.mediaFiles.set([]);
     } finally {
@@ -32,10 +38,29 @@ export class TeamMediaService {
     }
   }
 
-  async uploadFile(
+  uploadFile(
     teamId: string,
     file: File,
-    title: string
+    title: string,
+  ): Observable<HttpEvent<TeamMedia>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', title);
+
+    return this.http.post<TeamMedia>(
+      `${this.apiUrl}/${teamId}/media`,
+      formData,
+      {
+        reportProgress: true,
+        observe: 'events',
+      },
+    );
+  }
+
+  async uploadFileAndUpdateList(
+    teamId: string,
+    file: File,
+    title: string,
   ): Promise<TeamMedia> {
     const formData = new FormData();
     formData.append('file', file);

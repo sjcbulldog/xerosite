@@ -296,6 +296,8 @@ For files stored in the media storage area, if their extension indicates a video
 
 When displaying the event in the monthly calendar, include its name on a first line and the start and end time on a second line.  Hovering over an event should give all of the event information.
 
+If it is possible when uploading media files to know the actual amount of data that has been uploaded, provide a progress bar showing upload progress.
+
 In Progress
 ===========
 

@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 import { TeamMediaService } from './team-media.service';
 import { TeamMedia } from './team-media.types';
 import { AuthService } from '../auth/auth.service';
@@ -41,6 +41,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   readonly uploadTitle = signal('');
   readonly editTitle = signal('');
   readonly isUploading = signal(false);
+  readonly uploadProgress = signal(0);
 
   // Store blob URLs for cleanup
   private blobUrls = new Map<string, string>();
@@ -367,20 +368,53 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     }
 
     this.isUploading.set(true);
+    this.uploadProgress.set(0);
 
     try {
-      const uploadedMedia = await this.teamMediaService.uploadFile(this.teamId(), file, title);
+      // Subscribe to the upload observable to track progress
+      let uploadedMedia: TeamMedia | null = null;
+
+      await new Promise<void>((resolve, reject) => {
+        this.teamMediaService.uploadFile(this.teamId(), file, title).subscribe({
+          next: (event) => {
+            if (event.type === HttpEventType.UploadProgress) {
+              // Calculate and update progress percentage
+              if (event.total) {
+                const progress = Math.round((100 * event.loaded) / event.total);
+                this.uploadProgress.set(progress);
+              }
+            } else if (event.type === HttpEventType.Response) {
+              // Upload complete, store the response
+              uploadedMedia = event.body;
+              const currentMedia = this.teamMediaService.mediaFiles();
+              if (uploadedMedia) {
+                this.teamMediaService.mediaFiles.set([
+                  uploadedMedia,
+                  ...currentMedia,
+                ]);
+              }
+              resolve();
+            }
+          },
+          error: (error) => reject(error),
+        });
+      });
+
       this.closeUploadDialog();
-      
+
       // Load thumbnail for newly uploaded media if it's an image or video
-      if (uploadedMedia && this.canPreview(uploadedMedia.mimeType)) {
-        await this.loadMediaBlob(uploadedMedia);
+      if (uploadedMedia) {
+        const media = uploadedMedia as TeamMedia;
+        if (this.canPreview(media.mimeType)) {
+          await this.loadMediaBlob(media);
+        }
       }
     } catch (error) {
       console.error('Failed to upload file:', error);
       alert('Failed to upload file. Please try again.');
     } finally {
       this.isUploading.set(false);
+      this.uploadProgress.set(0);
     }
   }
 
