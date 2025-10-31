@@ -181,7 +181,7 @@
           (click)="toggleActiveMembers()"
           [class.active]="showActiveMembers()">
           <span class="chevron">{{ showActiveMembers() ? '▼' : '▶' }}</span>
-          <h2>Team Members ({{ activeMembers().length }})</h2>
+          <h2>Team Members ({{ filteredActiveMembers().length }})</h2>
         </button>
 
         @if (showActiveMembers()) {

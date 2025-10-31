@@ -42,10 +42,12 @@ export class TeamMediaService {
     teamId: string,
     file: File,
     title: string,
+    year: number,
   ): Observable<HttpEvent<TeamMedia>> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', title);
+    formData.append('year', year.toString());
 
     return this.http.post<TeamMedia>(
       `${this.apiUrl}/${teamId}/media`,
@@ -61,10 +63,12 @@ export class TeamMediaService {
     teamId: string,
     file: File,
     title: string,
+    year: number,
   ): Promise<TeamMedia> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', title);
+    formData.append('year', year.toString());
 
     const media = await this.http
       .post<TeamMedia>(`${this.apiUrl}/${teamId}/media`, formData)
@@ -82,9 +86,13 @@ export class TeamMediaService {
   async updateTitle(
     teamId: string,
     mediaId: string,
-    title: string
+    title: string,
+    year?: number
   ): Promise<TeamMedia> {
     const dto: UpdateTeamMediaDto = { title };
+    if (year !== undefined) {
+      dto.year = year;
+    }
     const updatedMedia = await this.http
       .patch<TeamMedia>(`${this.apiUrl}/${teamId}/media/${mediaId}`, dto)
       .toPromise();

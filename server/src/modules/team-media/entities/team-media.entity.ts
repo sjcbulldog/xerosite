@@ -28,6 +28,9 @@ export class TeamMedia {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
+  @Column({ type: 'int', nullable: true })
+  year: number | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

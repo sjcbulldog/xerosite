@@ -1,0 +1,211 @@
+<div class="team-media-card">
+  <button 
+    class="collapsible-header" 
+    (click)="toggleSection()"
+    [class.active]="showSection()">
+    <span class="chevron">{{ showSection() ? '▼' : '▶' }}</span>
+    <h2>Media ({{ teamMediaService.mediaFiles().length }})</h2>
+  </button>
+  <button (click)="openUploadDialog()" class="upload-button" title="Upload File">
+    <span class="plus-icon">+</span>
+  </button>
+
+  @if (showSection()) {
+    <div class="collapsible-content">
+      <!-- Filter Input and Expand/Collapse Buttons -->
+      <div class="filter-container">
+        <div class="filter-input-wrapper">
+          <input 
+            type="text" 
+            [value]="filterText()"
+            (input)="filterText.set($any($event.target).value)"
+            placeholder="Filter by title, filename, or uploader..."
+            class="filter-input"
+          />
+          @if (filterText()) {
+            <button (click)="filterText.set('')" class="clear-filter" title="Clear filter">
+              ×
+            </button>
+          }
+        </div>
+        <div class="filter-buttons">
+          <button (click)="expandAll()" class="expand-collapse-button" title="Expand All Years">
+            Expand All
+          </button>
+          <button (click)="collapseAll()" class="expand-collapse-button" title="Collapse All Years">
+            Collapse All
+          </button>
+        </div>
+      </div>
+
+      @if (teamMediaService.isLoading()) {
+        <p class="loading-message">Loading media files...</p>
+      } @else if (teamMediaService.error()) {
+        <p class="error-message">{{ teamMediaService.error() }}</p>
+      } @else if (filteredMedia().length === 0 && !filterText()) {
+        <p class="empty-message">No media files uploaded yet.</p>
+      } @else if (filteredMedia().length === 0 && filterText()) {
+      } @else {
+        <!-- Year Sections -->
+        @for (year of getYearsArray(); track year) {
+          <div class="year-section">
+            <button 
+              class="year-header" 
+              (click)="toggleYearSection(year)"
+              [class.active]="isYearExpanded(year)">
+              <span class="chevron">{{ isYearExpanded(year) ? '' : '' }}</span>
+              <h3>{{ getYearLabel(year) }} ({{ (mediaByYear().get(year)?.get('pictures')?.length || 0) + (mediaByYear().get(year)?.get('videos')?.length || 0) + (mediaByYear().get(year)?.get('other')?.length || 0) }})</h3>
+            </button>
+            
+            @if (isYearExpanded(year)) {
+              <div class="year-content">
+                <!-- Pictures Section -->
+                @if (getMediaTypeCount(year, 'pictures') > 0) {
+                  <div class="media-type-section">
+                    <button 
+                      class="media-type-header" 
+                      (click)="toggleMediaTypeSection(year, 'pictures')"
+                      [class.active]="isMediaTypeExpanded(year, 'pictures')">
+                      <span class="chevron">{{ isMediaTypeExpanded(year, 'pictures') ? '' : '' }}</span>
+                      <h4>{{ getMediaTypeLabel('pictures') }} ({{ getMediaTypeCount(year, 'pictures') }})</h4>
+                    </button>
+<!-- Upload Dialog -->
+@if (showUploadDialog()) {
+  <div class="dialog-overlay">
+    <div class="dialog-content">
+      <h3>Upload Media File</h3>
+      
+      <div class="form-group">
+        <label for="media-title">Title</label>
+        <input 
+          id="media-title"
+          type="text" 
+          [value]="uploadTitle()"
+          (input)="uploadTitle.set($any($event.target).value)"
+          placeholder="Enter title for the file"
+          class="form-input"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="media-year">Year</label>
+        <input 
+          id="media-year"
+          type="number" 
+          [value]="uploadYear()"
+          (input)="uploadYear.set(+$any($event.target).value)"
+          placeholder="Enter year"
+          min="1900"
+          max="2100"
+          class="form-input"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label>File</label>
+        <div 
+          class="drop-zone"
+          [class.dragging]="isDragging()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)">
+          @if (selectedFile()) {
+            <div class="selected-file">
+              <span class="file-icon">{{ getFileIcon(selectedFile()!.type) }}</span>
+              <div class="file-info">
+                <div class="file-name">{{ selectedFile()!.name }}</div>
+                <div class="file-size">{{ formatFileSize(selectedFile()!.size) }}</div>
+              </div>
+              <button (click)="selectedFile.set(null)" class="remove-file" type="button">
+                ×
+              </button>
+            </div>
+          } @else {
+            <div class="drop-zone-content">
+              <div class="drop-icon">📁</div>
+              <p class="drop-text">Drag and drop a file here</p>
+              <p class="drop-or">or</p>
+              <label class="browse-button">
+                Browse Files
+                <input 
+                  type="file" 
+                  (change)="onFileSelected($event)"
+                  class="file-input"
+                  hidden
+                />
+              </label>
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (isUploading()) {
+        <div class="upload-progress-container">
+          <div class="upload-progress-bar">
+            <div 
+              class="upload-progress-fill" 
+              [style.width.%]="uploadProgress()">
+            </div>
+          </div>
+          <div class="upload-progress-text">
+            {{ uploadProgress() }}%
+          </div>
+        </div>
+      }
+
+      <div class="dialog-actions">
+        <button 
+          type="button" 
+          (click)="uploadFile()" 
+          class="primary-button"
+          [disabled]="isUploading() || !selectedFile() || !uploadTitle()">
+          @if (isUploading()) {
+            Uploading...
+          } @else {
+            Upload
+          }
+        </button>
+        <button 
+          type="button" 
+          (click)="closeUploadDialog()" 
+          class="secondary-button"
+          [disabled]="isUploading()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Preview Dialog -->
+@if (showPreviewDialog() && previewingMedia()) {
+  <div class="preview-overlay">
+    <div class="preview-container">
+      <button class="preview-close" (click)="closePreview()" title="Close">×</button>
+      
+      <div class="preview-content">
+        @if (isImage(previewingMedia()!.mimeType)) {
+          <img 
+            [src]="getPreviewUrl(previewingMedia()!)" 
+            [alt]="previewingMedia()!.title"
+            class="preview-image"
+          />
+        } @else if (isVideo(previewingMedia()!.mimeType)) {
+          <video 
+            [src]="getVideoUrl(previewingMedia()!)"
+            class="preview-video"
+            controls
+            autoplay
+          ></video>
+        }
+      </div>
+      
+      <div class="preview-info">
+        <h3>{{ previewingMedia()!.title }}</h3>
+        <p class="preview-filename">{{ previewingMedia()!.originalFilename }}</p>
+      </div>
+    </div>
+  </div>
+}

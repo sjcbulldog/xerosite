@@ -52,6 +52,7 @@ export class TeamMediaService {
       userId,
       fileId: storedFile.id,
       title: createDto.title,
+      year: createDto.year,
     });
 
     const saved = await this.teamMediaRepository.save(teamMedia);
@@ -92,6 +93,9 @@ export class TeamMediaService {
     await this.verifyUpdatePermission(userId, media.teamId, media.userId);
 
     media.title = updateDto.title;
+    if (updateDto.year !== undefined) {
+      media.year = updateDto.year;
+    }
     const saved = await this.teamMediaRepository.save(media);
     return this.transformToResponse(saved);
   }
@@ -174,6 +178,7 @@ export class TeamMediaService {
       userId: media.userId,
       fileId: media.fileId,
       title: media.title,
+      year: media.year,
       originalFilename: media.file?.originalFilename || 'unknown',
       fileSize: media.file?.fileSize || 0,
       mimeType: media.file?.mimeType || 'application/octet-stream',

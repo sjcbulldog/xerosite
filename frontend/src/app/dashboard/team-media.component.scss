@@ -70,6 +70,14 @@
 .filter-container {
   position: relative;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-input-wrapper {
+  flex: 1;
+  position: relative;
 }
 
 .filter-input {
@@ -103,6 +111,156 @@
 
 .clear-filter:hover {
   color: #666;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.expand-collapse-button {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    background: #e0e0e0;
+    border-color: #ccc;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.media-category {
+  margin-bottom: 1.5rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.category-header {
+  background: #f5f7fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 0.75rem 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #edf2f7;
+  }
+
+  &.active {
+    background: #e3f2fd;
+    border-color: #90caf9;
+  }
+
+  h3 {
+    color: #1f2937;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+.year-section {
+  margin-bottom: 1rem;
+}
+
+.year-header {
+  background: #f5f7fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 0.75rem 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #edf2f7;
+    border-color: #d1d5da;
+  }
+
+  &.active {
+    background: #e3f2fd;
+    border-color: #90caf9;
+  }
+
+  h3 {
+    color: #1f2937;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+.year-content {
+  margin-left: 1.5rem;
+}
+
+.media-type-section {
+  margin-bottom: 0.75rem;
+}
+
+.media-type-header {
+  background: #fafbfc;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 0.5rem 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f6f8fa;
+    border-color: #d1d5da;
+  }
+
+  &.active {
+    background: #e8f5e9;
+    border-color: #81c784;
+  }
+
+  h4 {
+    color: #24292e;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+}
+
+.empty-category {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  font-size: 0.875rem;
 }
 
 .loading-message,
@@ -270,6 +428,11 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 0.875rem;
+  
+  &.year-input {
+    width: 120px;
+    margin-left: 0.5rem;
+  }
 }
 
 .edit-input:focus {

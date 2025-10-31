@@ -12,20 +12,30 @@
 
   @if (showSection()) {
     <div class="collapsible-content">
-      <!-- Filter Input -->
+      <!-- Filter Input and Expand/Collapse Buttons -->
       <div class="filter-container">
-        <input 
-          type="text" 
-          [value]="filterText()"
-          (input)="filterText.set($any($event.target).value)"
-          placeholder="Filter by title, filename, or uploader..."
-          class="filter-input"
-        />
-        @if (filterText()) {
-          <button (click)="filterText.set('')" class="clear-filter" title="Clear filter">
-            ×
+        <div class="filter-input-wrapper">
+          <input 
+            type="text" 
+            [value]="filterText()"
+            (input)="filterText.set($any($event.target).value)"
+            placeholder="Filter by title, filename, or uploader..."
+            class="filter-input"
+          />
+          @if (filterText()) {
+            <button (click)="filterText.set('')" class="clear-filter" title="Clear filter">
+              ×
+            </button>
+          }
+        </div>
+        <div class="filter-buttons">
+          <button (click)="expandAll()" class="expand-collapse-button" title="Expand All Years">
+            Expand All
           </button>
-        }
+          <button (click)="collapseAll()" class="expand-collapse-button" title="Collapse All Years">
+            Collapse All
+          </button>
+        </div>
       </div>
 
       @if (teamMediaService.isLoading()) {
@@ -37,85 +47,286 @@
       } @else if (filteredMedia().length === 0 && filterText()) {
         <p class="empty-message">No media files match "{{ filterText() }}".</p>
       } @else {
-        <div class="media-list">
-          @for (media of filteredMedia(); track media.id) {
-            <div class="media-item">
-              @if (editingMedia()?.id === media.id) {
-                <div class="edit-form">
-                  <input 
-                    type="text" 
-                    [value]="editTitle()"
-                    (input)="editTitle.set($any($event.target).value)"
-                    placeholder="Title"
-                    class="edit-input"
-                  />
-                  <div class="edit-actions">
-                    <button (click)="saveEdit()" class="save-button">Save</button>
-                    <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
-                  </div>
-                </div>
-              } @else {
-                <div class="media-content">
-                  <div class="media-info">
-                    @if (isImage(media.mimeType) || isVideo(media.mimeType)) {
-                      <div 
-                        class="media-thumbnail" 
-                        (click)="openPreview(media)"
-                        [class.clickable]="canPreview(media.mimeType)"
-                        title="Click to preview">
-                        @if (getPreviewUrl(media)) {
-                          <img 
-                            [src]="getPreviewUrl(media)" 
-                            [alt]="media.title"
-                            class="thumbnail-image"
-                          />
-                          @if (isVideo(media.mimeType)) {
-                            <div class="video-play-overlay">▶️</div>
-                          }
-                        } @else {
-                          <div class="thumbnail-loading">
-                            @if (isVideo(media.mimeType)) {
-                              <span>🎥</span>
+        <!-- Year Sections -->
+        @for (year of getYearsArray(); track year) {
+          <div class="year-section">
+            <button 
+              class="year-header" 
+              (click)="toggleYearSection(year)"
+              [class.active]="isYearExpanded(year)">
+              <span class="chevron">{{ isYearExpanded(year) ? '▼' : '▶' }}</span>
+              <h3>{{ getYearLabel(year) }} ({{ (mediaByYear().get(year)?.get('pictures')?.length || 0) + (mediaByYear().get(year)?.get('videos')?.length || 0) + (mediaByYear().get(year)?.get('other')?.length || 0) }})</h3>
+            </button>
+            
+            @if (isYearExpanded(year)) {
+              <div class="year-content">
+                <!-- Pictures Section -->
+                @if (getMediaTypeCount(year, 'pictures') > 0) {
+                  <div class="media-type-section">
+                    <button 
+                      class="media-type-header" 
+                      (click)="toggleMediaTypeSection(year, 'pictures')"
+                      [class.active]="isMediaTypeExpanded(year, 'pictures')">
+                      <span class="chevron">{{ isMediaTypeExpanded(year, 'pictures') ? '▼' : '▶' }}</span>
+                      <h4>{{ getMediaTypeLabel('pictures') }} ({{ getMediaTypeCount(year, 'pictures') }})</h4>
+                    </button>
+                    
+                    @if (isMediaTypeExpanded(year, 'pictures')) {
+                      <div class="media-list">
+                        @for (media of getMediaForType(year, 'pictures'); track media.id) {
+                          <div class="media-item">
+                            @if (editingMedia()?.id === media.id) {
+                              <div class="edit-form">
+                                <input 
+                                  type="text" 
+                                  [value]="editTitle()"
+                                  (input)="editTitle.set($any($event.target).value)"
+                                  placeholder="Title"
+                                  class="edit-input"
+                                />
+                                <input 
+                                  type="number" 
+                                  [value]="editYear()"
+                                  (input)="editYear.set(+$any($event.target).value)"
+                                  placeholder="Year"
+                                  min="1900"
+                                  max="2100"
+                                  class="edit-input year-input"
+                                />
+                                <div class="edit-actions">
+                                  <button (click)="saveEdit()" class="save-button">Save</button>
+                                  <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
+                                </div>
+                              </div>
                             } @else {
-                              <span>🖼️</span>
+                              <div class="media-content">
+                                <div class="media-info">
+                                  <div 
+                                    class="media-thumbnail" 
+                                    (click)="openPreview(media)"
+                                    [class.clickable]="canPreview(media.mimeType)"
+                                    title="Click to preview">
+                                    @if (getPreviewUrl(media)) {
+                                      <img 
+                                        [src]="getPreviewUrl(media)" 
+                                        [alt]="media.title"
+                                        class="thumbnail-image"
+                                      />
+                                    } @else {
+                                      <div class="thumbnail-loading">
+                                        <span>🖼️</span>
+                                      </div>
+                                    }
+                                  </div>
+                                  <div class="media-details">
+                                    <div class="media-title">{{ media.title }}</div>
+                                    <div class="media-meta">
+                                      <span class="filename">{{ media.originalFilename }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="filesize">{{ formatFileSize(media.fileSize) }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="uploader">{{ media.uploaderName }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="upload-date">{{ media.createdAt | date:'MMM d, y' }}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="media-actions">
+                                  <button (click)="downloadMedia(media)" class="action-button download" title="Download">
+                                    ⬇️
+                                  </button>
+                                  @if (canEditOrDelete(media)) {
+                                    <button (click)="startEdit(media)" class="action-button edit" title="Edit Title">
+                                      ✏️
+                                    </button>
+                                    <button (click)="deleteMedia(media)" class="action-button delete" title="Delete">
+                                      🗑️
+                                    </button>
+                                  }
+                                </div>
+                              </div>
                             }
                           </div>
                         }
                       </div>
-                    } @else {
-                      <span class="file-icon">{{ getFileIcon(media.mimeType) }}</span>
                     }
-                    <div class="media-details">
-                      <div class="media-title">{{ media.title }}</div>
-                      <div class="media-meta">
-                        <span class="filename">{{ media.originalFilename }}</span>
-                        <span class="separator">•</span>
-                        <span class="filesize">{{ formatFileSize(media.fileSize) }}</span>
-                        <span class="separator">•</span>
-                        <span class="uploader">{{ media.uploaderName }}</span>
-                        <span class="separator">•</span>
-                        <span class="upload-date">{{ media.createdAt | date:'MMM d, y' }}</span>
-                      </div>
-                    </div>
                   </div>
-                  <div class="media-actions">
-                    <button (click)="downloadMedia(media)" class="action-button download" title="Download">
-                      ⬇️
+                }
+
+                <!-- Videos Section -->
+                @if (getMediaTypeCount(year, 'videos') > 0) {
+                  <div class="media-type-section">
+                    <button 
+                      class="media-type-header" 
+                      (click)="toggleMediaTypeSection(year, 'videos')"
+                      [class.active]="isMediaTypeExpanded(year, 'videos')">
+                      <span class="chevron">{{ isMediaTypeExpanded(year, 'videos') ? '▼' : '▶' }}</span>
+                      <h4>{{ getMediaTypeLabel('videos') }} ({{ getMediaTypeCount(year, 'videos') }})</h4>
                     </button>
-                    @if (canEditOrDelete(media)) {
-                      <button (click)="startEdit(media)" class="action-button edit" title="Edit Title">
-                        ✏️
-                      </button>
-                      <button (click)="deleteMedia(media)" class="action-button delete" title="Delete">
-                        🗑️
-                      </button>
+                    
+                    @if (isMediaTypeExpanded(year, 'videos')) {
+                      <div class="media-list">
+                        @for (media of getMediaForType(year, 'videos'); track media.id) {
+                          <div class="media-item">
+                            @if (editingMedia()?.id === media.id) {
+                              <div class="edit-form">
+                                <input 
+                                  type="text" 
+                                  [value]="editTitle()"
+                                  (input)="editTitle.set($any($event.target).value)"
+                                  placeholder="Title"
+                                  class="edit-input"
+                                />
+                                <input 
+                                  type="number" 
+                                  [value]="editYear()"
+                                  (input)="editYear.set(+$any($event.target).value)"
+                                  placeholder="Year"
+                                  min="1900"
+                                  max="2100"
+                                  class="edit-input year-input"
+                                />
+                                <div class="edit-actions">
+                                  <button (click)="saveEdit()" class="save-button">Save</button>
+                                  <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
+                                </div>
+                              </div>
+                            } @else {
+                              <div class="media-content">
+                                <div class="media-info">
+                                  <div 
+                                    class="media-thumbnail" 
+                                    (click)="openPreview(media)"
+                                    [class.clickable]="canPreview(media.mimeType)"
+                                    title="Click to preview">
+                                    @if (thumbnailUrls().get(media.id)) {
+                                      <img 
+                                        [src]="thumbnailUrls().get(media.id)" 
+                                        [alt]="media.title"
+                                        class="thumbnail-video"
+                                      />
+                                      <div class="video-play-overlay">▶</div>
+                                    } @else {
+                                      <div class="thumbnail-loading">
+                                        <span>🎬</span>
+                                      </div>
+                                    }
+                                  </div>
+                                  <div class="media-details">
+                                    <div class="media-title">{{ media.title }}</div>
+                                    <div class="media-meta">
+                                      <span class="filename">{{ media.originalFilename }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="filesize">{{ formatFileSize(media.fileSize) }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="uploader">{{ media.uploaderName }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="upload-date">{{ media.createdAt | date:'MMM d, y' }}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="media-actions">
+                                  <button (click)="downloadMedia(media)" class="action-button download" title="Download">
+                                    ⬇️
+                                  </button>
+                                  @if (canEditOrDelete(media)) {
+                                    <button (click)="startEdit(media)" class="action-button edit" title="Edit Title">
+                                      ✏️
+                                    </button>
+                                    <button (click)="deleteMedia(media)" class="action-button delete" title="Delete">
+                                      🗑️
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
                     }
                   </div>
-                </div>
-              }
-            </div>
-          }
-        </div>
+                }
+
+                <!-- Other Files Section -->
+                @if (getMediaTypeCount(year, 'other') > 0) {
+                  <div class="media-type-section">
+                    <button 
+                      class="media-type-header" 
+                      (click)="toggleMediaTypeSection(year, 'other')"
+                      [class.active]="isMediaTypeExpanded(year, 'other')">
+                      <span class="chevron">{{ isMediaTypeExpanded(year, 'other') ? '▼' : '▶' }}</span>
+                      <h4>{{ getMediaTypeLabel('other') }} ({{ getMediaTypeCount(year, 'other') }})</h4>
+                    </button>
+                    
+                    @if (isMediaTypeExpanded(year, 'other')) {
+                      <div class="media-list">
+                        @for (media of getMediaForType(year, 'other'); track media.id) {
+                          <div class="media-item">
+                            @if (editingMedia()?.id === media.id) {
+                              <div class="edit-form">
+                                <input 
+                                  type="text" 
+                                  [value]="editTitle()"
+                                  (input)="editTitle.set($any($event.target).value)"
+                                  placeholder="Title"
+                                  class="edit-input"
+                                />
+                                <input 
+                                  type="number" 
+                                  [value]="editYear()"
+                                  (input)="editYear.set(+$any($event.target).value)"
+                                  placeholder="Year"
+                                  min="1900"
+                                  max="2100"
+                                  class="edit-input year-input"
+                                />
+                                <div class="edit-actions">
+                                  <button (click)="saveEdit()" class="save-button">Save</button>
+                                  <button (click)="cancelEdit()" class="cancel-button">Cancel</button>
+                                </div>
+                              </div>
+                            } @else {
+                              <div class="media-content">
+                                <div class="media-info">
+                                  <span class="file-icon">{{ getFileIcon(media.mimeType) }}</span>
+                                  <div class="media-details">
+                                    <div class="media-title">{{ media.title }}</div>
+                                    <div class="media-meta">
+                                      <span class="filename">{{ media.originalFilename }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="filesize">{{ formatFileSize(media.fileSize) }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="uploader">{{ media.uploaderName }}</span>
+                                      <span class="separator">•</span>
+                                      <span class="upload-date">{{ media.createdAt | date:'MMM d, y' }}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="media-actions">
+                                  <button (click)="downloadMedia(media)" class="action-button download" title="Download">
+                                    ⬇️
+                                  </button>
+                                  @if (canEditOrDelete(media)) {
+                                    <button (click)="startEdit(media)" class="action-button edit" title="Edit Title">
+                                      ✏️
+                                    </button>
+                                    <button (click)="deleteMedia(media)" class="action-button delete" title="Delete">
+                                      🗑️
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
       }
     </div>
   }
@@ -135,6 +346,21 @@
           [value]="uploadTitle()"
           (input)="uploadTitle.set($any($event.target).value)"
           placeholder="Enter title for the file"
+          class="form-input"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="media-year">Year</label>
+        <input 
+          id="media-year"
+          type="number" 
+          [value]="uploadYear()"
+          (input)="uploadYear.set(+$any($event.target).value)"
+          placeholder="Enter year"
+          min="1900"
+          max="2100"
           class="form-input"
           required
         />

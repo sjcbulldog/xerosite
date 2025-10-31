@@ -354,15 +354,23 @@ When clicking on a video link in the Media section, it takes a while for the vid
 
 When I click on a media video, it does not play.
 
+When a video is selected under the Media section of the team dashboard, it still does not play.
+
+In the media section, divide the media into three categories which are all under the Media block but are all individually collaspable.  One of these is pictures with all picture types there.  A second of these is videos with all videos types.  The final category is other with all other files.
+
+On the team dashboard, when the team members is being filtered, have the number of team members in parenthesis reflect the number of members visible.
+
+When I add a year for a piece of media without a year, I get a failed to update media message.
+
 In Progress
 ===========
 
-When a video is selected under the Media section of the team dashboard, it still does not play.
+I would like to reverse the order of the hierarchy in the media display.  At the top should be media.  Below that should be year and at the lowest level should be media type.
 
 Pending
 =======
 
-When downloading an attachment in a message, I get a permissions denied message.  Since the link is in email it must take me to a place where I can log into the site first and then get access to the link.
+When downloading an attachment in a message, I get a permissions denied message.  Since the link is in email, I don't seem to have permissions to download the file.
 
 When sending a message with an attachments provide a progress bar for the upload of each attachment.
 

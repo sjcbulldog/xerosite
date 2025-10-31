@@ -4,6 +4,7 @@ export interface TeamMedia {
   userId: string;
   fileId: string;
   title: string;
+  year: number | null;
   originalFilename: string;
   fileSize: number;
   mimeType: string;
@@ -14,8 +15,10 @@ export interface TeamMedia {
 
 export interface CreateTeamMediaDto {
   title: string;
+  year: number;
 }
 
 export interface UpdateTeamMediaDto {
   title: string;
+  year?: number;
 }

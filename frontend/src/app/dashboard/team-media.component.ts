@@ -39,9 +39,15 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   readonly filterText = signal('');
   readonly selectedFile = signal<File | null>(null);
   readonly uploadTitle = signal('');
+  readonly uploadYear = signal(new Date().getFullYear());
   readonly editTitle = signal('');
+  readonly editYear = signal(new Date().getFullYear());
   readonly isUploading = signal(false);
   readonly uploadProgress = signal(0);
+
+  // Track which year sections and media type sections are expanded
+  readonly expandedYears = signal<Set<number>>(new Set());
+  readonly expandedMediaTypes = signal<Map<number, Set<string>>>(new Map());
 
   // Store blob URLs for cleanup
   private blobUrls = new Map<string, string>();
@@ -64,6 +70,42 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
         m.originalFilename.toLowerCase().includes(filter) ||
         m.uploaderName.toLowerCase().includes(filter)
     );
+  });
+
+  // Group all media by year, then by type
+  readonly mediaByYear = computed(() => {
+    const media = this.filteredMedia();
+    const grouped = new Map<number, Map<string, TeamMedia[]>>();
+    
+    media.forEach((item) => {
+      // Use 0 as a placeholder for null/undefined years (will display as "Unknown Year")
+      const year = item.year ?? 0;
+      
+      if (!grouped.has(year)) {
+        grouped.set(year, new Map([
+          ['pictures', []],
+          ['videos', []],
+          ['other', []]
+        ]));
+      }
+      
+      const yearGroup = grouped.get(year)!;
+      
+      if (this.isImage(item.mimeType)) {
+        yearGroup.get('pictures')!.push(item);
+      } else if (this.isVideo(item.mimeType)) {
+        yearGroup.get('videos')!.push(item);
+      } else {
+        yearGroup.get('other')!.push(item);
+      }
+    });
+    
+    // Sort years in descending order, but keep 0 (Unknown Year) at the end
+    return new Map([...grouped.entries()].sort((a, b) => {
+      if (a[0] === 0) return 1; // Unknown Year goes to the end
+      if (b[0] === 0) return -1; // Unknown Year goes to the end
+      return b[0] - a[0]; // Regular years in descending order
+    }));
   });
 
   ngOnInit(): void {
@@ -289,9 +331,62 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     this.showSection.set(!this.showSection());
   }
 
+  toggleYearSection(year: number): void {
+    const current = this.expandedYears();
+    
+    if (current.has(year)) {
+      current.delete(year);
+    } else {
+      current.add(year);
+    }
+    
+    this.expandedYears.set(new Set(current));
+  }
+
+  isYearExpanded(year: number): boolean {
+    return this.expandedYears().has(year);
+  }
+
+  toggleMediaTypeSection(year: number, mediaType: string): void {
+    const current = this.expandedMediaTypes();
+    const yearMap = current.get(year) || new Set<string>();
+    
+    if (yearMap.has(mediaType)) {
+      yearMap.delete(mediaType);
+    } else {
+      yearMap.add(mediaType);
+    }
+    
+    current.set(year, yearMap);
+    this.expandedMediaTypes.set(new Map(current));
+  }
+
+  isMediaTypeExpanded(year: number, mediaType: string): boolean {
+    return this.expandedMediaTypes().get(year)?.has(mediaType) || false;
+  }
+
+  expandAll(): void {
+    // Expand all years
+    const allYears = new Set(Array.from(this.mediaByYear().keys()));
+    this.expandedYears.set(allYears);
+    
+    // Expand all media types within each year
+    const allMediaTypes = new Map<number, Set<string>>();
+    this.mediaByYear().forEach((_, year) => {
+      allMediaTypes.set(year, new Set(['pictures', 'videos', 'other']));
+    });
+    this.expandedMediaTypes.set(allMediaTypes);
+  }
+
+  collapseAll(): void {
+    this.expandedYears.set(new Set());
+    this.expandedMediaTypes.set(new Map());
+  }
+
   openUploadDialog(): void {
     this.selectedFile.set(null);
     this.uploadTitle.set('');
+    this.uploadYear.set(new Date().getFullYear());
     this.showUploadDialog.set(true);
   }
 
@@ -299,6 +394,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     this.showUploadDialog.set(false);
     this.selectedFile.set(null);
     this.uploadTitle.set('');
+    this.uploadYear.set(new Date().getFullYear());
   }
 
   onFileSelected(event: Event): void {
@@ -347,6 +443,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   async uploadFile(): Promise<void> {
     const file = this.selectedFile();
     const title = this.uploadTitle().trim();
+    const year = this.uploadYear();
 
     if (!file) {
       alert('Please select a file');
@@ -358,6 +455,11 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!year || year < 1900 || year > 2100) {
+      alert('Please provide a valid year (1900-2100)');
+      return;
+    }
+
     this.isUploading.set(true);
     this.uploadProgress.set(0);
 
@@ -366,7 +468,7 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
       let uploadedMedia: TeamMedia | null = null;
 
       await new Promise<void>((resolve, reject) => {
-        this.teamMediaService.uploadFile(this.teamId(), file, title).subscribe({
+        this.teamMediaService.uploadFile(this.teamId(), file, title, year).subscribe({
           next: (event) => {
             if (event.type === HttpEventType.UploadProgress) {
               // Calculate and update progress percentage
@@ -412,6 +514,8 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
   startEdit(media: TeamMedia): void {
     this.editingMedia.set(media);
     this.editTitle.set(media.title);
+    // If year is null, default to current year for editing
+    this.editYear.set(media.year ?? new Date().getFullYear());
   }
 
   cancelEdit(): void {
@@ -423,14 +527,20 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     if (!media) return;
 
     const title = this.editTitle().trim();
+    const year = this.editYear();
 
     if (!title) {
       alert('Please provide a title');
       return;
     }
 
+    if (!year || year < 1900 || year > 2100) {
+      alert('Please provide a valid year (1900-2100)');
+      return;
+    }
+
     try {
-      await this.teamMediaService.updateTitle(this.teamId(), media.id, title);
+      await this.teamMediaService.updateTitle(this.teamId(), media.id, title, year);
       this.cancelEdit();
     } catch (error) {
       console.error('Failed to update media:', error);
@@ -559,5 +669,30 @@ export class TeamMediaComponent implements OnInit, OnDestroy {
     this.showPreviewDialog.set(false);
     // Small delay to allow animation to complete before clearing
     setTimeout(() => this.previewingMedia.set(null), 300);
+  }
+
+  getYearsArray(): number[] {
+    return Array.from(this.mediaByYear().keys());
+  }
+
+  getYearLabel(year: number): string {
+    return year === 0 ? 'Unknown Year' : year.toString();
+  }
+
+  getMediaTypeLabel(mediaType: string): string {
+    const labels: { [key: string]: string } = {
+      'pictures': 'Pictures',
+      'videos': 'Videos',
+      'other': 'Other'
+    };
+    return labels[mediaType] || mediaType;
+  }
+
+  getMediaTypeCount(year: number, mediaType: string): number {
+    return this.mediaByYear().get(year)?.get(mediaType)?.length || 0;
+  }
+
+  getMediaForType(year: number, mediaType: string): TeamMedia[] {
+    return this.mediaByYear().get(year)?.get(mediaType) || [];
   }
 }
