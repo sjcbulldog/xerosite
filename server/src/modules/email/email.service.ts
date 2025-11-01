@@ -313,7 +313,7 @@ export class EmailService implements OnModuleInit {
       });
 
       // Return the parent email addresses
-      return parents.map(parent => parent.parentEmail);
+      return parents.map((parent) => parent.parentEmail);
     } catch (error) {
       this.logger.error(`Error fetching parent emails for ${userEmail}:`, error);
       return [];
@@ -323,10 +323,7 @@ export class EmailService implements OnModuleInit {
   /**
    * Queue emails to all parents of the user
    */
-  private async queueEmailToParents(
-    userEmail: string,
-    options: QueueEmailOptions,
-  ): Promise<void> {
+  private async queueEmailToParents(userEmail: string, options: QueueEmailOptions): Promise<void> {
     try {
       const parentEmails = await this.getParentEmailsForUser(userEmail);
 
@@ -554,10 +551,7 @@ export class EmailService implements OnModuleInit {
   /**
    * Send parent invitation email when parent doesn't have an account yet
    */
-  async sendParentInvitationEmail(
-    parentEmail: string,
-    childName: string,
-  ): Promise<void> {
+  async sendParentInvitationEmail(parentEmail: string, childName: string): Promise<void> {
     const apiUrl = this.configService.get('email.apiUrl');
     const registerUrl = `${apiUrl}/register`;
 

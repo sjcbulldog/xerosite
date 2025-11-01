@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Team } from './entities/team.entity';
@@ -10,8 +10,19 @@ import { SubteamLeadPosition } from './entities/subteam-lead-position.entity';
 import { UserPermission } from './entities/user-permission.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
-import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateMemberStatusDto, UpdateMemberAttributesDto, UserPermissionDto } from './dto/team-response.dto';
-import { SendInvitationDto, TeamInvitationResponseDto, UpdateInvitationStatusDto } from './dto/team-invitation.dto';
+import {
+  TeamResponseDto,
+  TeamMemberDto,
+  AddTeamMemberDto,
+  UpdateMemberStatusDto,
+  UpdateMemberAttributesDto,
+  UserPermissionDto,
+} from './dto/team-response.dto';
+import {
+  SendInvitationDto,
+  TeamInvitationResponseDto,
+  UpdateInvitationStatusDto,
+} from './dto/team-invitation.dto';
 import { ImportRosterDto, ImportRosterResultDto, RosterMemberDto } from './dto/import-roster.dto';
 import { MembershipStatus } from './enums/membership-status.enum';
 import { TeamVisibility } from './enums/team-visibility.enum';
@@ -24,6 +35,8 @@ import { TeamLinksService } from '../team-links/team-links.service';
 
 @Injectable()
 export class TeamsService {
+  private readonly logger = new Logger(TeamsService.name);
+
   constructor(
     @InjectRepository(Team)
     private readonly teamRepository: Repository<Team>,
@@ -53,14 +66,18 @@ export class TeamsService {
     });
 
     if (existingTeam) {
-      throw new BadRequestException(`A team with number ${createTeamDto.teamNumber} already exists`);
+      throw new BadRequestException(
+        `A team with number ${createTeamDto.teamNumber} already exists`,
+      );
     }
 
     const team = this.teamRepository.create({
       name: createTeamDto.name,
       teamNumber: createTeamDto.teamNumber,
       description: createTeamDto.description,
-      roles: createTeamDto.roles ? createTeamDto.roles.join(',') : 'Administrator,Mentor,Student,Parent',
+      roles: createTeamDto.roles
+        ? createTeamDto.roles.join(',')
+        : 'Administrator,Mentor,Student,Parent',
       roleConstraints: createTeamDto.roleConstraints || null,
       visibility: createTeamDto.visibility,
       timezone: createTeamDto.timezone || 'America/New_York',
@@ -68,7 +85,9 @@ export class TeamsService {
 
     // Validate role names
     if (!team.validateRoles()) {
-      throw new BadRequestException('Invalid role names. Roles must contain only alphanumeric characters, spaces, dashes, and underscores.');
+      throw new BadRequestException(
+        'Invalid role names. Roles must contain only alphanumeric characters, spaces, dashes, and underscores.',
+      );
     }
 
     const savedTeam = await this.teamRepository.save(team);
@@ -140,7 +159,9 @@ export class TeamsService {
     if (updateTeamDto.roles) {
       team.setRolesArray(updateTeamDto.roles);
       if (!team.validateRoles()) {
-        throw new BadRequestException('Invalid role names. Roles must contain only alphanumeric characters, spaces, dashes, and underscores.');
+        throw new BadRequestException(
+          'Invalid role names. Roles must contain only alphanumeric characters, spaces, dashes, and underscores.',
+        );
       }
     }
 
@@ -166,13 +187,98 @@ export class TeamsService {
     // Check if user is a site administrator
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user || user.state !== UserState.ADMIN) {
-      throw new BadRequestException(
-        'Only site administrators can delete teams',
-      );
+      throw new BadRequestException('Only site administrators can delete teams');
     }
+
+    // Get all team administrators before deleting the team
+    const adminMembers = await this.userTeamRepository.find({
+      where: { teamId: id, status: MembershipStatus.ACTIVE },
+      relations: ['user', 'user.emails'],
+    });
+
+    // Filter to only administrators
+    const administrators = adminMembers.filter((member) =>
+      member.getRolesArray().includes('Administrator'),
+    );
+
+    // Send notification emails to all administrators
+    await this.notifyAdministratorsOfTeamDeletion(team, administrators);
 
     // Delete the team (cascade will handle related records)
     await this.teamRepository.remove(team);
+  }
+
+  private async notifyAdministratorsOfTeamDeletion(
+    team: Team,
+    administrators: UserTeam[],
+  ): Promise<void> {
+    try {
+      if (administrators.length === 0) {
+        this.logger.warn(
+          `No administrators found for team ${team.name} (${team.id}) to notify of deletion`,
+        );
+        return;
+      }
+
+      this.logger.log(
+        `Notifying ${administrators.length} administrator(s) of team ${team.name} deletion`,
+      );
+
+      // Send email to each administrator
+      for (const adminMember of administrators) {
+        const adminEmail = adminMember.user?.primaryEmail || adminMember.user?.emails?.[0]?.email;
+
+        if (!adminEmail) {
+          this.logger.warn(
+            `No email found for administrator ${adminMember.userId} of team ${team.name}`,
+          );
+          continue;
+        }
+
+        const adminName = adminMember.user
+          ? `${adminMember.user.firstName} ${adminMember.user.lastName}`
+          : 'Administrator';
+
+        await this.emailService.sendEmail({
+          to: adminEmail,
+          subject: `Team Deleted: ${team.name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: #f8d7da; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc3545;">
+                <h2 style="color: #721c24; margin: 0 0 10px 0;">Team Deleted</h2>
+                <p style="color: #721c24; margin: 0;">
+                  Team: <strong>${team.name}</strong> (Team #${team.teamNumber})
+                </p>
+              </div>
+              
+              <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <p style="color: #333; line-height: 1.6;">
+                  Hi ${adminName},
+                </p>
+                <p style="color: #333; line-height: 1.6;">
+                  This is to inform you that <strong>${team.name}</strong> (Team #${team.teamNumber}) has been deleted from the system by a site administrator.
+                </p>
+                <p style="color: #333; line-height: 1.6;">
+                  All team data, including members, subteams, calendar events, and other related information, has been permanently removed from the system.
+                </p>
+                <p style="color: #666; line-height: 1.6; margin-top: 15px;">
+                  If you have any questions about this action, please contact a site administrator.
+                </p>
+              </div>
+              
+              <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                <p style="color: #666; font-size: 0.9em; margin: 0;">
+                  This is an automated notification from the team management system.
+                </p>
+              </div>
+            </div>
+          `,
+        });
+      }
+    } catch (error) {
+      // Log the error but don't fail the team deletion
+      this.logger.error('Error notifying administrators of team deletion:', error);
+    }
   }
 
   async addMember(teamId: string, addMemberDto: AddTeamMemberDto): Promise<TeamMemberDto> {
@@ -187,7 +293,9 @@ export class TeamsService {
     const invalidRoles = addMemberDto.roles.filter((role) => !teamRoles.includes(role));
 
     if (invalidRoles.length > 0) {
-      throw new BadRequestException(`Invalid roles: ${invalidRoles.join(', ')}. Available roles: ${teamRoles.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid roles: ${invalidRoles.join(', ')}. Available roles: ${teamRoles.join(', ')}`,
+      );
     }
 
     // Check if user is already a member
@@ -246,7 +354,10 @@ export class TeamsService {
       .getMany();
 
     // Create a map of userId to lead positions
-    const userLeadPositionsMap = new Map<string, Array<{ subteamName: string; positionTitle: string }>>();
+    const userLeadPositionsMap = new Map<
+      string,
+      Array<{ subteamName: string; positionTitle: string }>
+    >();
     for (const position of leadPositions) {
       if (position.userId) {
         const subteamName = (position as any).subteam?.name;
@@ -257,7 +368,7 @@ export class TeamsService {
           }
           userLeadPositionsMap.get(position.userId)!.push({
             subteamName,
-            positionTitle
+            positionTitle,
           });
         }
       }
@@ -280,13 +391,13 @@ export class TeamsService {
       });
     }
 
-    return userTeams.map((userTeam) => 
+    return userTeams.map((userTeam) =>
       this.transformToMemberDto(
-        userTeam, 
+        userTeam,
         userSubteamsMap.get(userTeam.userId),
         userLeadPositionsMap.get(userTeam.userId),
-        userPermissionsMap.get(userTeam.userId)
-      )
+        userPermissionsMap.get(userTeam.userId),
+      ),
     );
   }
 
@@ -311,7 +422,9 @@ export class TeamsService {
     const invalidRoles = roles.filter((role) => !teamRoles.includes(role));
 
     if (invalidRoles.length > 0) {
-      throw new BadRequestException(`Invalid roles: ${invalidRoles.join(', ')}. Available roles: ${teamRoles.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid roles: ${invalidRoles.join(', ')}. Available roles: ${teamRoles.join(', ')}`,
+      );
     }
 
     // Validate role constraints - check if any assigned roles are mutually exclusive
@@ -327,21 +440,22 @@ export class TeamsService {
 
     // Check if removing Administrator role from the last admin
     const currentRoles = userTeam.getRolesArray();
-    const isRemovingAdmin = currentRoles.includes('Administrator') && !roles.includes('Administrator');
-    
+    const isRemovingAdmin =
+      currentRoles.includes('Administrator') && !roles.includes('Administrator');
+
     if (isRemovingAdmin) {
       // Count how many active members have the Administrator role
       const allMembers = await this.userTeamRepository.find({
         where: { teamId, status: MembershipStatus.ACTIVE },
       });
-      
-      const adminCount = allMembers.filter(member => 
-        member.getRolesArray().includes('Administrator')
+
+      const adminCount = allMembers.filter((member) =>
+        member.getRolesArray().includes('Administrator'),
       ).length;
-      
+
       if (adminCount <= 1) {
         throw new BadRequestException(
-          'Cannot remove Administrator role. At least one team member must have the Administrator role.'
+          'Cannot remove Administrator role. At least one team member must have the Administrator role.',
         );
       }
     }
@@ -359,7 +473,11 @@ export class TeamsService {
     }
   }
 
-  async updateMemberStatus(teamId: string, userId: string, updateStatusDto: UpdateMemberStatusDto): Promise<TeamMemberDto> {
+  async updateMemberStatus(
+    teamId: string,
+    userId: string,
+    updateStatusDto: UpdateMemberStatusDto,
+  ): Promise<TeamMemberDto> {
     const userTeam = await this.userTeamRepository.findOne({
       where: { userId, teamId },
       relations: ['user', 'user.emails', 'user.phones'],
@@ -401,7 +519,9 @@ export class TeamsService {
     });
 
     if (existingMember) {
-      throw new BadRequestException('You have already requested to join this team or are already a member');
+      throw new BadRequestException(
+        'You have already requested to join this team or are already a member',
+      );
     }
 
     // Get the user who is requesting to join
@@ -442,8 +562,8 @@ export class TeamsService {
       });
 
       // Filter to only administrators
-      const administrators = adminMembers.filter(member => 
-        member.getRolesArray().includes('Administrator')
+      const administrators = adminMembers.filter((member) =>
+        member.getRolesArray().includes('Administrator'),
       );
 
       if (administrators.length === 0) {
@@ -451,13 +571,14 @@ export class TeamsService {
         return;
       }
 
-      const requestingUserEmail = requestingUser.primaryEmail || requestingUser.emails?.[0]?.email || 'Unknown';
+      const requestingUserEmail =
+        requestingUser.primaryEmail || requestingUser.emails?.[0]?.email || 'Unknown';
       const requestingUserName = `${requestingUser.firstName} ${requestingUser.lastName}`;
 
       // Send email to each administrator
       for (const adminMember of administrators) {
         const adminEmail = adminMember.user?.primaryEmail || adminMember.user?.emails?.[0]?.email;
-        
+
         if (adminEmail) {
           await this.emailService.sendEmail({
             to: adminEmail,
@@ -500,7 +621,7 @@ export class TeamsService {
   private async notifyUserOfApproval(team: Team, user: User): Promise<void> {
     try {
       const userEmail = user.primaryEmail || user.emails?.[0]?.email;
-      
+
       if (!userEmail) {
         console.warn(`No email found for user ${user.id} to notify of approval`);
         return;
@@ -551,7 +672,7 @@ export class TeamsService {
   private async notifyUserOfRejection(team: Team, user: User): Promise<void> {
     try {
       const userEmail = user.primaryEmail || user.emails?.[0]?.email;
-      
+
       if (!userEmail) {
         console.warn(`No email found for user ${user.id} to notify of rejection`);
         return;
@@ -600,9 +721,11 @@ export class TeamsService {
   }
 
   private transformToResponse(team: Team): TeamResponseDto {
-    const activeMemberCount = team.userTeams?.filter(ut => ut.status === MembershipStatus.ACTIVE).length || 0;
-    const pendingMemberCount = team.userTeams?.filter(ut => ut.status === MembershipStatus.PENDING).length || 0;
-    
+    const activeMemberCount =
+      team.userTeams?.filter((ut) => ut.status === MembershipStatus.ACTIVE).length || 0;
+    const pendingMemberCount =
+      team.userTeams?.filter((ut) => ut.status === MembershipStatus.PENDING).length || 0;
+
     return {
       id: team.id,
       name: team.name,
@@ -620,13 +743,13 @@ export class TeamsService {
   }
 
   private transformToMemberDto(
-    userTeam: UserTeam, 
+    userTeam: UserTeam,
     subteams?: string[],
     leadPositions?: Array<{ subteamName: string; positionTitle: string }>,
-    permissions?: UserPermissionDto[]
+    permissions?: UserPermissionDto[],
   ): TeamMemberDto {
-    const primaryPhone = userTeam.user?.phones?.find(phone => phone.isPrimary);
-    
+    const primaryPhone = userTeam.user?.phones?.find((phone) => phone.isPrimary);
+
     return {
       userId: userTeam.userId,
       teamId: userTeam.teamId,
@@ -635,15 +758,17 @@ export class TeamsService {
       subteams: subteams && subteams.length > 0 ? subteams : undefined,
       leadPositions: leadPositions && leadPositions.length > 0 ? leadPositions : undefined,
       permissions: permissions && permissions.length > 0 ? permissions : undefined,
-      user: userTeam.user ? {
-        id: userTeam.user.id,
-        firstName: userTeam.user.firstName,
-        lastName: userTeam.user.lastName,
-        fullName: userTeam.user.fullName,
-        primaryEmail: userTeam.user.primaryEmail,
-        primaryPhone: primaryPhone?.phoneNumber,
-        isActive: userTeam.user.isActive,
-      } : undefined,
+      user: userTeam.user
+        ? {
+            id: userTeam.user.id,
+            firstName: userTeam.user.firstName,
+            lastName: userTeam.user.lastName,
+            fullName: userTeam.user.fullName,
+            primaryEmail: userTeam.user.primaryEmail,
+            primaryPhone: primaryPhone?.phoneNumber,
+            isActive: userTeam.user.isActive,
+          }
+        : undefined,
       createdAt: userTeam.createdAt,
       updatedAt: userTeam.updatedAt,
     };
@@ -794,7 +919,10 @@ export class TeamsService {
     return this.transformToInvitationDto(updatedInvitation, invitation.team.name);
   }
 
-  private transformToInvitationDto(invitation: TeamInvitation, teamName?: string): TeamInvitationResponseDto {
+  private transformToInvitationDto(
+    invitation: TeamInvitation,
+    teamName?: string,
+  ): TeamInvitationResponseDto {
     return {
       id: invitation.id,
       teamId: invitation.teamId,
@@ -907,10 +1035,11 @@ export class TeamsService {
         }
 
         // Handle multiple email addresses separated by semicolons
-        const emailAddresses = member.email.split(';')
-          .map(e => e.trim().toLowerCase())
-          .filter(e => e.length > 0);
-        
+        const emailAddresses = member.email
+          .split(';')
+          .map((e) => e.trim().toLowerCase())
+          .filter((e) => e.length > 0);
+
         if (emailAddresses.length === 0) {
           result.failed++;
           result.errors.push({
@@ -932,14 +1061,15 @@ export class TeamsService {
         if (!user) {
           // Create new user with default password or a temporary one
           const password = importData.defaultPassword || Math.random().toString(36).slice(-12);
-          
+
           // Handle multiple phone numbers separated by semicolons
           let phones: any[] | undefined = undefined;
           if (member.phoneNumber?.trim()) {
-            const phoneNumbers = member.phoneNumber.split(';')
-              .map(p => p.trim())
-              .filter(p => p.length > 0);
-            
+            const phoneNumbers = member.phoneNumber
+              .split(';')
+              .map((p) => p.trim())
+              .filter((p) => p.length > 0);
+
             phones = phoneNumbers.map((phoneNumber, index) => ({
               phoneNumber: phoneNumber,
               phoneType: 'mobile',
@@ -978,7 +1108,10 @@ export class TeamsService {
                   ]
                 : undefined,
             // Set user state and isActive based on defaultStatus
-            state: importData.defaultStatus === MembershipStatus.ACTIVE ? UserState.ACTIVE : UserState.PENDING,
+            state:
+              importData.defaultStatus === MembershipStatus.ACTIVE
+                ? UserState.ACTIVE
+                : UserState.PENDING,
             isActive: importData.defaultStatus === MembershipStatus.ACTIVE,
           };
 
@@ -1041,7 +1174,11 @@ export class TeamsService {
     return result;
   }
 
-  async getSiteStatistics(): Promise<{ publicTeamsCount: number; privateTeamsCount: number; totalUsersCount: number }> {
+  async getSiteStatistics(): Promise<{
+    publicTeamsCount: number;
+    privateTeamsCount: number;
+    totalUsersCount: number;
+  }> {
     // Count public teams
     const publicTeamsCount = await this.teamRepository.count({
       where: { visibility: TeamVisibility.PUBLIC },
@@ -1215,18 +1352,17 @@ export class TeamsService {
     };
 
     // Default fields if none specified
-    const selectedFields = fields && fields.length > 0 
-      ? fields 
-      : ['firstName', 'lastName', 'primaryEmail', 'roles'];
+    const selectedFields =
+      fields && fields.length > 0 ? fields : ['firstName', 'lastName', 'primaryEmail', 'roles'];
 
     // Build CSV header
-    const headers = selectedFields.map(field => availableFields[field] || field);
+    const headers = selectedFields.map((field) => availableFields[field] || field);
     if (includeSubteams) {
       headers.push('Subteams');
     }
 
     // Get subteam memberships if needed
-    let subteamMemberships: Map<string, string[]> = new Map();
+    const subteamMemberships: Map<string, string[]> = new Map();
     if (includeSubteams) {
       const subteamMembers = await this.subteamMemberRepository.find({
         relations: ['subteam'],
@@ -1298,7 +1434,7 @@ export class TeamsService {
     }
 
     // Convert to CSV string
-    return rows.map(row => row.join(',')).join('\n');
+    return rows.map((row) => row.join(',')).join('\n');
   }
 
   private escapeCSV(value: string): string {
@@ -1308,5 +1444,153 @@ export class TeamsService {
     }
     return value;
   }
-}
 
+  async exportTeam(teamId: string, userId: string): Promise<any> {
+    // Verify user is team administrator
+    const userTeam = await this.userTeamRepository.findOne({
+      where: { teamId, userId },
+    });
+
+    if (!userTeam || !userTeam.hasRole('Administrator')) {
+      throw new BadRequestException('Only team administrators can export team data');
+    }
+
+    // Get team with all basic information
+    const team = await this.teamRepository.findOne({
+      where: { id: teamId },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    // Get all team members with full user details
+    const teamMembers = await this.userTeamRepository.find({
+      where: { teamId },
+      relations: ['user', 'user.emails', 'user.phones', 'user.addresses'],
+    });
+
+    // Get all subteams with their lead positions and members
+    const subteams = await this.subteamRepository.find({
+      where: { teamId },
+      relations: ['leadPositions', 'members'],
+    });
+
+    // Get user permissions for all team members
+    const userPermissions = await this.userPermissionRepository.find({
+      where: { teamId },
+    });
+
+    // Build the comprehensive export data
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      team: {
+        id: team.id,
+        name: team.name,
+        teamNumber: team.teamNumber,
+        description: team.description,
+        visibility: team.visibility,
+        timezone: team.timezone,
+        createdAt: team.createdAt,
+        updatedAt: team.updatedAt,
+        roles: team.getRolesArray(),
+        roleConstraints: team.getRoleConstraintsArray().map(([role1, role2]) => ({
+          role1,
+          role2,
+        })),
+      },
+      subteams: subteams.map((subteam) => ({
+        id: subteam.id,
+        name: subteam.name,
+        description: subteam.description,
+        validRoles: subteam.validRoles ? subteam.validRoles.split(',').map((r) => r.trim()) : [],
+        createdBy: subteam.createdBy,
+        createdAt: subteam.createdAt,
+        leadPositions: subteam.leadPositions.map((position) => ({
+          id: position.id,
+          title: position.title,
+          requiredRole: position.requiredRole,
+          userId: position.userId,
+        })),
+        memberUserIds: subteam.members.map((member) => member.userId),
+      })),
+      users: await Promise.all(
+        teamMembers.map(async (member) => {
+          const user = member.user;
+          
+          // Get subteams this user is a member of
+          const userSubteams = await this.subteamMemberRepository.find({
+            where: { userId: user.id },
+            relations: ['subteam'],
+          });
+
+          // Get lead positions this user holds
+          const leadPositions = await this.subteamLeadPositionRepository.find({
+            where: { userId: user.id },
+            relations: ['subteam'],
+          });
+
+          // Get user permissions
+          const permissions = userPermissions
+            .filter((p) => p.userId === user.id)
+            .map((p) => ({
+              permission: p.permission,
+              enabled: p.enabled,
+            }));
+
+          return {
+            id: user.id,
+            firstName: user.firstName,
+            middleName: user.middleName,
+            lastName: user.lastName,
+            state: user.state,
+            isActive: user.isActive,
+            lastLogin: user.lastLogin,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            emails: user.emails.map((email) => ({
+              email: email.email,
+              isPrimary: email.isPrimary,
+              isVerified: email.isVerified,
+            })),
+            phones: user.phones.map((phone) => ({
+              phoneNumber: phone.phoneNumber,
+              isPrimary: phone.isPrimary,
+            })),
+            addresses: user.addresses.map((address) => ({
+              addressType: address.addressType,
+              streetLine1: address.streetLine1,
+              streetLine2: address.streetLine2,
+              city: address.city,
+              stateProvince: address.stateProvince,
+              postalCode: address.postalCode,
+              country: address.country,
+              isPrimary: address.isPrimary,
+            })),
+            teamMembership: {
+              roles: member.getRolesArray(),
+              status: member.status,
+              joinedAt: member.createdAt,
+            },
+            subteams: userSubteams
+              .filter((us) => us.subteam.teamId === teamId)
+              .map((us) => ({
+                subteamId: us.subteam.id,
+                subteamName: us.subteam.name,
+              })),
+            leadPositions: leadPositions
+              .filter((lp) => lp.subteam.teamId === teamId)
+              .map((lp) => ({
+                subteamId: lp.subteam.id,
+                subteamName: lp.subteam.name,
+                positionTitle: lp.title,
+              })),
+            permissions,
+          };
+        }),
+      ),
+    };
+
+    return exportData;
+  }
+}

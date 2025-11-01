@@ -58,8 +58,7 @@ export class TeamLinksService {
 
     if (updateDto.title !== undefined) link.title = updateDto.title;
     if (updateDto.url !== undefined) link.url = updateDto.url;
-    if (updateDto.displayOrder !== undefined)
-      link.displayOrder = updateDto.displayOrder;
+    if (updateDto.displayOrder !== undefined) link.displayOrder = updateDto.displayOrder;
 
     const saved = await this.teamLinkRepository.save(link);
     return this.transformToResponse(saved);
@@ -104,10 +103,7 @@ export class TeamLinksService {
     await this.teamLinkRepository.save(links);
   }
 
-  private async verifyAdminPermission(
-    userId: string,
-    teamId: string,
-  ): Promise<void> {
+  private async verifyAdminPermission(userId: string, teamId: string): Promise<void> {
     const userTeam = await this.userTeamRepository.findOne({
       where: { userId, teamId },
     });
@@ -119,9 +115,7 @@ export class TeamLinksService {
     const isAdmin = userTeam.getRolesArray().includes('Administrator');
 
     if (!isAdmin) {
-      throw new ForbiddenException(
-        'Only team administrators can manage links',
-      );
+      throw new ForbiddenException('Only team administrators can manage links');
     }
   }
 

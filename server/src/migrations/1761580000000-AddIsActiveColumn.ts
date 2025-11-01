@@ -15,9 +15,7 @@ export class AddIsActiveColumn1761580000000 implements MigrationInterface {
     );
 
     // Set all existing users to active by default
-    await queryRunner.query(
-      `UPDATE users SET is_active = 1`,
-    );
+    await queryRunner.query(`UPDATE users SET is_active = 1`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

@@ -561,4 +561,36 @@ export class TeamsService {
       throw new Error(error.error?.message || 'Failed to load site statistics');
     }
   }
+
+  async exportTeamAsJson(teamId: string): Promise<void> {
+    try {
+      // Call the API and get the blob response
+      const blob = await firstValueFrom(
+        this.http.get(`${this.apiUrl}/${teamId}/export`, {
+          responseType: 'blob'
+        })
+      );
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Set the filename
+      const team = await this.getTeam(teamId);
+      const filename = `team_${team.teamNumber}_export_${new Date().toISOString().split('T')[0]}.json`;
+      link.download = filename;
+      
+      // Trigger the download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error exporting team:', error);
+      throw new Error(error.error?.message || 'Failed to export team');
+    }
+  }
 }

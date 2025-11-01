@@ -15,7 +15,14 @@ import { Response } from 'express';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
-import { TeamResponseDto, TeamMemberDto, AddTeamMemberDto, UpdateTeamMemberRolesDto, UpdateMemberStatusDto, UpdateMemberAttributesDto } from './dto/team-response.dto';
+import {
+  TeamResponseDto,
+  TeamMemberDto,
+  AddTeamMemberDto,
+  UpdateTeamMemberRolesDto,
+  UpdateMemberStatusDto,
+  UpdateMemberAttributesDto,
+} from './dto/team-response.dto';
 import { SendInvitationDto, TeamInvitationResponseDto } from './dto/team-invitation.dto';
 import { UpdateRoleConstraintsDto } from './dto/role-constraints.dto';
 import { ImportRosterDto, ImportRosterResultDto } from './dto/import-roster.dto';
@@ -39,7 +46,11 @@ export class TeamsController {
   }
 
   @Get('statistics')
-  async getSiteStatistics(): Promise<{ publicTeamsCount: number; privateTeamsCount: number; totalUsersCount: number }> {
+  async getSiteStatistics(): Promise<{
+    publicTeamsCount: number;
+    privateTeamsCount: number;
+    totalUsersCount: number;
+  }> {
     return this.teamsService.getSiteStatistics();
   }
 
@@ -89,10 +100,7 @@ export class TeamsController {
   }
 
   @Delete(':id')
-  async remove(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ): Promise<{ message: string }> {
+  async remove(@Param('id') id: string, @CurrentUser() user: any): Promise<{ message: string }> {
     await this.teamsService.remove(id, user.id);
     return { message: 'Team deleted successfully' };
   }
@@ -125,10 +133,7 @@ export class TeamsController {
   }
 
   @Post(':id/request-join')
-  async requestToJoin(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ): Promise<TeamMemberDto> {
+  async requestToJoin(@Param('id') id: string, @CurrentUser() user: any): Promise<TeamMemberDto> {
     return this.teamsService.requestToJoin(id, user.id);
   }
 
@@ -175,7 +180,9 @@ export class TeamsController {
   }
 
   @Get(':id/constraints')
-  async getRoleConstraints(@Param('id') id: string): Promise<{ constraints: Array<[string, string]> }> {
+  async getRoleConstraints(
+    @Param('id') id: string,
+  ): Promise<{ constraints: Array<[string, string]> }> {
     const constraints = await this.teamsService.getRoleConstraints(id);
     return { constraints };
   }
@@ -185,7 +192,9 @@ export class TeamsController {
     @Param('id') id: string,
     @Body() updateConstraintsDto: UpdateRoleConstraintsDto,
   ): Promise<{ constraints: Array<[string, string]> }> {
-    const pairs = updateConstraintsDto.constraints.map(c => [c.role1, c.role2] as [string, string]);
+    const pairs = updateConstraintsDto.constraints.map(
+      (c) => [c.role1, c.role2] as [string, string],
+    );
     const constraints = await this.teamsService.updateRoleConstraints(id, pairs);
     return { constraints };
   }
@@ -218,5 +227,21 @@ export class TeamsController {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.status(HttpStatus.OK).send(csv);
+  }
+
+  @Get(':id/export')
+  async exportTeam(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ): Promise<void> {
+    const exportData = await this.teamsService.exportTeam(id, user.id);
+    
+    const team = await this.teamsService.findOne(id);
+    const filename = `team_${team.teamNumber}_export_${new Date().toISOString().split('T')[0]}.json`;
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(HttpStatus.OK).json(exportData);
   }
 }

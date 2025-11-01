@@ -275,6 +275,30 @@
   font-size: 13px;
 }
 
+.direction-cell {
+  width: 80px;
+  text-align: center;
+
+  .direction-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+
+    &.sent {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    &.received {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+  }
+}
+
 .subject-cell {
   min-width: 200px;
   max-width: 300px;
@@ -321,6 +345,74 @@
   text-align: center;
   font-weight: 600;
   color: #333;
+}
+
+.attachments-cell {
+  width: 120px;
+  text-align: center;
+
+  .attachments-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+
+    &:hover {
+      background: #e9ecef;
+      border-color: #007bff;
+    }
+
+    &.expanded {
+      background: #e3f2fd;
+      border-color: #007bff;
+    }
+
+    .attachment-icon {
+      font-size: 16px;
+    }
+
+    .attachment-count {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .new-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background: #ff4444;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 10px;
+      text-transform: uppercase;
+      animation: pulse 2s infinite;
+    }
+
+    .expand-icon {
+      font-size: 10px;
+      color: #666;
+    }
+  }
+
+  .no-attachments {
+    color: #999;
+    font-size: 14px;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .status-cell {
@@ -381,6 +473,98 @@
   &:hover {
     background: #e9ecef;
     border-color: #ccc;
+  }
+}
+
+.attachments-expanded-row {
+  background: #f8f9fa;
+
+  &:hover {
+    background: #f8f9fa;
+  }
+}
+
+.attachments-expanded-cell {
+  padding: 16px !important;
+  border-bottom: 2px solid #dee2e6 !important;
+}
+
+.attachments-list {
+  h4 {
+    margin: 0 0 12px 0;
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.attachment-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+  }
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+
+  .attachment-icon {
+    font-size: 20px;
+  }
+}
+
+.attachment-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .attachment-name {
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+  }
+
+  .attachment-meta {
+    font-size: 12px;
+    color: #666;
+  }
+}
+
+.download-button {
+  padding: 6px 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: #0056b3;
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 }
 

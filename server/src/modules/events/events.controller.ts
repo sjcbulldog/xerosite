@@ -69,7 +69,7 @@ export class EventsController {
       id,
       occurrenceDate,
       occurrenceDateType: typeof occurrenceDate,
-      userId: user.id
+      userId: user.id,
     });
     const excludeDate = occurrenceDate ? new Date(occurrenceDate) : undefined;
     console.log('[Controller] Parsed excludeDate:', excludeDate);

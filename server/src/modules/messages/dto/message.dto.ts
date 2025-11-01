@@ -32,11 +32,13 @@ export class MessageResponseDto {
   userGroupName?: string;
   recipientCount: number;
   attachments?: Array<{
+    fileId: string;
     filename: string;
     originalName: string;
     mimetype: string;
     size: number;
   }>;
+  hasUnviewedAttachments?: boolean;
   sentAt?: Date;
   errorMessage?: string;
   createdAt: Date;

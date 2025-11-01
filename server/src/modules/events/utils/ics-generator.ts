@@ -16,18 +16,18 @@ export function generateICS(
   const now = new Date();
   const timestamp = formatICSDateTime(now, timezone);
   const uid = `${event.id}@xerosite-frc-teams`;
-  
+
   // For cancellations, ensure sequence is at least 1
   const effectiveSequence = method === 'CANCEL' ? Math.max(sequence, 1) : sequence;
-  
+
   // Format dates with timezone
   const dtStart = formatICSDateTime(event.startDateTime, timezone);
-  const dtEnd = event.endDateTime 
+  const dtEnd = event.endDateTime
     ? formatICSDateTime(event.endDateTime, timezone)
     : formatICSDateTime(new Date(event.startDateTime.getTime() + 60 * 60 * 1000), timezone); // Default 1 hour duration
 
   // Build the ICS content
-  let icsContent = [
+  const icsContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//FRC Teams//Event Calendar//EN',
@@ -85,8 +85,7 @@ function formatICSDateTime(date: Date, timezone: string): string {
   if (typeof date === 'string') {
     dateObj = new Date(date);
   }
-  
-  
+
   // Convert UTC date to timezone-specific date parts using Intl.DateTimeFormat
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
@@ -98,19 +97,19 @@ function formatICSDateTime(date: Date, timezone: string): string {
     second: '2-digit',
     hour12: false,
   });
-  
+
   const parts = formatter.formatToParts(dateObj);
   const getValue = (type: string) => parts.find((p) => p.type === type)?.value || '00';
-  
+
   const year = getValue('year');
   const month = getValue('month');
   const day = getValue('day');
   const hours = getValue('hour');
   const minutes = getValue('minute');
   const seconds = getValue('second');
-  
+
   const result = `${year}${month}${day}T${hours}${minutes}${seconds}`;
-  
+
   return result;
 }
 
@@ -120,10 +119,7 @@ function formatICSDateTime(date: Date, timezone: string): string {
  */
 function generateVTimezone(timezone: string): string[] {
   // Map common timezones to their TZID
-  const timezoneComponents: string[] = [
-    'BEGIN:VTIMEZONE',
-    `TZID:${timezone}`,
-  ];
+  const timezoneComponents: string[] = ['BEGIN:VTIMEZONE', `TZID:${timezone}`];
 
   // Add timezone components based on timezone
   // For US timezones, include DST rules
@@ -131,20 +127,20 @@ function generateVTimezone(timezone: string): string[] {
     // Standard time (fall/winter)
     timezoneComponents.push(
       'BEGIN:STANDARD',
-      'DTSTART:20241103T020000',  // First Sunday in November at 2 AM
+      'DTSTART:20241103T020000', // First Sunday in November at 2 AM
       'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
-      'TZOFFSETFROM:-0700',       // PDT offset (will be adjusted)
-      'TZOFFSETTO:-0800',          // PST offset (will be adjusted)
+      'TZOFFSETFROM:-0700', // PDT offset (will be adjusted)
+      'TZOFFSETTO:-0800', // PST offset (will be adjusted)
       'END:STANDARD',
     );
 
     // Daylight time (spring/summer)
     timezoneComponents.push(
       'BEGIN:DAYLIGHT',
-      'DTSTART:20240310T020000',  // Second Sunday in March at 2 AM
+      'DTSTART:20240310T020000', // Second Sunday in March at 2 AM
       'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
-      'TZOFFSETFROM:-0800',       // PST offset (will be adjusted)
-      'TZOFFSETTO:-0700',          // PDT offset (will be adjusted)
+      'TZOFFSETFROM:-0800', // PST offset (will be adjusted)
+      'TZOFFSETTO:-0700', // PDT offset (will be adjusted)
       'END:DAYLIGHT',
     );
   }
@@ -158,11 +154,11 @@ function generateVTimezone(timezone: string): string[] {
  */
 function escapeICSText(text: string): string {
   return text
-    .replace(/\\/g, '\\\\')  // Escape backslashes
-    .replace(/;/g, '\\;')     // Escape semicolons
-    .replace(/,/g, '\\,')     // Escape commas
-    .replace(/\n/g, '\\n')    // Escape newlines
-    .replace(/\r/g, '');      // Remove carriage returns
+    .replace(/\\/g, '\\\\') // Escape backslashes
+    .replace(/;/g, '\\;') // Escape semicolons
+    .replace(/,/g, '\\,') // Escape commas
+    .replace(/\n/g, '\\n') // Escape newlines
+    .replace(/\r/g, ''); // Remove carriage returns
 }
 
 /**
@@ -179,7 +175,7 @@ function generateRRule(event: TeamEvent, timezone: string): string | null {
     case 'daily':
       parts.push('FREQ=DAILY');
       break;
-    
+
     case 'weekly':
       parts.push('FREQ=WEEKLY');
       if (event.recurrencePattern) {
@@ -199,13 +195,16 @@ function generateRRule(event: TeamEvent, timezone: string): string | null {
         }
       }
       break;
-    
+
     case 'monthly':
       parts.push('FREQ=MONTHLY');
       if (event.recurrencePattern) {
         if (typeof event.recurrencePattern === 'object') {
           // Pattern format: { daysOfMonth: [1,15] }
-          if (event.recurrencePattern.daysOfMonth && Array.isArray(event.recurrencePattern.daysOfMonth)) {
+          if (
+            event.recurrencePattern.daysOfMonth &&
+            Array.isArray(event.recurrencePattern.daysOfMonth)
+          ) {
             parts.push(`BYMONTHDAY=${event.recurrencePattern.daysOfMonth.join(',')}`);
           }
           // Pattern format: { pattern: 'first-tuesday', 'last-thursday' }
@@ -213,22 +212,22 @@ function generateRRule(event: TeamEvent, timezone: string): string | null {
             // Convert pattern like 'first-tuesday' to '1TU', 'last-thursday' to '-1TH'
             const patternStr = event.recurrencePattern.pattern.toLowerCase();
             const positionMap: { [key: string]: string } = {
-              'first': '1',
-              'second': '2',
-              'third': '3',
-              'fourth': '4',
-              'last': '-1',
+              first: '1',
+              second: '2',
+              third: '3',
+              fourth: '4',
+              last: '-1',
             };
             const dayMap: { [key: string]: string } = {
-              'sunday': 'SU',
-              'monday': 'MO',
-              'tuesday': 'TU',
-              'wednesday': 'WE',
-              'thursday': 'TH',
-              'friday': 'FR',
-              'saturday': 'SA',
+              sunday: 'SU',
+              monday: 'MO',
+              tuesday: 'TU',
+              wednesday: 'WE',
+              thursday: 'TH',
+              friday: 'FR',
+              saturday: 'SA',
             };
-            
+
             for (const [position, posValue] of Object.entries(positionMap)) {
               for (const [day, dayValue] of Object.entries(dayMap)) {
                 if (patternStr.includes(position) && patternStr.includes(day)) {
@@ -250,7 +249,7 @@ function generateRRule(event: TeamEvent, timezone: string): string | null {
         }
       }
       break;
-    
+
     case 'custom':
       // For custom recurrence, try to extract meaningful RRULE if possible
       // Otherwise just mark as non-recurring

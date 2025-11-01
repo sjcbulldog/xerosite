@@ -14,56 +14,106 @@
             </span>
           </div>
           <div class="header-actions">
-            @if (isTeamAdmin()) {
-              <div class="admin-menu-container">
-                <button (click)="toggleAdminMenu()" class="hamburger-button" [class.active]="showAdminMenu()">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                  </svg>
-                  <span class="chevron-down">▼</span>
-                </button>
-                @if (showAdminMenu()) {
-                  <div class="admin-menu-dropdown">
+            <div class="admin-menu-container">
+              <button (click)="toggleAdminMenu()" class="hamburger-button" [class.active]="showAdminMenu()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+                <span class="chevron-down">▼</span>
+              </button>
+              @if (showAdminMenu()) {
+                <div class="admin-menu-dropdown">
+                  @if (isTeamAdmin()) {
                     <button (click)="openTeamOverview()" class="menu-item">
                       <span class="menu-icon">📊</span>
                       Team Overview
                     </button>
-                    @if (canSendMessages()) {
-                      <button (click)="openSendMessageDialog()" class="menu-item">
-                        <span class="menu-icon">📧</span>
-                        Send Message
-                      </button>
-                      <button (click)="openReviewMessagesDialog()" class="menu-item">
-                        <span class="menu-icon">📋</span>
-                        Review Messages
-                      </button>
+                  }
+                  
+                  <!-- Messages Section: Show submenu if can send, otherwise show review as top-level -->
+                  @if (canSendMessages()) {
+                    <!-- Messages Submenu (when user can send messages) -->
+                    <button (click)="toggleMessagesSubmenu($event)" class="menu-item submenu-parent">
+                      <span class="menu-icon">📧</span>
+                      Messages
+                      <span class="submenu-arrow">{{ showMessagesSubmenu() ? '▼' : '▶' }}</span>
+                    </button>
+                    @if (showMessagesSubmenu()) {
+                      <div class="submenu-items">
+                        <button (click)="openSendMessageDialog()" class="menu-item submenu-item">
+                          <span class="menu-icon">✉️</span>
+                          Send
+                        </button>
+                        <button (click)="openReviewMessagesDialog()" class="menu-item submenu-item">
+                          <span class="menu-icon">📋</span>
+                          Review
+                        </button>
+                      </div>
                     }
-                    <button (click)="openDescriptionEditor()" class="menu-item">
-                      <span class="menu-icon">📝</span>
-                      Edit Team Information
-                    </button>                    
-                    <button (click)="openRoleEditor()" class="menu-item">
-                      <span class="menu-icon">🎭</span>
-                      Edit Team Roles
-                    </button>
-                    <button (click)="openConstraintsEditor()" class="menu-item">
-                      <span class="menu-icon">⚖️</span>
-                      Edit Role Constraints
-                    </button>
-                    <button (click)="openInviteDialog()" class="menu-item">
-                      <span class="menu-icon">✉️</span>
-                      Invite Member
-                    </button>                    
-                    <button (click)="openImportDialog()" class="menu-item">
+                  } @else {
+                    <!-- Review Messages as top-level item (when user cannot send messages) -->
+                    <button (click)="openReviewMessagesDialog()" class="menu-item">
                       <span class="menu-icon">📋</span>
-                      Import Roster
+                      Review Messages
                     </button>
-                    <button (click)="openExportDialog()" class="menu-item">
-                      <span class="menu-icon">📊</span>
-                      Export Roster
-                    </button>
+                  }
+                  
+                  <!-- Edit Submenu -->
+                    @if (isTeamAdmin()) {
+                      <button (click)="toggleEditSubmenu($event)" class="menu-item submenu-parent">
+                        <span class="menu-icon">✏️</span>
+                        Edit
+                        <span class="submenu-arrow">{{ showEditSubmenu() ? '▼' : '▶' }}</span>
+                      </button>
+                      @if (showEditSubmenu()) {
+                      <div class="submenu-items">
+                        <button (click)="openDescriptionEditor()" class="menu-item submenu-item">
+                          <span class="menu-icon">📝</span>
+                          Information
+                        </button>
+                        <button (click)="openRoleEditor()" class="menu-item submenu-item">
+                          <span class="menu-icon">🎭</span>
+                          Roles
+                        </button>
+                        <button (click)="openConstraintsEditor()" class="menu-item submenu-item">
+                          <span class="menu-icon">⚖️</span>
+                          Role Constraints
+                        </button>
+                      </div>
+                    }
+                    }
+                    
+                    <!-- Roster Submenu -->
+                    @if (isTeamAdmin()) {
+                      <button (click)="toggleRosterSubmenu($event)" class="menu-item submenu-parent">
+                        <span class="menu-icon">👥</span>
+                        Roster
+                        <span class="submenu-arrow">{{ showRosterSubmenu() ? '▼' : '▶' }}</span>
+                      </button>
+                      @if (showRosterSubmenu()) {
+                      <div class="submenu-items">
+                        <button (click)="openInviteDialog()" class="menu-item submenu-item">
+                          <span class="menu-icon">✉️</span>
+                          Invite New Member
+                        </button>
+                        <button (click)="openExportDialog()" class="menu-item submenu-item">
+                          <span class="menu-icon">📊</span>
+                          Export As CSV
+                        </button>
+                        <button (click)="exportTeamAsJson()" class="menu-item submenu-item">
+                          <span class="menu-icon">📄</span>
+                          Export As JSON
+                        </button>
+                        <button (click)="openImportDialog()" class="menu-item submenu-item">
+                          <span class="menu-icon">📥</span>
+                          Import From CSV
+                        </button>
+                      </div>
+                    }
+                    }
+                    
                     @if (canCreateUserGroups()) {
                       <button (click)="openUserGroupsManager()" class="menu-item">
                         <span class="menu-icon">👥</span>
@@ -77,7 +127,6 @@
                   </div>
                 }
               </div>
-            }
           </div>
         </div>
 

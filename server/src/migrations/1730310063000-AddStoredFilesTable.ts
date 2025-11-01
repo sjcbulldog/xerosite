@@ -65,38 +65,26 @@ export class AddStoredFilesTable1730310063000 implements MigrationInterface {
     );
 
     // Add index on subsystem for faster queries
-    await queryRunner.query(
-      `CREATE INDEX idx_stored_files_subsystem ON stored_files(subsystem)`,
-    );
+    await queryRunner.query(`CREATE INDEX idx_stored_files_subsystem ON stored_files(subsystem)`);
 
     // Add index on userId for faster queries
-    await queryRunner.query(
-      `CREATE INDEX idx_stored_files_userId ON stored_files(userId)`,
-    );
+    await queryRunner.query(`CREATE INDEX idx_stored_files_userId ON stored_files(userId)`);
 
     // Update team_messages table to use file IDs instead of JSON attachments
-    await queryRunner.query(
-      `ALTER TABLE team_messages ADD COLUMN attachmentFileIds TEXT NULL`,
-    );
+    await queryRunner.query(`ALTER TABLE team_messages ADD COLUMN attachmentFileIds TEXT NULL`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Remove column from team_messages
-    await queryRunner.query(
-      `ALTER TABLE team_messages DROP COLUMN attachmentFileIds`,
-    );
+    await queryRunner.query(`ALTER TABLE team_messages DROP COLUMN attachmentFileIds`);
 
     // Drop indexes
     await queryRunner.query(`DROP INDEX idx_stored_files_userId ON stored_files`);
-    await queryRunner.query(
-      `DROP INDEX idx_stored_files_subsystem ON stored_files`,
-    );
+    await queryRunner.query(`DROP INDEX idx_stored_files_subsystem ON stored_files`);
 
     // Drop foreign key
     const table = await queryRunner.getTable('stored_files');
-    const foreignKey = table?.foreignKeys.find(
-      (fk) => fk.columnNames.indexOf('userId') !== -1,
-    );
+    const foreignKey = table?.foreignKeys.find((fk) => fk.columnNames.indexOf('userId') !== -1);
     if (foreignKey) {
       await queryRunner.dropForeignKey('stored_files', foreignKey);
     }

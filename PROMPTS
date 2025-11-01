@@ -414,24 +414,21 @@ The admin badge is being displayed on the far right.  It should be moved left to
 
 When an email is sent to a user, if they have parents, send the same email to each of the parents.
 
+When a team is deleted from the system, an email should be sent to all of the adminstrators for that team indicating that their team has been deleted.
+
+I would like you add hierarchy to the menu on the team dashboard.  There should be a menu item Messages with two submenu items 'Send' and 'Review'.  There should be an 'Edit' menu with Information, Roles, and Role Constraints as submenu items.  Finally there should be a Roster menu item with three submenu items, Invite New Member, Export As CSV, and Import From CSV.
+
+Change the way large attachments are managed.  Instead of sending a one time link with the message, just provide a notification that the user has attachments waiting at the site.  When a user logs in, if there are attachments they have not seen then display a popup indicating there are new attachments.  This popup should have two buttons, OK or View.  If View is selected, the review messages window should be displayed and attachments should be added to this display.
+
+Add an ability to export a team as a JSON file.  This should include all team information including role definintions, role constraints, subteam definitions, requirements definitions, and finally all users with their associated user database information as well as parents, roles, subteams, leadership positions, and requirements status.  This should be on the team dashboard menu and only for users that are team adminstrators.
+
 In Progress
 ===========
 
+Create a system to manage a list of TODO items that are per user per team.  The todo items are created at the team level and assigned to team members via the user group visibility mechanism.  The status of each todo item is tracked per user per team and the todo items are checked off the list by a team adminstrator.  There should be a GUI provided to the team admistrators to create new todo items that have a description, a due date, and date after which the system starts reminding the user, and a frequency of reminding the user. This GUI for the adminstrator should be accessible via the team dashboard menu. The user should be reminded when there are unfinished todo items that are after the reminder date.  The user is remineded via email messages and via a popup when the user logs into the system.  The user should have a GUI listing all unfinished items on the TODO list for a user.  This should also be accessible from the team dashboard menu.
+
 Pending
 =======
-
-In the team dashboard menu, add hierarchy.  There should be a Messages submenu with two item, Send and Review.  There should be and Edit submenu with three item, Team Information, Team Roles, and Role Constraints.  There should be a Roster submenu with three item, Invite New Member, Import From CSV, Export To CSV.
-
-For a team, there should be a system for adding a requirement (e.g. First Consent Form) for a given time period and user group.  If a user has not completed a requirement when they log in, they get a popup saying they have unfulfilled requirements.  The system should periodically email them to remind them of the outstanding requirement.
-
-When a team is deleted from the system, an email should be sent to all of the adminstrators for that team indicating that their team has been deleted.
-
-On the team dashboard menu, Roster submenu, add an 'Export As JSON' menu item, which exports all of the users for the team as a JSON file.  This file should contains only users for the current team and all of the per user information in the users database.  For each user should also contain the subteams they belong to and their roles.
-
-Add an ability to export a team as a JSON file.  This should include all team information including role definintions, role constraints, subteam definitions, requirements definitions, and finally all users with their associated user database information as well as parents, roles, subteams, leadership positions, and requirements status.
-
-Add a database table that records when each user logs into the system.  This information should be viewable as a table in a popup from the main dashboard for site adminstrators.
-
 
 --- calendar
 

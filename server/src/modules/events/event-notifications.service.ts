@@ -88,20 +88,13 @@ export class EventNotificationsService {
       ];
 
       const notificationPrefs: EventNotificationPref[] =
-        preference &&
-        preference.eventNotifications &&
-        preference.eventNotifications.length > 0
+        preference && preference.eventNotifications && preference.eventNotifications.length > 0
           ? preference.eventNotifications
           : defaultPreferences;
 
       // Check each preference
       for (const pref of notificationPrefs) {
-        await this.checkAndSendNotification(
-          event,
-          member.user,
-          pref.timeBefore,
-          pref.method,
-        );
+        await this.checkAndSendNotification(event, member.user, pref.timeBefore, pref.method);
       }
     }
   }
@@ -125,9 +118,7 @@ export class EventNotificationsService {
   ): Promise<void> {
     const now = new Date();
     const eventTime = new Date(event.startDateTime);
-    const notificationTime = new Date(
-      eventTime.getTime() - minutesBefore * 60 * 1000,
-    );
+    const notificationTime = new Date(eventTime.getTime() - minutesBefore * 60 * 1000);
 
     // Check if notification time has passed and event hasn't started yet
     if (notificationTime > now || eventTime < now) {
@@ -170,10 +161,7 @@ export class EventNotificationsService {
         `Sent ${notificationType} notification to ${user.primaryEmail} for event "${event.name}"`,
       );
     } catch (error) {
-      this.logger.error(
-        `Error sending notification to ${user.primaryEmail}:`,
-        error,
-      );
+      this.logger.error(`Error sending notification to ${user.primaryEmail}:`, error);
     }
   }
 
@@ -206,11 +194,7 @@ export class EventNotificationsService {
       <p style="color: #6b7280; font-size: 0.9em;">This is an automated notification from your team calendar.</p>
     `;
 
-    await this.emailService.sendEventNotificationEmail(
-      user.primaryEmail,
-      subject,
-      htmlContent,
-    );
+    await this.emailService.sendEventNotificationEmail(user.primaryEmail, subject, htmlContent);
   }
 
   private async sendTextNotification(
@@ -243,10 +227,7 @@ export class EventNotificationsService {
         `✓ SMS notification sent for event: ${event.name} (user: ${user.primaryEmail}, phone: ${phoneNumber})`,
       );
     } catch (error) {
-      this.logger.error(
-        `✗ Failed to send SMS for event ${event.name}:`,
-        error.message,
-      );
+      this.logger.error(`✗ Failed to send SMS for event ${event.name}:`, error.message);
     }
   }
 

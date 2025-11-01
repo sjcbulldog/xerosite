@@ -102,9 +102,7 @@ export class SmsService {
       const data = await response.json();
 
       if (response.ok && data.sid) {
-        this.logger.log(
-          `✓ SMS sent successfully to ${actualTo} (Message SID: ${data.sid})`,
-        );
+        this.logger.log(`✓ SMS sent successfully to ${actualTo} (Message SID: ${data.sid})`);
         return true;
       } else {
         this.logger.error(`✗ SMS send failed: ${data.message || 'Unknown error'}`);
@@ -164,7 +162,7 @@ export class SmsService {
 
     let message = `Event Reminder: "${eventName}" is coming up ${timeDescription}.\n`;
     message += `Time: ${timeStr}`;
-    
+
     if (location) {
       message += `\nLocation: ${location}`;
     }

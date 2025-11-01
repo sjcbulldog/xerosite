@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Subteam } from './entities/subteam.entity';
@@ -351,11 +356,11 @@ export class SubteamsService {
   private async transformToResponse(subteam: Subteam): Promise<SubteamResponseDto> {
     // Get all user IDs we need to fetch
     const userIds = new Set<string>();
-    
+
     if (subteam.members) {
       subteam.members.forEach((m) => userIds.add(m.userId));
     }
-    
+
     if (subteam.leadPositions) {
       subteam.leadPositions.forEach((p) => {
         if (p.userId) userIds.add(p.userId);

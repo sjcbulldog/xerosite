@@ -39,28 +39,28 @@ export class EventsService {
 
   async create(createEventDto: CreateEventDto, userId: string): Promise<EventResponseDto> {
     console.log('[EventCreate] Creating new event:', createEventDto.name);
-    
+
     // Fetch the team to get its timezone
     const team = await this.teamRepository.findOne({
       where: { id: createEventDto.teamId },
     });
-    
+
     if (!team) {
       throw new NotFoundException(`Team with ID ${createEventDto.teamId} not found`);
     }
-    
+
     const timezone = team.timezone || 'America/New_York';
     console.log('[EventCreate] Using team timezone:', timezone);
-    
+
     // Parse dates in the team's timezone and convert to UTC for storage
     const startDateTime = parseInTimezone(createEventDto.startDateTime, timezone);
-    const endDateTime = createEventDto.endDateTime 
+    const endDateTime = createEventDto.endDateTime
       ? parseInTimezone(createEventDto.endDateTime, timezone)
       : null;
     const recurrenceEndDate = createEventDto.recurrenceEndDate
       ? parseInTimezone(createEventDto.recurrenceEndDate, timezone)
       : null;
-    
+
     const event = this.eventRepository.create({
       ...createEventDto,
       startDateTime,
@@ -128,11 +128,11 @@ export class EventsService {
     const team = await this.teamRepository.findOne({
       where: { id: event.teamId },
     });
-    
+
     if (!team) {
       throw new NotFoundException(`Team with ID ${event.teamId} not found`);
     }
-    
+
     const timezone = team.timezone || 'America/New_York';
 
     // Update fields
@@ -143,14 +143,16 @@ export class EventsService {
       event.startDateTime = parseInTimezone(updateEventDto.startDateTime, timezone);
     }
     if (updateEventDto.endDateTime !== undefined) {
-      event.endDateTime = updateEventDto.endDateTime 
+      event.endDateTime = updateEventDto.endDateTime
         ? parseInTimezone(updateEventDto.endDateTime, timezone)
         : null;
     }
-    if (updateEventDto.recurrenceType !== undefined) event.recurrenceType = updateEventDto.recurrenceType;
-    if (updateEventDto.recurrencePattern !== undefined) event.recurrencePattern = updateEventDto.recurrencePattern;
+    if (updateEventDto.recurrenceType !== undefined)
+      event.recurrenceType = updateEventDto.recurrenceType;
+    if (updateEventDto.recurrencePattern !== undefined)
+      event.recurrencePattern = updateEventDto.recurrencePattern;
     if (updateEventDto.recurrenceEndDate !== undefined) {
-      event.recurrenceEndDate = updateEventDto.recurrenceEndDate 
+      event.recurrenceEndDate = updateEventDto.recurrenceEndDate
         ? parseInTimezone(updateEventDto.recurrenceEndDate, timezone)
         : null;
     }
@@ -168,7 +170,7 @@ export class EventsService {
       occurrenceDateValue: occurrenceDate ? occurrenceDate.toISOString() : null,
       deletedByUserId,
     });
-    
+
     const event = await this.eventRepository.findOne({ where: { id } });
 
     if (!event) {
@@ -184,13 +186,13 @@ export class EventsService {
     // If occurrenceDate is provided and event is recurring, exclude the specific occurrence
     if (occurrenceDate && event.recurrenceType !== 'none') {
       console.log('[EventDelete] Excluding single occurrence for recurring event');
-      
+
       // Get team to get timezone
       const team = await this.teamRepository.findOne({
         where: { id: event.teamId },
       });
       const timezone = team?.timezone || 'America/New_York';
-      
+
       // Normalize the date to the calendar date in the team timezone
       // Extract the date (YYYY-MM-DD) as seen in the team timezone
       const formatter = new Intl.DateTimeFormat('en-US', {
@@ -199,30 +201,30 @@ export class EventsService {
         month: '2-digit',
         day: '2-digit',
       });
-      
+
       const parts = formatter.formatToParts(occurrenceDate);
-      const year = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
-      const month = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10);
-      const day = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
-      
+      const year = parseInt(parts.find((p) => p.type === 'year')?.value || '0', 10);
+      const month = parseInt(parts.find((p) => p.type === 'month')?.value || '0', 10);
+      const day = parseInt(parts.find((p) => p.type === 'day')?.value || '0', 10);
+
       const calendarDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      
+
       // Parse this date at midnight in the team timezone to get the UTC timestamp
       const normalizedDate = parseInTimezone(`${calendarDate}T00:00:00`, timezone);
-      
+
       console.log('[EventDelete] Normalized date:', {
         original: occurrenceDate.toISOString(),
         timezone,
         calendarDate,
         normalized: normalizedDate.toISOString(),
       });
-      
+
       // Create an exclusion record
       const exclusion = this.eventExclusionRepository.create({
         eventId: id,
         excludedDate: normalizedDate,
       });
-      
+
       await this.eventExclusionRepository.save(exclusion);
       console.log('[EventDelete] Occurrence excluded:', normalizedDate);
 
@@ -230,18 +232,25 @@ export class EventsService {
       if (deletedByUserId) {
         console.log('[EventDelete] Sending single occurrence cancellation notifications');
         setImmediate(() => {
-          this.sendSingleOccurrenceCancellationNotifications(event, deletedByUserId, occurrenceDate).catch((error) => {
-            console.error('[EventDelete] Error sending single occurrence cancellation notifications:', error);
+          this.sendSingleOccurrenceCancellationNotifications(
+            event,
+            deletedByUserId,
+            occurrenceDate,
+          ).catch((error) => {
+            console.error(
+              '[EventDelete] Error sending single occurrence cancellation notifications:',
+              error,
+            );
           });
         });
       }
-      
+
       return;
     }
 
     // Otherwise, delete the entire event series
     console.log('[EventDelete] Deleting entire event series');
-    
+
     // Create a copy of the event for notifications (before it's removed from DB)
     const eventCopy = { ...event };
 
@@ -253,9 +262,11 @@ export class EventsService {
     if (deletedByUserId) {
       console.log('[EventDelete] Sending series cancellation notifications');
       setImmediate(() => {
-        this.sendCancellationNotifications(eventCopy as TeamEvent, deletedByUserId).catch((error) => {
-          console.error('[EventDelete] Error sending cancellation notifications:', error);
-        });
+        this.sendCancellationNotifications(eventCopy as TeamEvent, deletedByUserId).catch(
+          (error) => {
+            console.error('[EventDelete] Error sending cancellation notifications:', error);
+          },
+        );
       });
     }
   }
@@ -289,7 +300,7 @@ export class EventsService {
       createdBy: event.createdBy,
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
-      excludedDates: exclusions.map(e => e.excludedDate),
+      excludedDates: exclusions.map((e) => e.excludedDate),
       teamTimezone: timezone,
     };
   }
@@ -297,7 +308,7 @@ export class EventsService {
   private async sendEventNotifications(event: TeamEvent, creatorId: string): Promise<void> {
     try {
       console.log('[EventNotifications] Starting to send notifications for event:', event.id);
-      
+
       // Get team info
       const team = await this.teamRepository.findOne({
         where: { id: event.teamId },
@@ -331,7 +342,7 @@ export class EventsService {
         }
 
         console.log('[EventNotifications] Sending email to:', recipientEmail);
-        
+
         // Generate ICS attachment with sequence 0 for new events
         const icsContent = generateICS(event, 'REQUEST', 0, team.timezone || 'America/New_York');
         const icsBase64 = Buffer.from(icsContent).toString('base64');
@@ -358,10 +369,16 @@ export class EventsService {
     }
   }
 
-  private async sendCancellationNotifications(event: TeamEvent, deletedByUserId: string): Promise<void> {
+  private async sendCancellationNotifications(
+    event: TeamEvent,
+    deletedByUserId: string,
+  ): Promise<void> {
     try {
-      console.log('[EventCancellation] Starting to send cancellation notifications for event:', event.id);
-      
+      console.log(
+        '[EventCancellation] Starting to send cancellation notifications for event:',
+        event.id,
+      );
+
       // Get team info
       const team = await this.teamRepository.findOne({
         where: { id: event.teamId },
@@ -395,7 +412,7 @@ export class EventsService {
         }
 
         console.log('[EventCancellation] Sending cancellation email to:', recipientEmail);
-        
+
         // Generate ICS cancellation attachment with sequence 1 (higher than the original event's sequence 0)
         const icsContent = generateICS(event, 'CANCEL', 1, team.timezone || 'America/New_York');
         const icsBase64 = Buffer.from(icsContent).toString('base64');
@@ -428,8 +445,11 @@ export class EventsService {
     occurrenceDate: Date,
   ): Promise<void> {
     try {
-      console.log('[OccurrenceCancellation] Starting to send cancellation notifications for occurrence:', occurrenceDate);
-      
+      console.log(
+        '[OccurrenceCancellation] Starting to send cancellation notifications for occurrence:',
+        occurrenceDate,
+      );
+
       // Get team info
       const team = await this.teamRepository.findOne({
         where: { id: event.teamId },
@@ -469,15 +489,25 @@ export class EventsService {
         }
 
         console.log('[OccurrenceCancellation] Sending cancellation email to:', recipientEmail);
-        
+
         // Generate ICS cancellation attachment for single occurrence with RECURRENCE-ID
-        const icsContent = generateICS(occurrenceEvent as TeamEvent, 'CANCEL', 1, team.timezone || 'America/New_York');
+        const icsContent = generateICS(
+          occurrenceEvent as TeamEvent,
+          'CANCEL',
+          1,
+          team.timezone || 'America/New_York',
+        );
         const icsBase64 = Buffer.from(icsContent).toString('base64');
 
         return this.emailService.sendEmailWithAttachments({
           to: recipientEmail,
           subject: `[${team.name}] Event Occurrence Canceled: ${event.name}`,
-          html: this.generateOccurrenceCancellationEmailContent(event, team, deleter, occurrenceDate),
+          html: this.generateOccurrenceCancellationEmailContent(
+            event,
+            team,
+            deleter,
+            occurrenceDate,
+          ),
           attachments: [
             {
               filename: 'event.ics',
@@ -508,7 +538,7 @@ export class EventsService {
 
   private async getAllTeamMembers(teamId: string): Promise<User[]> {
     console.log('[getAllTeamMembers] Loading team members for team:', teamId);
-    
+
     const userTeams = await this.userTeamRepository.find({
       where: {
         teamId,
@@ -518,9 +548,9 @@ export class EventsService {
     });
 
     console.log('[getAllTeamMembers] Found userTeams:', userTeams.length);
-    
+
     const users = userTeams.filter((ut) => ut.user && ut.user.isActive).map((ut) => ut.user);
-    
+
     console.log('[getAllTeamMembers] Active users:', users.length);
     users.forEach((user, idx) => {
       console.log(`[getAllTeamMembers] User ${idx + 1}:`, {
@@ -530,7 +560,7 @@ export class EventsService {
         primaryEmail: user.primaryEmail,
       });
     });
-    
+
     return users;
   }
 
@@ -545,7 +575,7 @@ export class EventsService {
 
     // Get all active team members
     const allMembers = await this.getAllTeamMembers(teamId);
-    
+
     // If no visibility rules, return all members
     if (!userGroup.visibilityRules || !userGroup.visibilityRules.rows) {
       return allMembers;
@@ -555,16 +585,21 @@ export class EventsService {
     const userTeams = await this.userTeamRepository.find({
       where: { teamId, status: MembershipStatus.ACTIVE },
     });
-    
+
     // Create a map for quick lookup
     const userTeamMap = new Map<string, UserTeam>();
-    userTeams.forEach(ut => userTeamMap.set(ut.userId, ut));
+    userTeams.forEach((ut) => userTeamMap.set(ut.userId, ut));
 
     // Filter members based on visibility rules
     const matchingMembers = [];
     for (const user of allMembers) {
       const userTeam = userTeamMap.get(user.id) || null;
-      const matches = await this.isUserInVisibilityRules(user.id, userGroup.visibilityRules, userTeam, teamId);
+      const matches = await this.isUserInVisibilityRules(
+        user.id,
+        userGroup.visibilityRules,
+        userTeam,
+        teamId,
+      );
       if (matches) {
         matchingMembers.push(user);
       }
@@ -589,7 +624,7 @@ export class EventsService {
 
       // All criteria in a row must match (AND logic within row)
       let rowMatches = true;
-      
+
       for (const criterion of row.criteria) {
         let criterionMatches = false;
 
@@ -604,7 +639,7 @@ export class EventsService {
             // Get user's roles from userTeam
             if (userTeam) {
               const userRoles = userTeam.getRolesArray();
-              
+
               // Special case: if no roles are selected in the criterion,
               // match only users who have no roles assigned
               if (!criterion.roles || criterion.roles.length === 0) {
@@ -665,11 +700,7 @@ export class EventsService {
     return false; // No rows matched
   }
 
-  private generateEventEmailContent(
-    event: TeamEvent,
-    team: Team,
-    creator: User,
-  ): string {
+  private generateEventEmailContent(event: TeamEvent, team: Team, creator: User): string {
     const formatDate = (date: Date) => {
       return new Date(date).toLocaleString('en-US', {
         weekday: 'long',
@@ -684,7 +715,10 @@ export class EventsService {
 
     const startDate = formatDate(event.startDateTime);
     const endDate = event.endDateTime ? formatDate(event.endDateTime) : null;
-    const recurrenceInfo = event.recurrenceType !== 'none' ? `<p><strong>Recurrence:</strong> ${event.recurrenceType}</p>` : '';
+    const recurrenceInfo =
+      event.recurrenceType !== 'none'
+        ? `<p><strong>Recurrence:</strong> ${event.recurrenceType}</p>`
+        : '';
 
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -732,11 +766,7 @@ export class EventsService {
     `;
   }
 
-  private generateCancellationEmailContent(
-    event: TeamEvent,
-    team: Team,
-    deleter: User,
-  ): string {
+  private generateCancellationEmailContent(event: TeamEvent, team: Team, deleter: User): string {
     const formatDate = (date: Date) => {
       return new Date(date).toLocaleString('en-US', {
         weekday: 'long',

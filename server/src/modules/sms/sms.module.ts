@@ -4,9 +4,7 @@ import { SmsService } from './sms.service';
 import smsConfig from '../../config/sms.config';
 
 @Module({
-  imports: [
-    ConfigModule.forFeature(smsConfig),
-  ],
+  imports: [ConfigModule.forFeature(smsConfig)],
   providers: [SmsService],
   exports: [SmsService],
 })

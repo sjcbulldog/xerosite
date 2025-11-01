@@ -52,7 +52,8 @@ export class AddTeamMemberDto {
   @IsString({ each: true })
   @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
     each: true,
-    message: 'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
+    message:
+      'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
   })
   roles: string[];
 
@@ -66,7 +67,8 @@ export class UpdateTeamMemberRolesDto {
   @IsString({ each: true })
   @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
     each: true,
-    message: 'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
+    message:
+      'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
   })
   roles: string[];
 }
@@ -82,7 +84,8 @@ export class UpdateMemberAttributesDto {
   @IsString({ each: true })
   @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
     each: true,
-    message: 'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
+    message:
+      'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
   })
   roles?: string[];
 

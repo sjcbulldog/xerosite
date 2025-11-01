@@ -87,7 +87,7 @@ export class Team {
   // Helper method to get role constraints as array of pairs
   getRoleConstraintsArray(): Array<[string, string]> {
     if (!this.roleConstraints) return [];
-    
+
     return this.roleConstraints
       .split(',')
       .map((pair) => pair.trim())
@@ -100,17 +100,14 @@ export class Team {
 
   // Helper method to set role constraints from array of pairs
   setRoleConstraintsArray(constraints: Array<[string, string]>): void {
-    this.roleConstraints = constraints
-      .map(([role1, role2]) => `${role1}:${role2}`)
-      .join(',');
+    this.roleConstraints = constraints.map(([role1, role2]) => `${role1}:${role2}`).join(',');
   }
 
   // Helper method to check if two roles are constrained (mutually exclusive)
   areRolesConstrained(role1: string, role2: string): boolean {
     const constraints = this.getRoleConstraintsArray();
     return constraints.some(
-      ([r1, r2]) =>
-        (r1 === role1 && r2 === role2) || (r1 === role2 && r2 === role1),
+      ([r1, r2]) => (r1 === role1 && r2 === role2) || (r1 === role2 && r2 === role1),
     );
   }
 

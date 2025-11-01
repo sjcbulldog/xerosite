@@ -16,14 +16,10 @@ export class AddUserStateColumn1729814400000 implements MigrationInterface {
     );
 
     // Set existing users to 'active' state (they were previously active if is_active was true)
-    await queryRunner.query(
-      `UPDATE users SET state = 'active' WHERE is_active = 1`,
-    );
+    await queryRunner.query(`UPDATE users SET state = 'active' WHERE is_active = 1`);
 
     // Set existing users to 'disabled' state (they were previously inactive if is_active was false)
-    await queryRunner.query(
-      `UPDATE users SET state = 'disabled' WHERE is_active = 0`,
-    );
+    await queryRunner.query(`UPDATE users SET state = 'disabled' WHERE is_active = 0`);
 
     // Set the first user (lowest ID) to 'active' if no users are active
     await queryRunner.query(`
@@ -49,9 +45,7 @@ export class AddUserStateColumn1729814400000 implements MigrationInterface {
     );
 
     // Convert state back to is_active
-    await queryRunner.query(
-      `UPDATE users SET is_active = 1 WHERE state = 'active'`,
-    );
+    await queryRunner.query(`UPDATE users SET is_active = 1 WHERE state = 'active'`);
     await queryRunner.query(
       `UPDATE users SET is_active = 0 WHERE state IN ('pending', 'disabled')`,
     );

@@ -56,7 +56,7 @@ export class UsersService {
       where: { email },
       relations: ['user', 'user.emails', 'user.phones', 'user.addresses'],
     });
-    
+
     return userEmail?.user || null;
   }
 
@@ -183,7 +183,7 @@ export class UsersService {
       const adminCount = await this.userRepository.count({
         where: { state: UserState.ADMIN },
       });
-      
+
       if (adminCount <= 1) {
         throw new BadRequestException(
           'Cannot change the last administrator account. There must be at least one administrator.',
@@ -210,34 +210,37 @@ export class UsersService {
     return this.findById(id);
   }
 
-  async updateProfile(userId: string, updateData: {
-    firstName?: string;
-    middleName?: string;
-    lastName?: string;
-    emails?: Array<{
-      id?: string | number | null;
-      email: string;
-      emailType: string;
-      isPrimary: boolean;
-    }>;
-    phones?: Array<{
-      id?: string | number | null;
-      phoneNumber: string;
-      phoneType: string;
-      isPrimary: boolean;
-    }>;
-    addresses?: Array<{
-      id?: string | number | null;
-      streetLine1: string;
-      streetLine2?: string;
-      city: string;
-      stateProvince: string;
-      postalCode: string;
-      country: string;
-      addressType: string;
-      isPrimary: boolean;
-    }>;
-  }): Promise<User> {
+  async updateProfile(
+    userId: string,
+    updateData: {
+      firstName?: string;
+      middleName?: string;
+      lastName?: string;
+      emails?: Array<{
+        id?: string | number | null;
+        email: string;
+        emailType: string;
+        isPrimary: boolean;
+      }>;
+      phones?: Array<{
+        id?: string | number | null;
+        phoneNumber: string;
+        phoneType: string;
+        isPrimary: boolean;
+      }>;
+      addresses?: Array<{
+        id?: string | number | null;
+        streetLine1: string;
+        streetLine2?: string;
+        city: string;
+        stateProvince: string;
+        postalCode: string;
+        country: string;
+        addressType: string;
+        isPrimary: boolean;
+      }>;
+    },
+  ): Promise<User> {
     const user = await this.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -303,9 +306,7 @@ export class UsersService {
       }
 
       // Remove emails that are no longer in the list
-      const emailsToRemove = existingEmails.filter(
-        (email) => !emailsToKeep.has(email.id),
-      );
+      const emailsToRemove = existingEmails.filter((email) => !emailsToKeep.has(email.id));
       if (emailsToRemove.length > 0) {
         await this.userEmailRepository.remove(emailsToRemove);
       }
@@ -339,9 +340,7 @@ export class UsersService {
         }
       }
 
-      const phonesToRemove = existingPhones.filter(
-        (phone) => !phonesToKeep.has(phone.id),
-      );
+      const phonesToRemove = existingPhones.filter((phone) => !phonesToKeep.has(phone.id));
       if (phonesToRemove.length > 0) {
         await this.userPhoneRepository.remove(phonesToRemove);
       }
@@ -413,7 +412,7 @@ export class UsersService {
       const adminCount = await this.userRepository.count({
         where: { state: UserState.ADMIN },
       });
-      
+
       if (adminCount <= 1) {
         throw new BadRequestException(
           'Cannot delete the last administrator account. There must be at least one administrator.',
@@ -422,10 +421,7 @@ export class UsersService {
     }
 
     // Remove user from any subteam lead positions they hold
-    await this.subteamLeadPositionRepository.update(
-      { userId: id },
-      { userId: null }
-    );
+    await this.subteamLeadPositionRepository.update({ userId: id }, { userId: null });
 
     // Remove user from all subteam memberships
     await this.subteamMemberRepository.delete({ userId: id });
@@ -484,10 +480,12 @@ export class UsersService {
 
       console.log(`Email: ${duplicate.email}`);
       console.log(`  Associated with ${duplicate.userCount} users:`);
-      
+
       for (const userEmail of userEmails) {
         const user = userEmail.user;
-        console.log(`    - User ID: ${user.id}, Name: ${user.firstName} ${user.lastName}, State: ${user.state}`);
+        console.log(
+          `    - User ID: ${user.id}, Name: ${user.firstName} ${user.lastName}, State: ${user.state}`,
+        );
       }
       console.log('');
     }
@@ -540,9 +538,7 @@ export class UsersService {
 
     // Get the child's name for the email
     const childUser = await this.findById(userId);
-    const childName = childUser
-      ? `${childUser.firstName} ${childUser.lastName}`
-      : 'A user';
+    const childName = childUser ? `${childUser.firstName} ${childUser.lastName}` : 'A user';
 
     // Send appropriate email
     if (parentUser) {
@@ -554,10 +550,7 @@ export class UsersService {
       );
     } else {
       // Parent doesn't have an account - send invitation
-      await this.emailService.sendParentInvitationEmail(
-        normalizedEmail,
-        childName,
-      );
+      await this.emailService.sendParentInvitationEmail(normalizedEmail, childName);
     }
 
     return {

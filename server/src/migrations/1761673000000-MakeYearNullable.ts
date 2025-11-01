@@ -5,15 +5,11 @@ export class MakeYearNullable1761673000000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Make the year column nullable
-    await queryRunner.query(
-      `ALTER TABLE \`team_media\` MODIFY \`year\` int NULL`,
-    );
+    await queryRunner.query(`ALTER TABLE \`team_media\` MODIFY \`year\` int NULL`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Make the year column non-nullable again (only if all records have a year)
-    await queryRunner.query(
-      `ALTER TABLE \`team_media\` MODIFY \`year\` int NOT NULL`,
-    );
+    await queryRunner.query(`ALTER TABLE \`team_media\` MODIFY \`year\` int NOT NULL`);
   }
 }

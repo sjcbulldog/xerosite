@@ -1,10 +1,35 @@
-import { Controller, Get, Patch, Delete, Param, Body, UseGuards, NotFoundException, UnauthorizedException, Request, ForbiddenException, BadRequestException, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  NotFoundException,
+  UnauthorizedException,
+  Request,
+  ForbiddenException,
+  BadRequestException,
+  Post,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserResponseDto } from './dto/user-response.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AddParentDto } from './dto/add-parent.dto';
-import { IsString, IsEmail, IsBoolean, IsOptional, IsArray, ValidateNested, MaxLength, IsNumber, MinLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsBoolean,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  MaxLength,
+  IsNumber,
+  MinLength,
+  Matches,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class EmailDto {
@@ -138,7 +163,7 @@ export class UsersController {
   @Get()
   async getAllUsers(): Promise<UserResponseDto[]> {
     const users = await this.usersService.findAll();
-    return users.map(user => this.transformToUserResponse(user));
+    return users.map((user) => this.transformToUserResponse(user));
   }
 
   @Get(':id')
@@ -257,10 +282,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  async deleteUser(
-    @Param('id') id: string,
-    @Request() req: any,
-  ): Promise<{ message: string }> {
+  async deleteUser(@Param('id') id: string, @Request() req: any): Promise<{ message: string }> {
     try {
       // Verify the requesting user is an admin
       const requestingUser = await this.usersService.findById(req.user.id);

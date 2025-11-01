@@ -1,4 +1,15 @@
-import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus, Get, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  HttpCode,
+  HttpStatus,
+  Get,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -32,7 +43,7 @@ export class AuthController {
     message?: string;
   }> {
     const result = await this.authService.simpleRegister(simpleRegisterDto);
-    
+
     // Add message if user is pending verification
     if (result.user.state === 'pending') {
       return {
@@ -40,7 +51,7 @@ export class AuthController {
         message: 'You will be able to login once you verify your email.',
       };
     }
-    
+
     return result;
   }
 
@@ -78,10 +89,7 @@ export class AuthController {
   }
 
   @Get('verify-email')
-  async verifyEmail(
-    @Query('token') token: string,
-    @Res() res: Response,
-  ): Promise<void> {
+  async verifyEmail(@Query('token') token: string, @Res() res: Response): Promise<void> {
     const apiUrl = this.configService.get('email.apiUrl');
     try {
       await this.authService.verifyEmail(token);
@@ -117,9 +125,6 @@ export class AuthController {
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<{
     message: string;
   }> {
-    return this.authService.resetPassword(
-      resetPasswordDto.token,
-      resetPasswordDto.newPassword,
-    );
+    return this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
   }
 }

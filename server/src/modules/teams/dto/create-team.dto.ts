@@ -33,7 +33,8 @@ export class CreateTeamDto {
   @IsString({ each: true })
   @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
     each: true,
-    message: 'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
+    message:
+      'Role names must contain only alphanumeric characters, spaces, dashes, and underscores',
   })
   roles?: string[];
 

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StoredFile } from './entities/stored-file.entity';
@@ -27,9 +22,7 @@ export class FileStorageService implements OnModuleInit {
 
     // Check if path is absolute
     if (!path.isAbsolute(envPath)) {
-      throw new Error(
-        `FILE_STORAGE_PATH must be an absolute path. Got: ${envPath}`,
-      );
+      throw new Error(`FILE_STORAGE_PATH must be an absolute path. Got: ${envPath}`);
     }
 
     this.storagePath = envPath;
@@ -94,9 +87,7 @@ export class FileStorageService implements OnModuleInit {
       const data = await fs.readFile(filePath);
       return { file, data };
     } catch (error) {
-      throw new NotFoundException(
-        `File ${file.storedFilename} not found on disk`,
-      );
+      throw new NotFoundException(`File ${file.storedFilename} not found on disk`);
     }
   }
 
@@ -118,10 +109,7 @@ export class FileStorageService implements OnModuleInit {
     try {
       await fs.unlink(filePath);
     } catch (error) {
-      console.warn(
-        `Failed to delete file ${file.storedFilename} from disk:`,
-        error,
-      );
+      console.warn(`Failed to delete file ${file.storedFilename} from disk:`, error);
     }
 
     // Delete from database
@@ -131,10 +119,7 @@ export class FileStorageService implements OnModuleInit {
   /**
    * Get all files for a user in a specific subsystem
    */
-  async getFilesByUser(
-    userId: string,
-    subsystem?: string,
-  ): Promise<StoredFile[]> {
+  async getFilesByUser(userId: string, subsystem?: string): Promise<StoredFile[]> {
     const where: any = { userId };
     if (subsystem) {
       where.subsystem = subsystem;
@@ -173,14 +158,11 @@ export class FileStorageService implements OnModuleInit {
     const mimeTypes: { [key: string]: string } = {
       '.pdf': 'application/pdf',
       '.doc': 'application/msword',
-      '.docx':
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       '.xls': 'application/vnd.ms-excel',
-      '.xlsx':
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       '.ppt': 'application/vnd.ms-powerpoint',
-      '.pptx':
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       '.txt': 'text/plain',
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',

@@ -36,11 +36,12 @@ export class CalendarService {
 
     // Fetch all exclusions for these events
     const eventIds = events.map((e) => e.id);
-    const exclusions = eventIds.length > 0
-      ? await this.eventExclusionRepository.find({
-          where: eventIds.map((id) => ({ eventId: id })),
-        })
-      : [];
+    const exclusions =
+      eventIds.length > 0
+        ? await this.eventExclusionRepository.find({
+            where: eventIds.map((id) => ({ eventId: id })),
+          })
+        : [];
 
     // Create a map of event ID to exclusions
     const exclusionMap = new Map<string, EventExclusion[]>();
@@ -119,10 +120,7 @@ export class CalendarService {
       if (exclusions && exclusions.length > 0) {
         const exdates = exclusions
           .map((exclusion) => {
-            const exDateParts = this.formatDateTimeInTimezone(
-              exclusion.excludedDate,
-              timezone,
-            );
+            const exDateParts = this.formatDateTimeInTimezone(exclusion.excludedDate, timezone);
             return exDateParts;
           })
           .join(',');
@@ -162,7 +160,7 @@ export class CalendarService {
     const hour = String(date.getUTCHours()).padStart(2, '0');
     const minute = String(date.getUTCMinutes()).padStart(2, '0');
     const second = String(date.getUTCSeconds()).padStart(2, '0');
-    
+
     return `${year}${month}${day}T${hour}${minute}${second}Z`;
   }
 
@@ -181,7 +179,7 @@ export class CalendarService {
         parts.push('FREQ=WEEKLY');
         if (event.recurrencePattern?.daysOfWeek && event.recurrencePattern.daysOfWeek.length > 0) {
           const days = event.recurrencePattern.daysOfWeek
-            .map(day => ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][day])
+            .map((day) => ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][day])
             .join(',');
           parts.push(`BYDAY=${days}`);
         }
@@ -189,7 +187,10 @@ export class CalendarService {
 
       case 'monthly':
         parts.push('FREQ=MONTHLY');
-        if (event.recurrencePattern?.daysOfMonth && event.recurrencePattern.daysOfMonth.length > 0) {
+        if (
+          event.recurrencePattern?.daysOfMonth &&
+          event.recurrencePattern.daysOfMonth.length > 0
+        ) {
           parts.push(`BYMONTHDAY=${event.recurrencePattern.daysOfMonth.join(',')}`);
         }
         break;

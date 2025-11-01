@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, signal, computed, OnIni
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule, DatePipe } from '@angular/common';
 import { MessagesService, MessageResponse, GetMessagesQuery } from './messages.service';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-review-messages-dialog',
@@ -15,6 +16,7 @@ export class ReviewMessagesDialogComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
 
   private readonly messagesService = inject(MessagesService);
+  private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly isLoading = signal(false);
@@ -54,6 +56,9 @@ export class ReviewMessagesDialogComponent implements OnInit {
       return 0;
     });
   });
+
+  // Track which messages have expanded attachments
+  protected readonly expandedMessageIds = signal<Set<string>>(new Set());
 
   constructor() {
     this.searchForm = this.fb.group({
@@ -215,5 +220,67 @@ export class ReviewMessagesDialogComponent implements OnInit {
   protected truncateText(text: string, maxLength: number = 100): string {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+  }
+
+  protected hasAttachments(message: MessageResponse): boolean {
+    return message.attachments !== undefined && message.attachments.length > 0;
+  }
+
+  protected getAttachmentCount(message: MessageResponse): number {
+    return message.attachments?.length || 0;
+  }
+
+  protected isMessageExpanded(messageId: string): boolean {
+    return this.expandedMessageIds().has(messageId);
+  }
+
+  protected async toggleAttachments(message: MessageResponse): Promise<void> {
+    const expanded = this.expandedMessageIds();
+    const newExpanded = new Set(expanded);
+    
+    if (newExpanded.has(message.id)) {
+      newExpanded.delete(message.id);
+    } else {
+      newExpanded.add(message.id);
+      
+      // Mark attachments as viewed when expanding
+      if (message.hasUnviewedAttachments) {
+        try {
+          await this.messagesService.markAttachmentsAsViewed(this.teamId, message.id);
+          // Update the message to reflect it's been viewed
+          message.hasUnviewedAttachments = false;
+        } catch (error) {
+          console.error('Error marking attachments as viewed:', error);
+        }
+      }
+    }
+    
+    this.expandedMessageIds.set(newExpanded);
+  }
+
+  protected async downloadAttachment(message: MessageResponse, fileId: string): Promise<void> {
+    try {
+      await this.messagesService.downloadAttachment(this.teamId, message.id, fileId);
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+      alert('Failed to download attachment. Please try again.');
+    }
+  }
+
+  protected formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  protected isSentByCurrentUser(message: MessageResponse): boolean {
+    const currentUser = this.authService.currentUser();
+    return currentUser?.id === message.senderId;
+  }
+
+  protected getMessageDirection(message: MessageResponse): string {
+    return this.isSentByCurrentUser(message) ? 'Sent' : 'Received';
   }
 }

@@ -131,6 +131,9 @@ export class TeamDetailComponent implements OnInit {
   
   // Admin menu signals
   protected readonly showAdminMenu = signal(false);
+  protected readonly showMessagesSubmenu = signal(false);
+  protected readonly showEditSubmenu = signal(false);
+  protected readonly showRosterSubmenu = signal(false);
   
   // Import roster signals
   protected readonly showImportDialog = signal(false);
@@ -327,6 +330,15 @@ export class TeamDetailComponent implements OnInit {
       await this.loadTeamDetails(teamId);
     }
 
+    // Check if we should open the review messages dialog (from unseen attachments notification)
+    const openReview = this.route.snapshot.queryParamMap.get('openReview');
+    if (openReview === 'true') {
+      // Open the review messages dialog after a brief delay to ensure team is loaded
+      setTimeout(() => {
+        this.showReviewMessagesDialog.set(true);
+      }, 100);
+    }
+
     // Listen for export dialog close event
     window.addEventListener('closeExportUsersDialog', () => {
       this.closeExportDialog();
@@ -403,10 +415,34 @@ export class TeamDetailComponent implements OnInit {
 
   protected toggleAdminMenu(): void {
     this.showAdminMenu.set(!this.showAdminMenu());
+    // Close all submenus when main menu is toggled
+    if (!this.showAdminMenu()) {
+      this.showMessagesSubmenu.set(false);
+      this.showEditSubmenu.set(false);
+      this.showRosterSubmenu.set(false);
+    }
+  }
+
+  protected toggleMessagesSubmenu(event: Event): void {
+    event.stopPropagation();
+    this.showMessagesSubmenu.set(!this.showMessagesSubmenu());
+  }
+
+  protected toggleEditSubmenu(event: Event): void {
+    event.stopPropagation();
+    this.showEditSubmenu.set(!this.showEditSubmenu());
+  }
+
+  protected toggleRosterSubmenu(event: Event): void {
+    event.stopPropagation();
+    this.showRosterSubmenu.set(!this.showRosterSubmenu());
   }
 
   protected closeAdminMenu(): void {
     this.showAdminMenu.set(false);
+    this.showMessagesSubmenu.set(false);
+    this.showEditSubmenu.set(false);
+    this.showRosterSubmenu.set(false);
   }
 
   protected signOut(): void {
@@ -1678,6 +1714,23 @@ export class TeamDetailComponent implements OnInit {
 
   protected closeExportDialog(): void {
     this.showExportDialog.set(false);
+  }
+
+  protected async exportTeamAsJson(): Promise<void> {
+    this.closeAdminMenu();
+    const teamId = this.team()?.id;
+    
+    if (!teamId) {
+      alert('No team selected');
+      return;
+    }
+
+    try {
+      await this.teamsService.exportTeamAsJson(teamId);
+    } catch (error: any) {
+      console.error('Error exporting team:', error);
+      alert(error.message || 'Failed to export team data');
+    }
   }
 
   // Computed permission check for user groups

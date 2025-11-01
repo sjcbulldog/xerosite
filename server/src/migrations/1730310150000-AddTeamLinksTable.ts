@@ -58,18 +58,14 @@ export class AddTeamLinksTable1730310150000 implements MigrationInterface {
       }),
     );
 
-    await queryRunner.query(
-      `CREATE INDEX idx_team_links_teamId ON team_links(teamId)`,
-    );
+    await queryRunner.query(`CREATE INDEX idx_team_links_teamId ON team_links(teamId)`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX idx_team_links_teamId ON team_links`);
 
     const table = await queryRunner.getTable('team_links');
-    const foreignKey = table?.foreignKeys.find(
-      (fk) => fk.columnNames.indexOf('teamId') !== -1,
-    );
+    const foreignKey = table?.foreignKeys.find((fk) => fk.columnNames.indexOf('teamId') !== -1);
     if (foreignKey) {
       await queryRunner.dropForeignKey('team_links', foreignKey);
     }

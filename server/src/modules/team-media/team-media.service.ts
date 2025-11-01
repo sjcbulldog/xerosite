@@ -7,11 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TeamMedia } from './entities/team-media.entity';
-import {
-  CreateTeamMediaDto,
-  UpdateTeamMediaDto,
-  TeamMediaResponseDto,
-} from './dto/team-media.dto';
+import { CreateTeamMediaDto, UpdateTeamMediaDto, TeamMediaResponseDto } from './dto/team-media.dto';
 import { FileStorageService } from '../file-storage/file-storage.service';
 import { UserTeam } from '../teams/entities/user-team.entity';
 import { User } from '../users/entities/user.entity';
@@ -69,10 +65,7 @@ export class TeamMediaService {
     return this.transformToResponse(saved);
   }
 
-  async findAllForTeam(
-    teamId: string,
-    userId: string,
-  ): Promise<TeamMediaResponseDto[]> {
+  async findAllForTeam(teamId: string, userId: string): Promise<TeamMediaResponseDto[]> {
     try {
       // Verify user is a team member before showing media
       await this.verifyTeamMembership(userId, teamId);
@@ -106,7 +99,7 @@ export class TeamMediaService {
       const responses = await Promise.all(
         visibleMedia.map((media) => this.transformToResponse(media)),
       );
-      
+
       return responses;
     } catch (error) {
       console.error('Error in findAllForTeam:', error);
@@ -187,10 +180,7 @@ export class TeamMediaService {
     };
   }
 
-  private async verifyTeamMembership(
-    userId: string,
-    teamId: string,
-  ): Promise<void> {
+  private async verifyTeamMembership(userId: string, teamId: string): Promise<void> {
     const userTeam = await this.userTeamRepository.findOne({
       where: { userId, teamId },
     });
@@ -222,15 +212,11 @@ export class TeamMediaService {
     const isAdmin = userTeam.getRolesArray().includes('Administrator');
 
     if (!isAdmin) {
-      throw new ForbiddenException(
-        'Only the uploader or team administrators can modify this file',
-      );
+      throw new ForbiddenException('Only the uploader or team administrators can modify this file');
     }
   }
 
-  private async transformToResponse(
-    media: TeamMedia,
-  ): Promise<TeamMediaResponseDto> {
+  private async transformToResponse(media: TeamMedia): Promise<TeamMediaResponseDto> {
     let userGroupName: string | null = null;
 
     if (media.userGroupId) {
@@ -256,17 +242,14 @@ export class TeamMediaService {
       userGroupId: media.userGroupId,
       userGroupName,
     };
-    
+
     return response;
   }
 
   /**
    * Get all user group IDs that a user belongs to within a team
    */
-  private async getUserGroupIds(
-    userId: string,
-    teamId: string,
-  ): Promise<string[]> {
+  private async getUserGroupIds(userId: string, teamId: string): Promise<string[]> {
     try {
       // Get user's team membership for role lookup
       const userTeam = await this.userTeamRepository.findOne({
@@ -297,10 +280,15 @@ export class TeamMediaService {
           );
           if (matches) {
             matchingGroupIds.push(group.id);
-            console.log(`[getUserGroupIds] User ${userId} matches group ${group.name} (${group.id})`);
+            console.log(
+              `[getUserGroupIds] User ${userId} matches group ${group.name} (${group.id})`,
+            );
           }
         } catch (error) {
-          console.error(`[getUserGroupIds] Error checking visibility rules for group ${group.id}:`, error);
+          console.error(
+            `[getUserGroupIds] Error checking visibility rules for group ${group.id}:`,
+            error,
+          );
           // Continue checking other groups
         }
       }
@@ -356,9 +344,7 @@ export class TeamMediaService {
               if (!criterion.roles || criterion.roles.length === 0) {
                 criterionMatches = userRoles.length === 0;
               } else {
-                criterionMatches = criterion.roles.some((role: string) =>
-                  userRoles.includes(role),
-                );
+                criterionMatches = criterion.roles.some((role: string) => userRoles.includes(role));
               }
             } else {
               criterionMatches = false;
@@ -425,9 +411,7 @@ export class TeamMediaService {
     // Check if user is in the required user group
     const userGroupIds = await this.getUserGroupIds(userId, teamId);
     if (!userGroupIds.includes(userGroupId)) {
-      throw new ForbiddenException(
-        'You do not have access to this media file',
-      );
+      throw new ForbiddenException('You do not have access to this media file');
     }
   }
 }

@@ -39,15 +39,7 @@ import { TeamMediaModule } from './modules/team-media/team-media.module';
 
     // Serve static files from Angular frontend
     ServeStaticModule.forRoot({
-      rootPath: join(
-        __dirname,
-        '..',
-        '..',
-        'frontend',
-        'dist',
-        'frontend',
-        'browser',
-      ),
+      rootPath: join(__dirname, '..', '..', 'frontend', 'dist', 'frontend', 'browser'),
       exclude: ['/api*'],
     }),
 

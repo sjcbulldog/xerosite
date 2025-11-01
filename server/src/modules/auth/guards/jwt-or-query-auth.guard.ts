@@ -30,10 +30,10 @@ export class JwtOrQueryAuthGuard extends AuthGuard('jwt') {
     try {
       // Verify the token
       const payload = this.jwtService.verify(token);
-      
+
       // Attach user to request (same as standard JWT strategy does)
       request.user = payload;
-      
+
       return true;
     } catch (error) {
       throw new UnauthorizedException('Invalid authentication token');

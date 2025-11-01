@@ -74,7 +74,7 @@
         @if (isLoading()) {
           <div class="loading-container">
             <div class="loading-spinner"></div>
-            <p>Loading sent messages...</p>
+            <p>Loading messages...</p>
           </div>
         } @else if (sortedMessages().length === 0) {
           <div class="empty-state">
@@ -84,7 +84,7 @@
                 Clear filters to see all messages
               </button>
             } @else {
-              <p>No messages have been sent yet.</p>
+              <p>No messages have been sent or received yet.</p>
             }
           </div>
         } @else {
@@ -96,6 +96,7 @@
                   <th class="sortable" (click)="sortBy('createdAt')">
                     Date {{ getSortIcon('createdAt') }}
                   </th>
+                  <th>Direction</th>
                   <th class="sortable" (click)="sortBy('subject')">
                     Subject {{ getSortIcon('subject') }}
                   </th>
@@ -108,6 +109,7 @@
                   <th class="sortable" (click)="sortBy('recipientCount')">
                     Count {{ getSortIcon('recipientCount') }}
                   </th>
+                  <th>Attachments</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -117,6 +119,11 @@
                   <tr class="message-row">
                     <td class="date-cell">
                       {{ message.createdAt | date:'short' }}
+                    </td>
+                    <td class="direction-cell">
+                      <span class="direction-badge" [class.sent]="isSentByCurrentUser(message)" [class.received]="!isSentByCurrentUser(message)">
+                        {{ getMessageDirection(message) }}
+                      </span>
                     </td>
                     <td class="subject-cell">
                       <div class="subject-content">
@@ -137,6 +144,24 @@
                     </td>
                     <td class="count-cell">
                       {{ message.recipientCount }}
+                    </td>
+                    <td class="attachments-cell">
+                      @if (hasAttachments(message)) {
+                        <button 
+                          type="button" 
+                          class="attachments-button"
+                          (click)="toggleAttachments(message)"
+                          [class.expanded]="isMessageExpanded(message.id)">
+                          <span class="attachment-icon">📎</span>
+                          <span class="attachment-count">{{ getAttachmentCount(message) }}</span>
+                          @if (message.hasUnviewedAttachments) {
+                            <span class="new-badge">NEW</span>
+                          }
+                          <span class="expand-icon">{{ isMessageExpanded(message.id) ? '▼' : '▶' }}</span>
+                        </button>
+                      } @else {
+                        <span class="no-attachments">—</span>
+                      }
                     </td>
                     <td class="status-cell">
                       <span class="status-badge" [class]="getStatusClass(message)">
@@ -163,6 +188,37 @@
                       </button>
                     </td>
                   </tr>
+                  @if (isMessageExpanded(message.id) && hasAttachments(message)) {
+                    <tr class="attachments-expanded-row">
+                      <td colspan="9" class="attachments-expanded-cell">
+                        <div class="attachments-list">
+                          <h4>Attachments ({{ getAttachmentCount(message) }})</h4>
+                          <div class="attachment-items">
+                            @for (attachment of message.attachments; track attachment.fileId) {
+                              <div class="attachment-item">
+                                <div class="attachment-info">
+                                  <span class="attachment-icon">📎</span>
+                                  <div class="attachment-details">
+                                    <div class="attachment-name">{{ attachment.originalName }}</div>
+                                    <div class="attachment-meta">
+                                      {{ formatFileSize(attachment.size) }}
+                                    </div>
+                                  </div>
+                                </div>
+                                <button 
+                                  type="button" 
+                                  class="download-button"
+                                  (click)="downloadAttachment(message, attachment.fileId)"
+                                  title="Download attachment">
+                                  ⬇️ Download
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>

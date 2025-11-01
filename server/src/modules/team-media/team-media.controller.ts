@@ -19,11 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtOrQueryAuthGuard } from '../auth/guards/jwt-or-query-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { TeamMediaService } from './team-media.service';
-import {
-  CreateTeamMediaDto,
-  UpdateTeamMediaDto,
-  TeamMediaResponseDto,
-} from './dto/team-media.dto';
+import { CreateTeamMediaDto, UpdateTeamMediaDto, TeamMediaResponseDto } from './dto/team-media.dto';
 
 @Controller('teams/:teamId/media')
 export class TeamMediaController {
@@ -58,14 +54,8 @@ export class TeamMediaController {
       throw new BadRequestException('Title is required');
     }
 
-    if (
-      isNaN(createDto.year) ||
-      createDto.year < 1900 ||
-      createDto.year > 2100
-    ) {
-      throw new BadRequestException(
-        'Year must be a valid number between 1900 and 2100',
-      );
+    if (isNaN(createDto.year) || createDto.year < 1900 || createDto.year > 2100) {
+      throw new BadRequestException('Year must be a valid number between 1900 and 2100');
     }
 
     return this.teamMediaService.uploadFile(teamId, user.id, file, createDto);
@@ -92,10 +82,7 @@ export class TeamMediaController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async remove(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ): Promise<void> {
+  async remove(@Param('id') id: string, @CurrentUser() user: any): Promise<void> {
     await this.teamMediaService.remove(id, user.id);
   }
 
@@ -106,8 +93,7 @@ export class TeamMediaController {
     @CurrentUser() user: any,
     @Res() res: Response,
   ): Promise<void> {
-    const { data, filename, mimeType } =
-      await this.teamMediaService.downloadFile(id, user.id);
+    const { data, filename, mimeType } = await this.teamMediaService.downloadFile(id, user.id);
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -122,8 +108,10 @@ export class TeamMediaController {
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    const { data, filename, mimeType, fileSize } =
-      await this.teamMediaService.downloadFile(id, user.id);
+    const { data, filename, mimeType, fileSize } = await this.teamMediaService.downloadFile(
+      id,
+      user.id,
+    );
 
     // Support for HTTP Range requests (needed for video streaming)
     const range = req.headers.range;

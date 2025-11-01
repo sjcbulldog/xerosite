@@ -14,7 +14,7 @@ export class PreferencesService {
 
   async getPreferences(userId: string): Promise<PreferencesResponseDto> {
     console.log('getPreferences called with userId:', userId);
-    
+
     let preferences = await this.preferencesRepository.findOne({
       where: { userId },
     });

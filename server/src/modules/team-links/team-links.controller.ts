@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Param,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { TeamLinksService } from './team-links.service';
 import { CreateTeamLinkDto, UpdateTeamLinkDto, TeamLinkResponseDto } from './dto/team-link.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -28,9 +19,7 @@ export class TeamLinksController {
   }
 
   @Get()
-  async findAll(
-    @Param('teamId') teamId: string,
-  ): Promise<TeamLinkResponseDto[]> {
+  async findAll(@Param('teamId') teamId: string): Promise<TeamLinkResponseDto[]> {
     return this.teamLinksService.findAllForTeam(teamId);
   }
 
@@ -44,10 +33,7 @@ export class TeamLinksController {
   }
 
   @Delete(':id')
-  async remove(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ): Promise<void> {
+  async remove(@Param('id') id: string, @CurrentUser() user: any): Promise<void> {
     return this.teamLinksService.remove(id, user.id);
   }
 }

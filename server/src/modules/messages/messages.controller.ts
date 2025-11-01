@@ -80,6 +80,23 @@ export class MessagesController {
     return this.messagesService.getTeamMessages(req.user.id, teamId, query);
   }
 
+  @Get('unseen-attachments')
+  async getUnseenAttachments(
+    @Request() req: any,
+    @Param('teamId') teamId: string,
+  ): Promise<MessageResponseDto[]> {
+    return this.messagesService.getMessagesWithUnseenAttachments(req.user.id, teamId);
+  }
+
+  @Post(':messageId/mark-viewed')
+  async markAttachmentsAsViewed(
+    @Request() req: any,
+    @Param('teamId') teamId: string,
+    @Param('messageId') messageId: string,
+  ): Promise<void> {
+    await this.messagesService.markAttachmentsAsViewed(req.user.id, teamId, messageId);
+  }
+
   @Get(':messageId/attachments/:fileId/download')
   async downloadAttachment(
     @Request() req: any,
@@ -113,10 +130,7 @@ export class PublicDownloadController {
   ) {}
 
   @Get(':token')
-  async downloadWithToken(
-    @Param('token') token: string,
-    @Res() res: Response,
-  ): Promise<void> {
+  async downloadWithToken(@Param('token') token: string, @Res() res: Response): Promise<void> {
     // Validate token and get file information
     const { messageId, fileId, teamId } = await this.downloadTokenService.validateToken(token);
 

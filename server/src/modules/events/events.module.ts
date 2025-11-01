@@ -39,12 +39,7 @@ import { SmsModule } from '../sms/sms.module';
     SmsModule,
   ],
   controllers: [EventsController, CalendarController],
-  providers: [
-    EventsService,
-    AttendanceService,
-    EventNotificationsService,
-    CalendarService,
-  ],
+  providers: [EventsService, AttendanceService, EventNotificationsService, CalendarService],
   exports: [EventsService, AttendanceService, EventNotificationsService],
 })
 export class EventsModule {}

@@ -28,7 +28,7 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User | null> {
     // Find user by email
     const user = await this.usersService.findByEmail(email);
-    
+
     if (!user) {
       return null;
     }
@@ -43,10 +43,10 @@ export class AuthService {
     if (user.state === UserState.PENDING) {
       // Resend verification email
       await this.createAndSendVerificationToken(user);
-      
+
       // Throw a specific exception for pending users
       throw new UnauthorizedException(
-        'Your account is pending email verification. A new verification email has been sent to your email address. Please verify your email before logging in.'
+        'Your account is pending email verification. A new verification email has been sent to your email address. Please verify your email before logging in.',
       );
     }
 
@@ -77,10 +77,7 @@ export class AuthService {
     // Send appropriate email based on user type
     if (isFirstUser) {
       // First user becomes site admin - send welcome email
-      await this.emailService.sendFirstUserAdminEmail(
-        user.primaryEmail,
-        user.firstName,
-      );
+      await this.emailService.sendFirstUserAdminEmail(user.primaryEmail, user.firstName);
     } else {
       // Regular users get verification email
       await this.createAndSendVerificationToken(user);
@@ -194,10 +191,7 @@ export class AuthService {
     );
 
     // Send welcome email
-    await this.emailService.sendWelcomeEmail(
-      user.primaryEmail,
-      user.firstName,
-    );
+    await this.emailService.sendWelcomeEmail(user.primaryEmail, user.firstName);
 
     return this.transformToUserResponse(user);
   }
@@ -240,11 +234,7 @@ export class AuthService {
     await this.verificationTokenRepository.save(verificationToken);
 
     // Send verification email
-    await this.emailService.sendVerificationEmail(
-      user.primaryEmail,
-      user.firstName,
-      token,
-    );
+    await this.emailService.sendVerificationEmail(user.primaryEmail, user.firstName, token);
   }
 
   private transformToUserResponse(user: User): UserResponseDto {
@@ -294,11 +284,7 @@ export class AuthService {
     await this.passwordResetTokenRepository.save(passwordResetToken);
 
     // Send reset email
-    await this.emailService.sendPasswordResetEmail(
-      user.primaryEmail,
-      user.firstName,
-      resetToken,
-    );
+    await this.emailService.sendPasswordResetEmail(user.primaryEmail, user.firstName, resetToken);
 
     return {
       message: 'If an account with that email exists, a password reset link has been sent.',
@@ -332,7 +318,8 @@ export class AuthService {
     await this.passwordResetTokenRepository.save(resetToken);
 
     return {
-      message: 'Your password has been successfully reset. You can now log in with your new password.',
+      message:
+        'Your password has been successfully reset. You can now log in with your new password.',
     };
   }
 

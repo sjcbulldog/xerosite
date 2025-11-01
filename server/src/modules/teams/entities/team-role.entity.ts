@@ -44,9 +44,7 @@ export class TeamRole {
 
   // Helper method to get excluded roles as array
   getExcludedRolesArray(): string[] {
-    return this.excludedRoles
-      ? this.excludedRoles.split(',').map((role) => role.trim())
-      : [];
+    return this.excludedRoles ? this.excludedRoles.split(',').map((role) => role.trim()) : [];
   }
 
   // Helper method to set excluded roles from array
@@ -56,9 +54,7 @@ export class TeamRole {
 
   // Helper method to get excluded groups as array
   getExcludedGroupsArray(): string[] {
-    return this.excludedGroups
-      ? this.excludedGroups.split(',').map((group) => group.trim())
-      : [];
+    return this.excludedGroups ? this.excludedGroups.split(',').map((group) => group.trim()) : [];
   }
 
   // Helper method to set excluded groups from array

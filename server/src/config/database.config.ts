@@ -9,7 +9,7 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
   createTypeOrmOptions(): TypeOrmModuleOptions {
     const synchronize = this.configService.get<string>('DB_SYNCHRONIZE', 'false') === 'true';
     const logging = this.configService.get<string>('DB_LOGGING', 'false') === 'true';
-    
+
     return {
       type: 'mysql',
       host: this.configService.get<string>('DB_HOST', 'localhost'),

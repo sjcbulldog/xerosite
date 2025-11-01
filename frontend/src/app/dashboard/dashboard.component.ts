@@ -6,9 +6,11 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators, AbstractContro
 import { FormsModule } from '@angular/forms';
 import { TeamsService, TeamInvitation, Team } from './teams.service';
 import { UsersService, UserProfile } from '../profile/users.service';
+import { MessagesService, MessageResponse } from './messages.service';
 import { PreferencesDialogComponent } from '../preferences/preferences-dialog.component';
 import { TestMessageDialogComponent } from './test-message-dialog.component';
 import { HelpDialogComponent } from './help-dialog.component';
+import { UnseenAttachmentsDialogComponent } from './unseen-attachments-dialog.component';
 import { ProfileComponent } from '../profile/profile.component';
 import { COMMON_TIMEZONES } from './timezones';
 
@@ -31,7 +33,7 @@ interface CreateTeamForm {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent, HelpDialogComponent, ProfileComponent],
+  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent, HelpDialogComponent, UnseenAttachmentsDialogComponent, ProfileComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -40,6 +42,7 @@ export class DashboardComponent implements OnInit {
   protected readonly authService = inject(AuthService);
   protected readonly teamsService = inject(TeamsService);
   protected readonly usersService = inject(UsersService);
+  protected readonly messagesService = inject(MessagesService);
   private readonly router = inject(Router);
 
   // Expose timezones for template
@@ -87,6 +90,12 @@ export class DashboardComponent implements OnInit {
   
   // Help dialog signal
   protected readonly showHelpDialog = signal(false);
+  
+  // Unseen attachments dialog signals
+  protected readonly showUnseenAttachmentsDialog = signal(false);
+  protected readonly unseenAttachmentsMessages = signal<MessageResponse[]>([]);
+  protected readonly unseenAttachmentsCount = computed(() => this.unseenAttachmentsMessages().length);
+  private hasCheckedUnseenAttachments = false;
   
   // Password requirement signals - must be defined before form
   protected readonly newPasswordValue = signal('');
@@ -233,6 +242,7 @@ export class DashboardComponent implements OnInit {
     await this.checkPendingInvitations();
     await this.loadPublicTeamsInitial();
     await this.loadSiteStatistics();
+    await this.checkForUnseenAttachments();
   }
 
   protected isAdmin(): boolean {
@@ -304,6 +314,67 @@ export class DashboardComponent implements OnInit {
     this.showCreateTeamDialog.set(true);
     this.createTeamForm.reset({ visibility: 'private', teamNumber: null, timezone: 'America/New_York' });
     this.createTeamError.set(null);
+  }
+
+  private async checkForUnseenAttachments(): Promise<void> {
+    // Only check once per session
+    if (this.hasCheckedUnseenAttachments) {
+      console.log('Already checked for unseen attachments, skipping');
+      return;
+    }
+    
+    this.hasCheckedUnseenAttachments = true;
+    
+    try {
+      const teams = this.teamsService.userTeams();
+      console.log('Checking for unseen attachments across', teams.length, 'teams');
+      const allMessages: MessageResponse[] = [];
+      
+      // Check each team for unseen attachments
+      for (const team of teams) {
+        try {
+          console.log('Checking team:', team.name, 'ID:', team.id);
+          const messages = await this.messagesService.getUnseenAttachments(team.id);
+          console.log('Found', messages.length, 'unseen attachment messages in team', team.name);
+          allMessages.push(...messages);
+        } catch (error) {
+          console.error(`Error checking unseen attachments for team ${team.id}:`, error);
+        }
+      }
+      
+      // If there are unseen attachments, show the dialog
+      console.log('Total unseen attachment messages:', allMessages.length);
+      if (allMessages.length > 0) {
+        this.unseenAttachmentsMessages.set(allMessages);
+        this.showUnseenAttachmentsDialog.set(true);
+        console.log('Showing unseen attachments dialog');
+      } else {
+        console.log('No unseen attachments found');
+      }
+    } catch (error) {
+      console.error('Error checking for unseen attachments:', error);
+    }
+  }
+
+  protected closeUnseenAttachmentsDialog(): void {
+    this.showUnseenAttachmentsDialog.set(false);
+  }
+
+  protected viewUnseenAttachments(): void {
+    this.showUnseenAttachmentsDialog.set(false);
+    
+    // Get the messages before clearing
+    const messages = this.unseenAttachmentsMessages();
+    
+    // Clear the messages so dialog won't reopen
+    this.unseenAttachmentsMessages.set([]);
+    
+    // Navigate to the first team that has unseen attachments with query param to open review dialog
+    if (messages.length > 0) {
+      const firstMessage = messages[0];
+      console.log('Navigating to team:', firstMessage.teamId);
+      this.router.navigate(['/team', firstMessage.teamId], { queryParams: { openReview: 'true' } });
+    }
   }
 
   protected closeCreateTeamDialog(): void {

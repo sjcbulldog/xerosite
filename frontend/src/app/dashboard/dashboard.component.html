@@ -856,3 +856,12 @@
     </div>
   </div>
 }
+
+<!-- Unseen Attachments Dialog -->
+@if (showUnseenAttachmentsDialog()) {
+  <app-unseen-attachments-dialog
+    [attachmentCount]="unseenAttachmentsCount()"
+    (close)="closeUnseenAttachmentsDialog()"
+    (view)="viewUnseenAttachments()"
+  />
+}

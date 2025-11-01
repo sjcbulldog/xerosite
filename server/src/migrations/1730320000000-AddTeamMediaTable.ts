@@ -82,9 +82,7 @@ export class AddTeamMediaTable1730320000000 implements MigrationInterface {
     );
 
     // Add index on teamId for performance
-    await queryRunner.query(
-      'CREATE INDEX `idx_team_media_teamId` ON `team_media` (`teamId`)',
-    );
+    await queryRunner.query('CREATE INDEX `idx_team_media_teamId` ON `team_media` (`teamId`)');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

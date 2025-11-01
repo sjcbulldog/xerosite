@@ -182,6 +182,28 @@
       background: linear-gradient(to right, #dbeafe, #ddd6fe);
     }
 
+    &.submenu-parent {
+      position: relative;
+      justify-content: space-between;
+      
+      .submenu-arrow {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin-left: auto;
+      }
+    }
+
+    &.submenu-item {
+      padding-left: 2.5rem;
+      font-size: 0.85rem;
+      background: #f9fafb;
+      
+      &:hover {
+        background: linear-gradient(to right, #f0f9ff, #ede9fe);
+        padding-left: 2.75rem;
+      }
+    }
+
     &.sign-out {
       border-top: 2px solid #f3f4f6;
       color: #dc2626;
@@ -196,6 +218,13 @@
         background: linear-gradient(to right, #fee2e2, #fecaca);
       }
     }
+  }
+
+  .submenu-items {
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    animation: slideDown 0.15s ease;
   }
 }
 

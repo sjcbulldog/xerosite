@@ -53,6 +53,10 @@ export class TeamMessage {
   @Column('simple-array', { nullable: true })
   attachmentFileIds?: string[];
 
+  // Array of user IDs who have viewed the message attachments
+  @Column('simple-array', { nullable: true })
+  viewedByRecipients?: string[];
+
   @Column('timestamp', { nullable: true })
   sentAt?: Date;
 

@@ -20,12 +20,18 @@ export class CalendarController {
    * recurrence rules, and exclusions for deleted occurrences.
    */
   @Get(':teamNumber')
-  async getTeamCalendar(@Param('teamNumber') teamNumber: string, @Res() res: Response): Promise<void> {
+  async getTeamCalendar(
+    @Param('teamNumber') teamNumber: string,
+    @Res() res: Response,
+  ): Promise<void> {
     try {
       const icsContent = await this.calendarService.generateTeamCalendarFeed(teamNumber);
 
       res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="team-${teamNumber}-calendar.ics"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="team-${teamNumber}-calendar.ics"`,
+      );
       res.send(icsContent);
     } catch (error) {
       if (error instanceof NotFoundException) {
