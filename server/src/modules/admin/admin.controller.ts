@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, ForbiddenException, Request, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, ForbiddenException, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminService } from './admin.service';
 import { TestMessageDto } from './dto/test-message.dto';
@@ -19,17 +19,5 @@ export class AdminController {
     }
 
     return this.adminService.sendTestMessage(testMessageDto);
-  }
-
-  @Get('login-history')
-  async getLoginHistory(@Request() req, @Query('limit') limit?: number) {
-    const user: User = req.user;
-
-    // Check if user is site admin
-    if (!user.isSiteAdmin) {
-      throw new ForbiddenException('Only site administrators can view login history');
-    }
-
-    return this.adminService.getLoginHistory(limit || 100);
   }
 }

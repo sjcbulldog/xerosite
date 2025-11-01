@@ -1,8 +1,8 @@
-import { Component, inject, ChangeDetectionStrategy, signal, OnInit } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, OnInit, input, output } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
-import { UsersService, UserProfile } from './users.service';
+import { UsersService, UserProfile, UserParent } from './users.service';
 
 interface EmailFormGroup {
   id: FormControl<string | null>;
@@ -52,6 +52,10 @@ export class ProfileComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
+  // Dialog mode
+  readonly isDialog = input(false);
+  readonly closeDialog = output<void>();
+
   protected readonly isLoading = signal(false);
   protected readonly isSaving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -62,6 +66,10 @@ export class ProfileComponent implements OnInit {
   protected readonly showEmails = signal(true);
   protected readonly showPhones = signal(true);
   protected readonly showAddresses = signal(true);
+  protected readonly showParents = signal(true);
+  protected readonly parents = signal<UserParent[]>([]);
+  protected readonly newParentEmail = signal<string>('');
+  protected readonly isAddingParent = signal(false);
 
   protected readonly profileForm = new FormGroup<ProfileForm>({
     firstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(100)] }),
@@ -116,6 +124,11 @@ export class ProfileComponent implements OnInit {
         lastName: profile.lastName
       });
 
+      // Clear existing form arrays
+      this.emails.clear();
+      this.phones.clear();
+      this.addresses.clear();
+
       // Populate emails
       if (profile.emails && profile.emails.length > 0) {
         profile.emails.forEach((email: any) => {
@@ -138,10 +151,22 @@ export class ProfileComponent implements OnInit {
           this.addresses.push(this.createAddressFormGroup(address));
         });
       }
+
+      // Load parents
+      await this.loadParents(targetUserId);
     } catch (error: any) {
       this.errorMessage.set(error.message || 'Failed to load profile');
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  private async loadParents(userId: string): Promise<void> {
+    try {
+      const parentsList = await this.usersService.getUserParents(userId);
+      this.parents.set(parentsList);
+    } catch (error: any) {
+      console.error('Failed to load parents:', error);
     }
   }
 
@@ -253,13 +278,74 @@ export class ProfileComponent implements OnInit {
     this.showAddresses.update(value => !value);
   }
 
+  protected toggleParents(): void {
+    this.showParents.update(value => !value);
+  }
+
+  protected async addParent(): Promise<void> {
+    const email = this.newParentEmail().trim();
+    if (!email) {
+      return;
+    }
+
+    const userId = this.viewingUserId() || this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    this.isAddingParent.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const result = await this.usersService.addParent(userId, email);
+      
+      // Add to parents list
+      this.parents.update(current => [...current, result]);
+      
+      // Clear the input
+      this.newParentEmail.set('');
+      
+      // Show success message
+      if (result.isNewUser) {
+        this.successMessage.set(`Invitation sent to ${email}`);
+      } else {
+        this.successMessage.set(`Parent ${result.parentName} added successfully`);
+      }
+      
+      setTimeout(() => this.successMessage.set(null), 3000);
+    } catch (error: any) {
+      this.errorMessage.set(error.message || 'Failed to add parent');
+    } finally {
+      this.isAddingParent.set(false);
+    }
+  }
+
+  protected async removeParent(parentId: number): Promise<void> {
+    const userId = this.viewingUserId() || this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    if (!confirm('Are you sure you want to remove this parent?')) {
+      return;
+    }
+
+    try {
+      await this.usersService.removeParent(userId, parentId);
+      
+      // Remove from parents list
+      this.parents.update(current => current.filter(p => p.id !== parentId));
+      
+      this.successMessage.set('Parent removed successfully');
+      setTimeout(() => this.successMessage.set(null), 3000);
+    } catch (error: any) {
+      this.errorMessage.set(error.message || 'Failed to remove parent');
+    }
+  }
+
   protected async onSubmit(): Promise<void> {
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
       return;
     }
 
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.viewingUserId() || this.authService.currentUser()?.id;
     if (!userId) return;
 
     this.isSaving.set(true);
@@ -295,17 +381,29 @@ export class ProfileComponent implements OnInit {
       
       this.successMessage.set('Profile updated successfully!');
       
-      // Clear success message after 3 seconds
-      setTimeout(() => this.successMessage.set(null), 3000);
+      // If in dialog mode, close the dialog immediately
+      if (this.isDialog()) {
+        this.closeDialog.emit();
+      } else {
+        // Clear success message after 3 seconds when not in dialog
+        setTimeout(() => this.successMessage.set(null), 3000);
+      }
     } catch (error: any) {
       this.errorMessage.set(error.message || 'Failed to update profile');
+      
+      // Reload the profile to revert any invalid changes (like duplicate emails)
+      await this.loadProfile(userId);
     } finally {
       this.isSaving.set(false);
     }
   }
 
   protected cancel(): void {
-    this.router.navigate(['/dashboard']);
+    if (this.isDialog()) {
+      this.closeDialog.emit();
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 
   protected async updateUserState(): Promise<void> {

@@ -9,7 +9,6 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../email/email.module';
-import { AdminModule } from '../admin/admin.module';
 import { EmailVerificationToken } from './entities/email-verification-token.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 
@@ -17,7 +16,6 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
   imports: [
     UsersModule,
     EmailModule,
-    AdminModule,
     TypeOrmModule.forFeature([EmailVerificationToken, PasswordResetToken]),
     PassportModule,
     JwtModule.registerAsync({

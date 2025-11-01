@@ -74,10 +74,12 @@ export class TeamsService {
   private readonly userTeamsSignal = signal<Team[]>([]);
   private readonly publicTeamsSignal = signal<Team[]>([]);
   private readonly pendingTeamsSignal = signal<Team[]>([]);
+  private readonly allTeamsSignal = signal<Team[]>([]);
 
   public readonly userTeams = this.userTeamsSignal.asReadonly();
   public readonly publicTeams = this.publicTeamsSignal.asReadonly();
   public readonly pendingTeams = this.pendingTeamsSignal.asReadonly();
+  public readonly allTeams = this.allTeamsSignal.asReadonly();
 
   async loadUserTeams(userId: string): Promise<void> {
     try {
@@ -161,6 +163,18 @@ export class TeamsService {
     }
   }
 
+  async loadAllTeams(): Promise<void> {
+    try {
+      const teams = await firstValueFrom(
+        this.http.get<Team[]>(`${this.apiUrl}/admin/all`)
+      );
+      this.allTeamsSignal.set(teams);
+    } catch (error) {
+      console.error('Error loading all teams:', error);
+      throw error;
+    }
+  }
+
   async createTeam(teamData: CreateTeamRequest, userId: string): Promise<Team> {
     try {
       // Create the team
@@ -232,6 +246,9 @@ export class TeamsService {
       
       const updatedPublicTeams = this.publicTeamsSignal().filter(t => t.id !== teamId);
       this.publicTeamsSignal.set(updatedPublicTeams);
+      
+      const updatedAllTeams = this.allTeamsSignal().filter(t => t.id !== teamId);
+      this.allTeamsSignal.set(updatedAllTeams);
     } catch (error: any) {
       console.error('Error deleting team:', error);
       throw new Error(error.error?.message || 'Failed to delete team');

@@ -43,6 +43,14 @@ export class TeamsController {
     return this.teamsService.getSiteStatistics();
   }
 
+  @Get('admin/all')
+  async getAllTeams(@CurrentUser() user: any): Promise<TeamResponseDto[]> {
+    if (!user.isSiteAdmin) {
+      throw new Error('Unauthorized: Only site administrators can view all teams');
+    }
+    return this.teamsService.findAll();
+  }
+
   @Get('public/available')
   async findPublicTeams(@CurrentUser() user: any): Promise<TeamResponseDto[]> {
     return this.teamsService.findPublicTeamsForUser(user.id);

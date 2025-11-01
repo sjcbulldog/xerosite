@@ -7,7 +7,9 @@
         Edit Profile
       }
     </h1>
-    <button (click)="cancel()" class="back-button">← Back to Dashboard</button>
+    @if (!isDialog()) {
+      <button (click)="cancel()" class="back-button">← Back to Dashboard</button>
+    }
   </header>
 
   @if (isLoading()) {
@@ -122,6 +124,77 @@
             }
           </div>
         </div>
+      </div>
+
+      <div class="form-section">
+        <button 
+          type="button"
+          class="collapsible-header" 
+          (click)="toggleParents()"
+          [class.active]="showParents()">
+          <span class="chevron">{{ showParents() ? '▼' : '▶' }}</span>
+          <h2>Parents</h2>
+        </button>
+
+        @if (showParents()) {
+          <div class="collapsible-content">
+            <div class="add-parent-section">
+              <div class="form-group">
+                <label for="newParentEmail">Add Parent by Email</label>
+                <div class="add-parent-row">
+                  <input 
+                    id="newParentEmail"
+                    type="email"
+                    [value]="newParentEmail()"
+                    (input)="newParentEmail.set($any($event.target).value)"
+                    placeholder="Enter parent's email address"
+                    [disabled]="isAddingParent()"
+                  />
+                  <button 
+                    type="button"
+                    (click)="addParent()" 
+                    class="add-parent-button"
+                    [disabled]="isAddingParent() || !newParentEmail()">
+                    @if (isAddingParent()) {
+                      Adding...
+                    } @else {
+                      Add Parent
+                    }
+                  </button>
+                </div>
+                <p class="helper-text">
+                  If the email matches a user in the system, they will be notified. 
+                  If not, an invitation will be sent to join the site.
+                </p>
+              </div>
+            </div>
+
+            @if (parents().length === 0) {
+              <p class="empty-message">No parents added yet.</p>
+            } @else {
+              <div class="parents-list">
+                @for (parent of parents(); track parent.id) {
+                  <div class="parent-card">
+                    <div class="parent-info">
+                      <div class="parent-email">{{ parent.parentEmail }}</div>
+                      @if (parent.parentName) {
+                        <div class="parent-name">{{ parent.parentName }}</div>
+                      } @else {
+                        <div class="parent-status pending">Invitation sent</div>
+                      }
+                    </div>
+                    <button 
+                      type="button"
+                      (click)="removeParent(parent.id)" 
+                      class="remove-button">
+                      Remove
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-section">

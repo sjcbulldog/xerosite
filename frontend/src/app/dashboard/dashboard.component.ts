@@ -9,7 +9,7 @@ import { UsersService, UserProfile } from '../profile/users.service';
 import { PreferencesDialogComponent } from '../preferences/preferences-dialog.component';
 import { TestMessageDialogComponent } from './test-message-dialog.component';
 import { HelpDialogComponent } from './help-dialog.component';
-import { LoginHistoryDialogComponent } from '../admin/login-history-dialog.component';
+import { ProfileComponent } from '../profile/profile.component';
 import { COMMON_TIMEZONES } from './timezones';
 
 type SortField = 'firstName' | 'lastName' | 'email';
@@ -31,7 +31,7 @@ interface CreateTeamForm {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent, HelpDialogComponent, LoginHistoryDialogComponent],
+  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent, HelpDialogComponent, ProfileComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -47,13 +47,16 @@ export class DashboardComponent implements OnInit {
 
   protected readonly showCreateTeamDialog = signal(false);
   protected readonly showMyTeams = signal(true);
-  protected readonly showAllUsers = signal(true);
+  protected readonly showAllUsers = signal(false);
   protected readonly showPublicTeams = signal(false);
   protected readonly showPendingTeams = signal(false);
+  protected readonly showAllTeams = signal(false);
   protected readonly isLoadingTeams = signal(false);
   protected readonly isLoadingPublicTeams = signal(false);
   protected readonly isLoadingPendingTeams = signal(false);
   protected readonly isLoadingUsers = signal(false);
+  protected readonly isLoadingAllTeams = signal(false);
+  protected readonly teamAdmins = signal<Map<string, string[]>>(new Map());
   protected readonly isCreatingTeam = signal(false);
   protected readonly isJoiningTeam = signal(false);
   protected readonly createTeamError = signal<string | null>(null);
@@ -73,6 +76,9 @@ export class DashboardComponent implements OnInit {
   protected readonly changePasswordError = signal<string | null>(null);
   protected readonly changePasswordSuccess = signal<string | null>(null);
   
+  // Profile dialog signal
+  protected readonly showProfileDialog = signal(false);
+  
   // Preferences dialog signal
   protected readonly showPreferencesDialog = signal(false);
   
@@ -81,9 +87,6 @@ export class DashboardComponent implements OnInit {
   
   // Help dialog signal
   protected readonly showHelpDialog = signal(false);
-  
-  // Login history dialog signal
-  protected readonly showLoginHistoryDialog = signal(false);
   
   // Password requirement signals - must be defined before form
   protected readonly newPasswordValue = signal('');
@@ -385,6 +388,48 @@ export class DashboardComponent implements OnInit {
         this.isLoadingPendingTeams.set(false);
       }
     }
+  }
+
+  protected async toggleAllTeams(): Promise<void> {
+    const newState = !this.showAllTeams();
+    this.showAllTeams.set(newState);
+
+    if (newState && this.teamsService.allTeams().length === 0) {
+      this.isLoadingAllTeams.set(true);
+      try {
+        await this.teamsService.loadAllTeams();
+        // Load administrators for each team
+        await this.loadTeamAdministrators();
+      } catch (error) {
+        console.error('Error loading all teams:', error);
+      } finally {
+        this.isLoadingAllTeams.set(false);
+      }
+    }
+  }
+
+  private async loadTeamAdministrators(): Promise<void> {
+    const adminMap = new Map<string, string[]>();
+    
+    for (const team of this.teamsService.allTeams()) {
+      try {
+        const members = await this.teamsService.getTeamMembers(team.id);
+        const admins = members
+          .filter(m => m.roles.includes('Administrator') && m.status === 'active')
+          .map(m => m.user?.fullName || 'Unknown')
+          .filter(name => name !== 'Unknown');
+        adminMap.set(team.id, admins);
+      } catch (error) {
+        console.error(`Error loading admins for team ${team.id}:`, error);
+        adminMap.set(team.id, []);
+      }
+    }
+    
+    this.teamAdmins.set(adminMap);
+  }
+
+  protected getTeamAdmins(teamId: string): string[] {
+    return this.teamAdmins().get(teamId) || [];
   }
 
   protected async joinTeam(teamId: string): Promise<void> {
@@ -706,6 +751,16 @@ export class DashboardComponent implements OnInit {
     this.newPasswordValue.set('');
   }
 
+  // Profile dialog methods
+  protected openProfileDialog(): void {
+    this.showUserMenu.set(false);
+    this.showProfileDialog.set(true);
+  }
+
+  protected closeProfileDialog(): void {
+    this.showProfileDialog.set(false);
+  }
+
   protected openPreferencesDialog(): void {
     this.showUserMenu.set(false);
     this.showPreferencesDialog.set(true);
@@ -730,15 +785,6 @@ export class DashboardComponent implements OnInit {
 
   protected closeHelpDialog(): void {
     this.showHelpDialog.set(false);
-  }
-
-  protected openLoginHistoryDialog(): void {
-    this.showUserMenu.set(false);
-    this.showLoginHistoryDialog.set(true);
-  }
-
-  protected closeLoginHistoryDialog(): void {
-    this.showLoginHistoryDialog.set(false);
   }
 
   protected async onChangePassword(): Promise<void> {

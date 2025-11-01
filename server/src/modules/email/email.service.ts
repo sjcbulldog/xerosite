@@ -424,4 +424,61 @@ export class EmailService implements OnModuleInit {
       this.logger.error('Error cleaning up old emails:', error);
     }
   }
+
+  /**
+   * Send parent notification email when added as a parent (user already exists)
+   */
+  async sendParentNotificationEmail(
+    parentEmail: string,
+    parentFirstName: string,
+    childName: string,
+  ): Promise<void> {
+    const apiUrl = this.configService.get('email.apiUrl');
+    const loginUrl = `${apiUrl}/login`;
+
+    await this.queueEmail({
+      to: parentEmail,
+      subject: 'You have been added as a parent',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #667eea;">Parent Account Notification</h2>
+          <p>Hello ${parentFirstName},</p>
+          <p><strong>${childName}</strong> has added you as a parent on their account.</p>
+          <p>You can log in to your account to view their profile and information:</p>
+          <p><a href="${loginUrl}" style="display: inline-block; padding: 10px 20px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px;">Log In</a></p>
+          <p>If you have any questions, please contact us.</p>
+          <p>Best regards,<br>The FRC Teams Team</p>
+        </div>
+      `,
+    });
+  }
+
+  /**
+   * Send parent invitation email when parent doesn't have an account yet
+   */
+  async sendParentInvitationEmail(
+    parentEmail: string,
+    childName: string,
+  ): Promise<void> {
+    const apiUrl = this.configService.get('email.apiUrl');
+    const registerUrl = `${apiUrl}/register`;
+
+    await this.queueEmail({
+      to: parentEmail,
+      subject: 'Invitation to join FRC Teams as a parent',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #667eea;">Join FRC Teams</h2>
+          <p>Hello,</p>
+          <p><strong>${childName}</strong> has added you as a parent on their FRC Teams account.</p>
+          <p>FRC Teams is a platform for managing FIRST Robotics Competition team information and communications.</p>
+          <p>To view their profile and connect with the team, please create an account:</p>
+          <p><a href="${registerUrl}" style="display: inline-block; padding: 10px 20px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px;">Create Account</a></p>
+          <p><strong>Note:</strong> Please use this email address (${parentEmail}) when registering to link to your child's account.</p>
+          <p>If you have any questions, please contact us.</p>
+          <p>Best regards,<br>The FRC Teams Team</p>
+        </div>
+      `,
+    });
+  }
 }

@@ -388,20 +388,46 @@ In the subteam view on the team dashboard, after the total member count, display
 
 Add a sign out link to the team dashboard page.
 
+One the dashboard, site adminstrators should have a collaseable section called 'All Team' and all teams in the system should be visible.
+
+For the all teams feature, within each listed team, add the list of adminstrators for that team and a waste bucket icon to delete that team.
+
+In the all teams display, the waste bucket is on top of the public/private badge.  Move the public/private badge to the row below the team name and to the left of the member count.
+
+Do not allow the same email address to appear associated with multiple user accounts.  This should be checked at both registration time and when editing user preferences.
+
+On the main dashboard page when first displayed, All Teams, All Users, and Available Teams should be collasped.  My Teams should be expanded.
+
+When I add an email in the profile page that is already in use, I get the error 'Http failure response for http://localhost:3000/api/users/edc65fc2-3f93-4914-aa39-82be578bf46d/profile: 409 Conflict'.  This should be more user friendly indicating that this email address is already associated with a user in the system.
+
+When adding an email to a user profile, if that email is already in use, there is an error telling me this, but the email is still added to the user creating a conflicting email.  In addition to the error, the conflicting email should not be added to the user.
+
+Make the Edit Profile window a popup window.  When Save Changes is pressed dismiss the popup.  Be sure the click to close is NOT set.
+
+At server startup, add a check to see if any email in the system is already associated with multiple user accounts.  Print any conflicts to the console or print the message in all CAPS 'NO EMAIL CONFLICTS FOUND'.
+
 In Progress
 ===========
-Add a database table that records when each user logs into the system.  This information should be viewable as a table in a popup from the main dashboard for site adminstrators.
+
+For each users in the system there should be an arbitrary number of parents.  In the Edit Profile popup, after Personal Information and before Email Addresses, there should be the ability to add parents or delete parents. Parents should be stored as email addresses.  A parent can be added by entering an email address for that parent in a text field.  If this email matches a user in the system that users is set as a parent of the current user and an email is sent to the parent. If the email address does not match a user in the site, an email is sent that that address inviting them to join the site.
+
 
 Pending
 =======
 
-In the team dashboard menu, add hierarchy.  There should be a Messages submenu with two item, Send and Review.  There should be and Edit submenu with three item, Team Information, Team Roles, and Role Constraints.  There should be a Roster submenu with three item, Invite New Member, Import From CSV, Export To CSV.
+In the my teams display, display the public/private badge below the team title and to the left of the member count.  If the user is an administratory, display this right after the title and leave the up right most corner for the waste basket where it already is.
 
-For users, there should be an optional set of parent.  These are setup.
+In the team dashboard menu, add hierarchy.  There should be a Messages submenu with two item, Send and Review.  There should be and Edit submenu with three item, Team Information, Team Roles, and Role Constraints.  There should be a Roster submenu with three item, Invite New Member, Import From CSV, Export To CSV.
 
 For a team, there should be a system for adding a requirement (e.g. First Consent Form) for a given time period and user group.  If a user has not completed a requirement when they log in, they get a popup saying they have unfulfilled requirements.  The system should periodically email them to remind them of the outstanding requirement.
 
+When a team is deleted from the system, an email should be sent to all of the adminstrators for that team indicating that their team has been deleted.
+
 On the team dashboard menu, Roster submenu, add an 'Export As JSON' menu item, which exports all of the users for the team as a JSON file.  This file should contains only users for the current team and all of the per user information in the users database.  For each user should also contain the subteams they belong to and their roles.
+
+Add an ability to export a team as a JSON file.  This should include all team information including role definintions, role constraints, subteam definitions, requirements definitions, and finally all users with their associated user database information as well as parents, roles, subteams, leadership positions, and requirements status.
+
+Add a database table that records when each user logs into the system.  This information should be viewable as a table in a popup from the main dashboard for site adminstrators.
 
 
 --- calendar
@@ -420,6 +446,10 @@ Continous
 ---------
 Update the user's guide to reflect features added single the last update to the user's guide: 10/29/2025, 10/31/2025
 Update the API document to reflect changes in the rest APIs: 10/29/2025
+
+Notes
+-----
+What to do with conflicting email addresses in the import process.
 
 Specific Tests
 --------------

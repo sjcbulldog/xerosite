@@ -1,8 +1,9 @@
-import { Controller, Get, Patch, Delete, Param, Body, UseGuards, NotFoundException, UnauthorizedException, Request, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Body, UseGuards, NotFoundException, UnauthorizedException, Request, ForbiddenException, BadRequestException, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserResponseDto } from './dto/user-response.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { AddParentDto } from './dto/add-parent.dto';
 import { IsString, IsEmail, IsBoolean, IsOptional, IsArray, ValidateNested, MaxLength, IsNumber, MinLength, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -282,6 +283,93 @@ export class UsersController {
       return { message: 'User deleted successfully' };
     } catch (error) {
       console.error('Error deleting user:', error);
+      throw error;
+    }
+  }
+
+  // Parent management endpoints
+  @Get(':id/parents')
+  async getUserParents(@Param('id') id: string, @Request() req: any) {
+    try {
+      // Users can only view their own parents unless they are an admin
+      const requestingUser = await this.usersService.findById(req.user.id);
+      if (id !== req.user.id && requestingUser?.state !== 'admin') {
+        throw new UnauthorizedException('You can only view your own parents');
+      }
+
+      const parents = await this.usersService.getUserParents(id);
+      return parents.map((parent) => ({
+        id: parent.id,
+        parentEmail: parent.parentEmail,
+        parentUserId: parent.parentUserId,
+        parentName: parent.parentUser
+          ? `${parent.parentUser.firstName} ${parent.parentUser.lastName}`
+          : null,
+        status: parent.status,
+        invitationSentAt: parent.invitationSentAt,
+        createdAt: parent.createdAt,
+      }));
+    } catch (error) {
+      console.error('Error fetching user parents:', error);
+      throw error;
+    }
+  }
+
+  @Post(':id/parents')
+  async addParent(
+    @Param('id') id: string,
+    @Body() addParentDto: AddParentDto,
+    @Request() req: any,
+  ) {
+    try {
+      // Users can only add parents to their own account unless they are an admin
+      const requestingUser = await this.usersService.findById(req.user.id);
+      if (id !== req.user.id && requestingUser?.state !== 'admin') {
+        throw new UnauthorizedException('You can only add parents to your own account');
+      }
+
+      const user = await this.usersService.findById(id);
+      if (!user) {
+        throw new NotFoundException(`User with id ${id} not found`);
+      }
+
+      const result = await this.usersService.addParent(id, addParentDto.parentEmail);
+
+      return {
+        id: result.parent.id,
+        parentEmail: result.parent.parentEmail,
+        parentUserId: result.parent.parentUserId,
+        parentName: result.parent.parentUser
+          ? `${result.parent.parentUser.firstName} ${result.parent.parentUser.lastName}`
+          : null,
+        status: result.parent.status,
+        invitationSentAt: result.parent.invitationSentAt,
+        createdAt: result.parent.createdAt,
+        isNewUser: result.isNewUser,
+      };
+    } catch (error) {
+      console.error('Error adding parent:', error);
+      throw error;
+    }
+  }
+
+  @Delete(':id/parents/:parentId')
+  async removeParent(
+    @Param('id') id: string,
+    @Param('parentId') parentId: string,
+    @Request() req: any,
+  ): Promise<{ message: string }> {
+    try {
+      // Users can only remove parents from their own account unless they are an admin
+      const requestingUser = await this.usersService.findById(req.user.id);
+      if (id !== req.user.id && requestingUser?.state !== 'admin') {
+        throw new UnauthorizedException('You can only remove parents from your own account');
+      }
+
+      await this.usersService.removeParent(id, parseInt(parentId));
+      return { message: 'Parent removed successfully' };
+    } catch (error) {
+      console.error('Error removing parent:', error);
       throw error;
     }
   }

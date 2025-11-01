@@ -64,6 +64,16 @@ export interface UserProfile {
   }>;
 }
 
+export interface UserParent {
+  id: number;
+  parentEmail: string;
+  parentUserId: string | null;
+  parentName: string | null;
+  status: 'pending' | 'accepted' | 'declined';
+  invitationSentAt: string | null;
+  createdAt: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -84,9 +94,14 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, data: UpdateProfileRequest): Promise<UserProfile> {
-    return firstValueFrom(
-      this.http.patch<UserProfile>(`${this.apiUrl}/${userId}/profile`, data)
-    );
+    try {
+      return await firstValueFrom(
+        this.http.patch<UserProfile>(`${this.apiUrl}/${userId}/profile`, data)
+      );
+    } catch (error: any) {
+      const errorMessage = error.error?.message || error.message || 'Failed to update profile';
+      throw new Error(errorMessage);
+    }
   }
 
   async toggleUserActiveStatus(userId: string, isActive: boolean): Promise<UserProfile> {
@@ -125,6 +140,35 @@ export class UsersService {
       );
     } catch (error: any) {
       const errorMessage = error.error?.message || error.message || 'Failed to delete user';
+      throw new Error(errorMessage);
+    }
+  }
+
+  // Parent management methods
+  async getUserParents(userId: string): Promise<UserParent[]> {
+    return firstValueFrom(
+      this.http.get<UserParent[]>(`${this.apiUrl}/${userId}/parents`)
+    );
+  }
+
+  async addParent(userId: string, parentEmail: string): Promise<UserParent & { isNewUser: boolean }> {
+    try {
+      return await firstValueFrom(
+        this.http.post<UserParent & { isNewUser: boolean }>(`${this.apiUrl}/${userId}/parents`, { parentEmail })
+      );
+    } catch (error: any) {
+      const errorMessage = error.error?.message || error.message || 'Failed to add parent';
+      throw new Error(errorMessage);
+    }
+  }
+
+  async removeParent(userId: string, parentId: number): Promise<{ message: string }> {
+    try {
+      return await firstValueFrom(
+        this.http.delete<{ message: string }>(`${this.apiUrl}/${userId}/parents/${parentId}`)
+      );
+    } catch (error: any) {
+      const errorMessage = error.error?.message || error.message || 'Failed to remove parent';
       throw new Error(errorMessage);
     }
   }

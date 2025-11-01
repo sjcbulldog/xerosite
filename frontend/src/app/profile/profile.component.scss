@@ -504,3 +504,278 @@
     gap: 1rem;
   }
 }
+
+// Parents section styles
+.add-parent-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 6px;
+
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .add-parent-row {
+    display: flex;
+    gap: 0.5rem;
+
+    input {
+      flex: 1;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 1rem;
+
+      &:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      &:disabled {
+        background: #f3f4f6;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .add-parent-button {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.625rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      background: #059669;
+    }
+
+    &:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+  }
+
+  .helper-text {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+    line-height: 1.4;
+  }
+}
+
+.parents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.parent-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .parent-info {
+    flex: 1;
+  }
+
+  .parent-email {
+    font-weight: 500;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+
+  .parent-name {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .parent-status {
+    font-size: 0.875rem;
+    
+    &.pending {
+      color: #d97706;
+      font-style: italic;
+    }
+  }
+
+  .remove-button {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: #dc2626;
+    }
+  }
+}
+
+.empty-message {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 2rem;
+  margin: 0;
+}
+
+// Parents section styles
+.add-parent-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 6px;
+
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .add-parent-row {
+    display: flex;
+    gap: 0.5rem;
+
+    input {
+      flex: 1;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 1rem;
+
+      &:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+    }
+  }
+
+  .add-parent-button {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.625rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      background: #059669;
+    }
+
+    &:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+  }
+
+  .helper-text {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+  }
+}
+
+.parents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.parent-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .parent-info {
+    flex: 1;
+  }
+
+  .parent-email {
+    font-weight: 500;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+
+  .parent-name {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .parent-status {
+    font-size: 0.875rem;
+    
+    &.pending {
+      color: #d97706;
+      font-style: italic;
+    }
+  }
+
+  .remove-button {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: #dc2626;
+    }
+  }
+}
+
+.empty-message {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 2rem;
+}

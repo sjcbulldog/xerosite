@@ -10,11 +10,13 @@ import { User } from './entities/user.entity';
 import { UserEmail } from './entities/user-email.entity';
 import { UserPhone } from './entities/user-phone.entity';
 import { UserAddress } from './entities/user-address.entity';
+import { UserParent, ParentStatus } from './entities/user-parent.entity';
 import { UserState } from './enums/user-state.enum';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SubteamLeadPosition } from '../teams/entities/subteam-lead-position.entity';
 import { SubteamMember } from '../teams/entities/subteam-member.entity';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class UsersService {
@@ -27,10 +29,13 @@ export class UsersService {
     private readonly userPhoneRepository: Repository<UserPhone>,
     @InjectRepository(UserAddress)
     private readonly userAddressRepository: Repository<UserAddress>,
+    @InjectRepository(UserParent)
+    private readonly userParentRepository: Repository<UserParent>,
     @InjectRepository(SubteamLeadPosition)
     private readonly subteamLeadPositionRepository: Repository<SubteamLeadPosition>,
     @InjectRepository(SubteamMember)
     private readonly subteamMemberRepository: Repository<SubteamMember>,
+    private readonly emailService: EmailService,
   ) {}
 
   async findById(id: string): Promise<User | null> {
@@ -66,11 +71,16 @@ export class UsersService {
       throw new BadRequestException('At least one email must be marked as primary');
     }
 
-    const existingEmail = await this.userEmailRepository.findOne({
-      where: { email: primaryEmail.email },
-    });
-    if (existingEmail) {
-      throw new ConflictException('Email already exists');
+    // Check if any of the provided emails already exist
+    for (const emailDto of registerDto.emails) {
+      const existingEmail = await this.userEmailRepository.findOne({
+        where: { email: emailDto.email },
+      });
+      if (existingEmail) {
+        throw new ConflictException(
+          `Email ${emailDto.email} is already associated with another user account`,
+        );
+      }
     }
 
     // Ensure only one primary email
@@ -244,6 +254,21 @@ export class UsersService {
       // Ensure at least one email
       if (updateData.emails.length === 0) {
         throw new BadRequestException('At least one email is required');
+      }
+
+      // Check for duplicate emails across all users (excluding current user)
+      for (const emailData of updateData.emails) {
+        const existingEmail = await this.userEmailRepository
+          .createQueryBuilder('userEmail')
+          .where('userEmail.email = :email', { email: emailData.email })
+          .andWhere('userEmail.userId != :userId', { userId })
+          .getOne();
+
+        if (existingEmail) {
+          throw new ConflictException(
+            `Email ${emailData.email} is already associated with another user account`,
+          );
+        }
       }
 
       // Get existing emails
@@ -431,5 +456,125 @@ export class UsersService {
     user.password = newPassword;
     // Password will be hashed automatically by the @BeforeInsert/@BeforeUpdate hook
     await this.userRepository.save(user);
+  }
+
+  async checkEmailConflicts(): Promise<void> {
+    // Query to find duplicate emails
+    const duplicates = await this.userEmailRepository
+      .createQueryBuilder('userEmail')
+      .select('userEmail.email', 'email')
+      .addSelect('COUNT(DISTINCT userEmail.userId)', 'userCount')
+      .groupBy('userEmail.email')
+      .having('COUNT(DISTINCT userEmail.userId) > 1')
+      .getRawMany();
+
+    if (duplicates.length === 0) {
+      console.log('NO EMAIL CONFLICTS FOUND');
+      return;
+    }
+
+    console.log('\n⚠️  EMAIL CONFLICTS DETECTED ⚠️\n');
+    console.log('The following emails are associated with multiple user accounts:\n');
+
+    for (const duplicate of duplicates) {
+      const userEmails = await this.userEmailRepository.find({
+        where: { email: duplicate.email },
+        relations: ['user'],
+      });
+
+      console.log(`Email: ${duplicate.email}`);
+      console.log(`  Associated with ${duplicate.userCount} users:`);
+      
+      for (const userEmail of userEmails) {
+        const user = userEmail.user;
+        console.log(`    - User ID: ${user.id}, Name: ${user.firstName} ${user.lastName}, State: ${user.state}`);
+      }
+      console.log('');
+    }
+  }
+
+  // Parent management methods
+  async getUserParents(userId: string): Promise<UserParent[]> {
+    return this.userParentRepository.find({
+      where: { userId },
+      relations: ['parentUser'],
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async addParent(
+    userId: string,
+    parentEmail: string,
+  ): Promise<{ parent: UserParent; isNewUser: boolean }> {
+    // Normalize email
+    const normalizedEmail = parentEmail.toLowerCase().trim();
+
+    // Check if this parent relationship already exists
+    const existingParent = await this.userParentRepository.findOne({
+      where: { userId, parentEmail: normalizedEmail },
+    });
+
+    if (existingParent) {
+      throw new ConflictException('This parent has already been added');
+    }
+
+    // Check if the email belongs to an existing user
+    const parentUser = await this.findByEmail(normalizedEmail);
+
+    // Create the parent relationship
+    const userParent = this.userParentRepository.create({
+      userId,
+      parentEmail: normalizedEmail,
+      parentUserId: parentUser?.id || null,
+      invitationSentAt: new Date(),
+      status: ParentStatus.PENDING,
+    });
+
+    await this.userParentRepository.save(userParent);
+
+    // Load the parent with relations for return
+    const savedParent = await this.userParentRepository.findOne({
+      where: { id: userParent.id },
+      relations: ['parentUser', 'user'],
+    });
+
+    // Get the child's name for the email
+    const childUser = await this.findById(userId);
+    const childName = childUser
+      ? `${childUser.firstName} ${childUser.lastName}`
+      : 'A user';
+
+    // Send appropriate email
+    if (parentUser) {
+      // Parent already has an account - send notification
+      await this.emailService.sendParentNotificationEmail(
+        normalizedEmail,
+        parentUser.firstName,
+        childName,
+      );
+    } else {
+      // Parent doesn't have an account - send invitation
+      await this.emailService.sendParentInvitationEmail(
+        normalizedEmail,
+        childName,
+      );
+    }
+
+    return {
+      parent: savedParent!,
+      isNewUser: !parentUser,
+    };
+  }
+
+  async removeParent(userId: string, parentId: number): Promise<void> {
+    const parent = await this.userParentRepository.findOne({
+      where: { id: parentId, userId },
+    });
+
+    if (!parent) {
+      throw new NotFoundException('Parent relationship not found');
+    }
+
+    await this.userParentRepository.remove(parent);
   }
 }
