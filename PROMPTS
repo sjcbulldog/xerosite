@@ -406,16 +406,19 @@ Make the Edit Profile window a popup window.  When Save Changes is pressed dismi
 
 At server startup, add a check to see if any email in the system is already associated with multiple user accounts.  Print any conflicts to the console or print the message in all CAPS 'NO EMAIL CONFLICTS FOUND'.
 
+For each users in the system there should be an arbitrary number of parents.  In the Edit Profile popup, after Personal Information and before Email Addresses, there should be the ability to add parents or delete parents. Parents should be stored as email addresses.  A parent can be added by entering an email address for that parent in a text field.  If this email matches a user in the system that users is set as a parent of the current user and an email is sent to the parent. If the email address does not match a user in the site, an email is sent that that address inviting them to join the site.
+
+In the my teams display, display the public/private badge below the team title and to the left of the member count.  If the user is an administratory, display this right after the title and leave the up right most corner for the waste basket where it already is.
+
+The admin badge is being displayed on the far right.  It should be moved left to be just to the right of the team name and not at the far right where the waste basket is located.
+
+When an email is sent to a user, if they have parents, send the same email to each of the parents.
+
 In Progress
 ===========
 
-For each users in the system there should be an arbitrary number of parents.  In the Edit Profile popup, after Personal Information and before Email Addresses, there should be the ability to add parents or delete parents. Parents should be stored as email addresses.  A parent can be added by entering an email address for that parent in a text field.  If this email matches a user in the system that users is set as a parent of the current user and an email is sent to the parent. If the email address does not match a user in the site, an email is sent that that address inviting them to join the site.
-
-
 Pending
 =======
-
-In the my teams display, display the public/private badge below the team title and to the left of the member count.  If the user is an administratory, display this right after the title and leave the up right most corner for the waste basket where it already is.
 
 In the team dashboard menu, add hierarchy.  There should be a Messages submenu with two item, Send and Review.  There should be and Edit submenu with three item, Team Information, Team Roles, and Role Constraints.  There should be a Roster submenu with three item, Invite New Member, Import From CSV, Export To CSV.
 

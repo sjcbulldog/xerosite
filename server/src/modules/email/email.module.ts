@@ -6,10 +6,12 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { join } from 'path';
 import { EmailService } from './email.service';
 import { EmailQueue } from './entities/email-queue.entity';
+import { UserParent } from '../users/entities/user-parent.entity';
+import { UserEmail } from '../users/entities/user-email.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EmailQueue]),
+    TypeOrmModule.forFeature([EmailQueue, UserParent, UserEmail]),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

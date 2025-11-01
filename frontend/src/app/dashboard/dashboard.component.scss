@@ -319,7 +319,7 @@
 .team-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: center;
   margin-bottom: 0.75rem;
 
   h3 {
@@ -328,6 +328,10 @@
     font-size: 1.125rem;
     font-weight: 600;
     flex: 1;
+
+    .admin-badge {
+      margin-left: 0.5rem;
+    }
   }
 
   .badges {
@@ -406,8 +410,13 @@
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+  align-items: center;
   font-size: 0.875rem;
   color: #6b7280;
+
+  .visibility-badge {
+    margin-right: 0;
+  }
 
   .member-count {
     font-weight: 500;

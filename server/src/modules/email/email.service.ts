@@ -5,6 +5,8 @@ import { Repository, LessThan } from 'typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { EmailQueue, EmailStatus } from './entities/email-queue.entity';
+import { UserParent } from '../users/entities/user-parent.entity';
+import { UserEmail } from '../users/entities/user-email.entity';
 
 interface QueueEmailOptions {
   to: string;
@@ -29,6 +31,10 @@ export class EmailService implements OnModuleInit {
   constructor(
     @InjectRepository(EmailQueue)
     private readonly emailQueueRepository: Repository<EmailQueue>,
+    @InjectRepository(UserParent)
+    private readonly userParentRepository: Repository<UserParent>,
+    @InjectRepository(UserEmail)
+    private readonly userEmailRepository: Repository<UserEmail>,
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
   ) {}
@@ -279,6 +285,98 @@ export class EmailService implements OnModuleInit {
 
     await this.emailQueueRepository.save(queueItem);
     this.logger.log(`Email queued for ${finalTo}: ${options.subject}`);
+
+    // Check if the recipient has parents and send to them as well
+    await this.queueEmailToParents(options.to, options);
+  }
+
+  /**
+   * Get parent emails for a user by their email address
+   */
+  private async getParentEmailsForUser(userEmail: string): Promise<string[]> {
+    try {
+      // Find the user by email
+      const userEmailRecord = await this.userEmailRepository.findOne({
+        where: { email: userEmail },
+        relations: ['user'],
+      });
+
+      if (!userEmailRecord || !userEmailRecord.user) {
+        return [];
+      }
+
+      const userId = userEmailRecord.user.id;
+
+      // Get all parents for this user
+      const parents = await this.userParentRepository.find({
+        where: { userId },
+      });
+
+      // Return the parent email addresses
+      return parents.map(parent => parent.parentEmail);
+    } catch (error) {
+      this.logger.error(`Error fetching parent emails for ${userEmail}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Queue emails to all parents of the user
+   */
+  private async queueEmailToParents(
+    userEmail: string,
+    options: QueueEmailOptions,
+  ): Promise<void> {
+    try {
+      const parentEmails = await this.getParentEmailsForUser(userEmail);
+
+      if (parentEmails.length === 0) {
+        return;
+      }
+
+      this.logger.log(`Sending copy of email to ${parentEmails.length} parent(s) of ${userEmail}`);
+
+      // Queue email for each parent
+      for (const parentEmail of parentEmails) {
+        const dontSend = this.configService.get<boolean>('email.dontSend', false);
+        const redirectTo = this.configService.get<string>('email.redirectTo');
+
+        if (dontSend) {
+          this.logger.log(
+            `[EMAIL NOT SENT] Would have queued email to parent ${parentEmail} with subject "${options.subject}"`,
+          );
+          continue;
+        }
+
+        let finalTo = parentEmail;
+        let originalTo = null;
+
+        if (redirectTo) {
+          originalTo = parentEmail;
+          finalTo = redirectTo;
+          this.logger.log(`Redirecting parent email from ${originalTo} to ${redirectTo}`);
+        }
+
+        // Create queue entry for parent
+        const queueItem = this.emailQueueRepository.create({
+          to: finalTo,
+          originalTo,
+          subject: `[Parent Copy] ${options.subject}`,
+          htmlContent: options.html || null,
+          template: options.template || null,
+          context: options.context || null,
+          attachments: options.attachments || null,
+          status: EmailStatus.PENDING,
+          attempts: 0,
+        });
+
+        await this.emailQueueRepository.save(queueItem);
+        this.logger.log(`Email queued for parent ${finalTo}: ${options.subject}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error queuing emails to parents:`, error);
+      // Don't throw - we don't want to prevent the original email from being sent
+    }
   }
 
   async sendVerificationEmail(email: string, firstName: string, token: string): Promise<void> {

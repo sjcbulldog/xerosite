@@ -102,18 +102,13 @@
               @for (team of teamsService.userTeams(); track team.id) {
                 <div class="team-card clickable" [class.admin]="isTeamAdmin(team.id)" (click)="viewTeam(team.id)">
                   <div class="team-card-header">
-                    <h3>{{ team.name }}</h3>
-                    <div class="badges">
-                      @if (isTeamAdmin(team.id)) {
-                        <span class="admin-badge">Admin</span>
-                      }
-                      <span class="visibility-badge {{ team.visibility }}">{{ team.visibility | titlecase }}</span>
-                    </div>
+                    <h3>{{ team.name }} @if (isTeamAdmin(team.id)) {<span class="admin-badge">Admin</span>}</h3>
                   </div>
                   @if (team.description) {
                     <p class="team-description">{{ team.description }}</p>
                   }
                   <div class="team-meta">
+                    <span class="visibility-badge {{ team.visibility }}">{{ team.visibility | titlecase }}</span>
                     <span class="member-count">{{ team.memberCount || 0 }} member{{ (team.memberCount || 0) === 1 ? '' : 's' }}</span>
                     @if (team.pendingCount && team.pendingCount > 0) {
                       <span class="pending-count">{{ team.pendingCount }} pending</span>
