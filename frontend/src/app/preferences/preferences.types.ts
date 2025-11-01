@@ -7,14 +7,12 @@ export interface UserPreferences {
   id: string;
   userId: string;
   eventNotifications: EventNotification[];
-  messageDeliveryMethod: 'email' | 'text';
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface UpdatePreferencesRequest {
   eventNotifications?: EventNotification[];
-  messageDeliveryMethod?: 'email' | 'text';
 }
 
 // Helper to format time before event for display

@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
+import { AdminService } from '../admin/admin.service';
 import { RegisterUserDto } from '../users/dto/register-user.dto';
 import { SimpleRegisterUserDto } from '../users/dto/simple-register-user.dto';
 import { UserResponseDto } from '../users/dto/user-response.dto';
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly adminService: AdminService,
     @InjectRepository(EmailVerificationToken)
     private readonly verificationTokenRepository: Repository<EmailVerificationToken>,
     @InjectRepository(PasswordResetToken)
@@ -143,7 +145,7 @@ export class AuthService {
     return this.register(fullRegisterDto);
   }
 
-  async login(user: User): Promise<{
+  async login(user: User, ipAddress?: string, userAgent?: string): Promise<{
     user: UserResponseDto;
     access_token: string;
   }> {
@@ -155,6 +157,9 @@ export class AuthService {
 
     // Update last login
     await this.usersService.updateLastLogin(user.id);
+
+    // Record login to login history
+    await this.adminService.recordLogin(user.id, ipAddress, userAgent);
 
     return {
       access_token: this.jwtService.sign(payload),

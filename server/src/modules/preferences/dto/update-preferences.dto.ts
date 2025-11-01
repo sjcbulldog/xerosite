@@ -15,8 +15,4 @@ export class UpdatePreferencesDto {
   @ValidateNested({ each: true })
   @Type(() => EventNotificationDto)
   eventNotifications?: EventNotificationDto[];
-
-  @IsOptional()
-  @IsEnum(['email', 'text'])
-  messageDeliveryMethod?: 'email' | 'text';
 }

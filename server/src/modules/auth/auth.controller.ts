@@ -51,7 +51,9 @@ export class AuthController {
     user: UserResponseDto;
     access_token: string;
   }> {
-    return this.authService.login(req.user);
+    const ipAddress = req.ip || req.connection?.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.login(req.user, ipAddress, userAgent);
   }
 
   @UseGuards(JwtAuthGuard)

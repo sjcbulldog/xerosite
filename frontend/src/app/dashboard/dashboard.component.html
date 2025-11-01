@@ -45,6 +45,10 @@
                   <span class="menu-icon">📧</span>
                   Test Message
                 </button>
+                <button (click)="openLoginHistoryDialog()" class="menu-item">
+                  <span class="menu-icon">📊</span>
+                  User Login History
+                </button>
               }
               <button (click)="logout()" class="menu-item">
                 <span class="menu-icon">🚪</span>
@@ -720,6 +724,10 @@
 
 @if (showHelpDialog()) {
   <app-help-dialog (close)="closeHelpDialog()" />
+}
+
+@if (showLoginHistoryDialog()) {
+  <app-login-history-dialog (close)="closeLoginHistoryDialog()" />
 }
 
 <!-- Delete Team Confirmation Dialog -->

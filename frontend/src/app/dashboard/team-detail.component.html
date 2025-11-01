@@ -70,6 +70,10 @@
                         User Groups
                       </button>
                     }
+                    <button (click)="signOut()" class="menu-item sign-out">
+                      <span class="menu-icon">🚪</span>
+                      Sign Out
+                    </button>
                   </div>
                 }
               </div>
@@ -346,7 +350,16 @@
 
                       <div class="info-item">
                         <strong>Members:</strong>
-                        <span class="member-count">{{ subteam.members.length }}</span>
+                        <span class="member-count">
+                          <span class="role-counts">
+                            <span class="role-count-item total-count">Total: {{ subteam.members.length }}</span>
+                            @if (subteam.members.length > 0) {
+                              @for (role of Object.keys(getRoleCountsForSubteam(subteam)); track role) {
+                                <span class="role-count-item">{{ role }}: {{ getRoleCountsForSubteam(subteam)[role] }}</span>
+                              }
+                            }
+                          </span>
+                        </span>
                       </div>
                     </div>
 

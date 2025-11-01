@@ -1,0 +1,61 @@
+<div class="dialog-overlay" (click)="closeDialog()">
+  <div class="dialog-content" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2>User Login History</h2>
+      <button class="close-button" (click)="closeDialog()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="dialog-body">
+      @if (errorMessage()) {
+        <div class="error-banner">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="loading-state">
+          <p>Loading login history...</p>
+        </div>
+      } @else {
+        @if (logins().length === 0) {
+          <div class="empty-state">
+            <p>No login records found.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="login-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Login Time</th>
+                  <th>IP Address</th>
+                  <th>Browser</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (login of logins(); track login.id) {
+                  <tr>
+                    <td class="user-name">{{ login.userName }}</td>
+                    <td class="user-email">{{ login.userEmail }}</td>
+                    <td class="login-time">
+                      {{ login.loginTime | date:'short' }}
+                    </td>
+                    <td class="ip-address">{{ login.ipAddress || 'N/A' }}</td>
+                    <td class="browser">{{ getBrowserInfo(login.userAgent) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" (click)="closeDialog()" class="close-action-button">
+        Close
+      </button>
+    </div>
+  </div>
+</div>

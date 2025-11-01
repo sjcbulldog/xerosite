@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export interface EventNotification {
   timeBefore: number; // in minutes
@@ -15,9 +21,6 @@ export class UserPreference {
 
   @Column({ type: 'json', nullable: true })
   eventNotifications: EventNotification[];
-
-  @Column({ type: 'varchar', length: 10, default: 'email' })
-  messageDeliveryMethod: 'email' | 'text';
 
   @CreateDateColumn()
   createdAt: Date;

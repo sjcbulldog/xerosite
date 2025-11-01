@@ -9,6 +9,7 @@ import { UsersService, UserProfile } from '../profile/users.service';
 import { PreferencesDialogComponent } from '../preferences/preferences-dialog.component';
 import { TestMessageDialogComponent } from './test-message-dialog.component';
 import { HelpDialogComponent } from './help-dialog.component';
+import { LoginHistoryDialogComponent } from '../admin/login-history-dialog.component';
 import { COMMON_TIMEZONES } from './timezones';
 
 type SortField = 'firstName' | 'lastName' | 'email';
@@ -30,7 +31,7 @@ interface CreateTeamForm {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent, HelpDialogComponent],
+  imports: [TitleCasePipe, DatePipe, ReactiveFormsModule, FormsModule, PreferencesDialogComponent, TestMessageDialogComponent, HelpDialogComponent, LoginHistoryDialogComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -80,6 +81,9 @@ export class DashboardComponent implements OnInit {
   
   // Help dialog signal
   protected readonly showHelpDialog = signal(false);
+  
+  // Login history dialog signal
+  protected readonly showLoginHistoryDialog = signal(false);
   
   // Password requirement signals - must be defined before form
   protected readonly newPasswordValue = signal('');
@@ -726,6 +730,15 @@ export class DashboardComponent implements OnInit {
 
   protected closeHelpDialog(): void {
     this.showHelpDialog.set(false);
+  }
+
+  protected openLoginHistoryDialog(): void {
+    this.showUserMenu.set(false);
+    this.showLoginHistoryDialog.set(true);
+  }
+
+  protected closeLoginHistoryDialog(): void {
+    this.showLoginHistoryDialog.set(false);
   }
 
   protected async onChangePassword(): Promise<void> {

@@ -380,20 +380,28 @@ When I start the server, I get the error 'QueryFailedError: Duplicate key name '
 
 The media section is still not showing the media that should be there based on the user groups.
 
+When sending a message with an attachments provide a progress bar for the upload of each attachment.
+
+When a message contains an attachment that exceeds the 1 MB limit, the attachment is stored on the server and a link is provided in the email.  However, clicking on the link leads to a message about a lack of permission because the link is not useful unless the user is logged into the site.
+
+In the subteam view on the team dashboard, after the total member count, display the count by role.
+
+Add a sign out link to the team dashboard page.
+
 In Progress
 ===========
-When a message contains an attachment that exceeds the 1 MB limit, the attachment is stored on the server and a link is provided in the email.  However, clicking on the link leads to a message about a lack of permission because the link is not useful unless the user is logged into the site.
+Add a database table that records when each user logs into the system.  This information should be viewable as a table in a popup from the main dashboard for site adminstrators.
 
 Pending
 =======
 
-When sending a message with an attachments provide a progress bar for the upload of each attachment.
-
-Add a sign out link to the team dashboard page.
+In the team dashboard menu, add hierarchy.  There should be a Messages submenu with two item, Send and Review.  There should be and Edit submenu with three item, Team Information, Team Roles, and Role Constraints.  There should be a Roster submenu with three item, Invite New Member, Import From CSV, Export To CSV.
 
 For users, there should be an optional set of parent.  These are setup.
 
 For a team, there should be a system for adding a requirement (e.g. First Consent Form) for a given time period and user group.  If a user has not completed a requirement when they log in, they get a popup saying they have unfulfilled requirements.  The system should periodically email them to remind them of the outstanding requirement.
+
+On the team dashboard menu, Roster submenu, add an 'Export As JSON' menu item, which exports all of the users for the team as a JSON file.  This file should contains only users for the current team and all of the per user information in the users database.  For each user should also contain the subteams they belong to and their roles.
 
 
 --- calendar
@@ -406,16 +414,14 @@ The webcal protocol does not seem to be working with various calendar applicatio
 
 When a new user joins a team, send calendar invites for all active and future calendar events to that user.
 
---- Testing
-
-Create a test plan to test all functionality for the application.
+For all users, once a period of time expires as defined by the site preference, have a popup appear with a countdown from 10 seconds and a message that the page will log off when the count down expires.  The popup should have a message indicating its purpose and two button choices, Logout or Continue.  If Logout is picked the user is logged out of the site.  If Continue is picked the timeout period is reset.  If the timeout expires, the user is logged out.
 
 Continous
 ---------
 Update the user's guide to reflect features added single the last update to the user's guide: 10/29/2025, 10/31/2025
 Update the API document to reflect changes in the rest APIs: 10/29/2025
 
-Notes
------
+Specific Tests
+--------------
 Be sure I can export roster and then import same roster
 

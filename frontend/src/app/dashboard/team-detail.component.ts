@@ -295,6 +295,27 @@ export class TeamDetailComponent implements OnInit {
     return grouped;
   });
   
+  // Computed signal to get role counts for a subteam
+  protected getRoleCountsForSubteam(subteam: Subteam): { [role: string]: number } {
+    const teamMembers = this.activeMembers();
+    const roleCounts: { [role: string]: number } = {};
+    
+    // Count members by their roles
+    subteam.members.forEach(subteamMember => {
+      const teamMember = teamMembers.find(tm => tm.userId === subteamMember.userId);
+      if (!teamMember) return;
+      
+      teamMember.roles.forEach((role: string) => {
+        if (!roleCounts[role]) {
+          roleCounts[role] = 0;
+        }
+        roleCounts[role]++;
+      });
+    });
+    
+    return roleCounts;
+  }
+  
   // Computed signal for available roles
   protected readonly availableRoles = computed(() => {
     return this.teamRoles(); // Already an array of strings
@@ -386,6 +407,11 @@ export class TeamDetailComponent implements OnInit {
 
   protected closeAdminMenu(): void {
     this.showAdminMenu.set(false);
+  }
+
+  protected signOut(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   protected async approveMember(userId: string): Promise<void> {

@@ -1,8 +1,9 @@
-import { Component, OnInit, signal, inject, output } from '@angular/core';
+import { Component, OnInit, signal, inject, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PreferencesService } from './preferences.service';
 import { EventNotification, TIME_OPTIONS, formatTimeBefore } from './preferences.types';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-preferences-dialog',
@@ -12,18 +13,27 @@ import { EventNotification, TIME_OPTIONS, formatTimeBefore } from './preferences
 })
 export class PreferencesDialogComponent implements OnInit {
   private preferencesService = inject(PreferencesService);
+  private authService = inject(AuthService);
 
   close = output<void>();
 
   eventNotifications = signal<EventNotification[]>([]);
-  messageDeliveryMethod = signal<'email' | 'text'>('email');
+  idleTimeout = signal<number>(30); // Default 30 minutes
+  activeTab = signal<'user' | 'site'>('user');
   loading = signal(false);
   errorMessage = signal<string | null>(null);
 
   timeOptions = TIME_OPTIONS;
 
+  // Check if user is an administrator
+  isAdmin = computed(() => this.authService.currentUser()?.state === 'admin');
+
   ngOnInit() {
     this.loadPreferences();
+  }
+
+  setActiveTab(tab: 'user' | 'site') {
+    this.activeTab.set(tab);
   }
 
   loadPreferences() {
@@ -33,7 +43,6 @@ export class PreferencesDialogComponent implements OnInit {
     this.preferencesService.getPreferences().subscribe({
       next: (preferences) => {
         this.eventNotifications.set(preferences.eventNotifications || []);
-        this.messageDeliveryMethod.set(preferences.messageDeliveryMethod);
         this.loading.set(false);
       },
       error: (error) => {
@@ -74,8 +83,7 @@ export class PreferencesDialogComponent implements OnInit {
     this.errorMessage.set(null);
 
     this.preferencesService.updatePreferences({
-      eventNotifications: this.eventNotifications(),
-      messageDeliveryMethod: this.messageDeliveryMethod()
+      eventNotifications: this.eventNotifications()
     }).subscribe({
       next: () => {
         this.loading.set(false);

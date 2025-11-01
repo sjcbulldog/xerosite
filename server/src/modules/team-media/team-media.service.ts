@@ -74,8 +74,6 @@ export class TeamMediaService {
     userId: string,
   ): Promise<TeamMediaResponseDto[]> {
     try {
-      console.log(`[findAllForTeam] Loading media for team ${teamId}, user ${userId}`);
-      
       // Verify user is a team member before showing media
       await this.verifyTeamMembership(userId, teamId);
 
@@ -85,8 +83,6 @@ export class TeamMediaService {
         relations: ['file', 'user'],
         order: { createdAt: 'DESC' },
       });
-
-      console.log(`[findAllForTeam] Found ${mediaFiles.length} total media files`);
 
       // Get user's group memberships for filtering
       let userGroupIds: string[] = [];
@@ -107,13 +103,10 @@ export class TeamMediaService {
         return userGroupIds.includes(media.userGroupId);
       });
 
-      console.log(`[findAllForTeam] User can see ${visibleMedia.length} media files after visibility filtering`);
-
       const responses = await Promise.all(
         visibleMedia.map((media) => this.transformToResponse(media)),
       );
       
-      console.log(`[findAllForTeam] Returning ${responses.length} responses`);
       return responses;
     } catch (error) {
       console.error('Error in findAllForTeam:', error);
@@ -245,7 +238,6 @@ export class TeamMediaService {
         where: { id: media.userGroupId },
       });
       userGroupName = userGroup?.name || null;
-      console.log(`[transformToResponse] Media ${media.id} has userGroupId ${media.userGroupId}, resolved name: ${userGroupName}`);
     }
 
     const response = {
@@ -264,11 +256,6 @@ export class TeamMediaService {
       userGroupId: media.userGroupId,
       userGroupName,
     };
-    
-    console.log(`[transformToResponse] Returning response for ${media.id}:`, {
-      userGroupId: response.userGroupId,
-      userGroupName: response.userGroupName
-    });
     
     return response;
   }

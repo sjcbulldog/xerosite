@@ -16,6 +16,7 @@ import { CommonModule } from '@angular/common';
             <div class="header">
               <h1>XeroSite User Guide</h1>
               <p>Complete guide to using the XeroSite team management platform</p>
+              <p class="version-info"><em>Last Updated: October 31, 2025 | Version 2.0</em></p>
             </div>
 
             <div class="toc">
@@ -31,7 +32,8 @@ import { CommonModule } from '@angular/common';
                 <li><a href="#profile">8. Profile Management</a></li>
                 <li><a href="#preferences">9. User Preferences</a></li>
                 <li><a href="#admin">10. Administrator Features</a></li>
-                <li><a href="#troubleshooting">11. Troubleshooting</a></li>
+                <li><a href="#mobile">11. Mobile App Access</a></li>
+                <li><a href="#troubleshooting">12. Troubleshooting</a></li>
               </ul>
             </div>
 
@@ -42,12 +44,14 @@ import { CommonModule } from '@angular/common';
               <h3>What is XeroSite?</h3>
               <p>XeroSite is a web-based platform that provides:</p>
               <ul>
-                <li>Team creation and management</li>
-                <li>Member role and permission management</li>
-                <li>Event scheduling and calendar management</li>
+                <li>Team creation and management with hierarchical subteams</li>
+                <li>Member role and permission management with role constraints</li>
+                <li>Event scheduling and calendar management with attendance tracking</li>
+                <li>Team messaging with intelligent file attachment handling</li>
+                <li>Media library with organized file storage</li>
                 <li>User profile and preference management</li>
-                <li>Communication and notification systems</li>
-                <li>Administrative tools for user management</li>
+                <li>Communication and notification systems (email and SMS)</li>
+                <li>Administrative tools for user and team management</li>
               </ul>
 
               <h3>User Roles</h3>
@@ -225,6 +229,17 @@ import { CommonModule } from '@angular/common';
                 <li>Manage subteam-specific roles and responsibilities</li>
               </ul>
 
+              <h4>Viewing Subteam Information</h4>
+              <p>When viewing a team's subteams, you can see detailed membership statistics:</p>
+              <ul>
+                <li><strong>Total Member Count:</strong> Displayed in a green badge showing the total number of members in the subteam</li>
+                <li><strong>Role Breakdown:</strong> Blue badges showing the count for each role (e.g., "Student: 5", "Mentor: 2", "Parent: 3")</li>
+                <li><strong>Valid Roles:</strong> Which roles are eligible to be members of each subteam</li>
+              </ul>
+              <div class="note">
+                <strong>Note:</strong> The role counts help team administrators quickly understand the composition of each subteam at a glance.
+              </div>
+
               <h4>Join Request Notifications</h4>
               <p>When users request to join public teams:</p>
               <ul>
@@ -233,6 +248,25 @@ import { CommonModule } from '@angular/common';
                 <li>Administrators can approve or reject requests from the team management page</li>
                 <li>Users receive email notifications when their requests are approved or rejected</li>
               </ul>
+
+              <h4>User Groups</h4>
+              <p>Create custom groups of team members for targeted communications and access control:</p>
+              <ul>
+                <li><strong>Create Groups:</strong> Define groups based on roles, subteams, or custom criteria</li>
+                <li><strong>Dynamic Membership:</strong> Groups can automatically include members based on rules (e.g., all students, all mentors)</li>
+                <li><strong>Manual Selection:</strong> Manually select specific members for a group</li>
+                <li><strong>Use Cases:</strong>
+                  <ul>
+                    <li>Send messages to specific groups</li>
+                    <li>Control event visibility</li>
+                    <li>Restrict media file access</li>
+                    <li>Target notifications</li>
+                  </ul>
+                </li>
+              </ul>
+              <div class="note">
+                <strong>Note:</strong> User groups make it easy to communicate with subsets of your team without manually selecting individuals each time.
+              </div>
             </section>
 
             <section id="calendar" class="section">
@@ -286,6 +320,30 @@ import { CommonModule } from '@angular/common';
               <div class="note">
                 <strong>Note:</strong> Calendar subscriptions support recurring events, event updates, and timezone conversions automatically.
               </div>
+
+              <h3>Recurring Events</h3>
+              <p>Create events that repeat on a regular schedule:</p>
+              <ul>
+                <li><strong>Daily:</strong> Events that occur every day or every N days</li>
+                <li><strong>Weekly:</strong> Events on specific days of the week</li>
+                <li><strong>Monthly:</strong> Events on specific days of the month</li>
+                <li><strong>Yearly:</strong> Annual events</li>
+              </ul>
+              <p>When creating a recurring event, you can specify:</p>
+              <ul>
+                <li>The recurrence pattern (daily, weekly, monthly, yearly)</li>
+                <li>The interval (e.g., every 2 weeks)</li>
+                <li>End date or number of occurrences</li>
+                <li>Exceptions for specific dates</li>
+              </ul>
+
+              <h3>Event Visibility & Access</h3>
+              <p>Control who can see and attend events:</p>
+              <ul>
+                <li><strong>All Team Members:</strong> Visible to everyone on the team</li>
+                <li><strong>User Groups:</strong> Visible only to members of specific groups</li>
+                <li><strong>Subteams:</strong> Visible to specific subteam members</li>
+              </ul>
             </section>
 
             <section id="media" class="section">
@@ -310,8 +368,18 @@ import { CommonModule } from '@angular/common';
               </ol>
 
               <div class="note">
-                <strong>Note:</strong> The title will automatically populate from the filename, but you can change it to something more descriptive.
+                <strong>Note:</strong> The title will automatically populate from the filename, but you can change it to something more descriptive. Large file uploads show detailed progress including upload speed and estimated time remaining.
               </div>
+
+              <h3>Upload Progress Tracking</h3>
+              <p>When uploading files, you'll see detailed progress information:</p>
+              <ul>
+                <li><strong>Progress Bar:</strong> Visual indicator of upload completion</li>
+                <li><strong>Percentage:</strong> Exact upload progress (e.g., 45%)</li>
+                <li><strong>Upload Speed:</strong> Current transfer rate (e.g., 2.5 MB/s)</li>
+                <li><strong>Time Remaining:</strong> Estimated completion time for large files</li>
+                <li><strong>File Size:</strong> Total size being uploaded</li>
+              </ul>
 
               <h3>Supported File Types</h3>
               <ul>
@@ -337,6 +405,17 @@ import { CommonModule } from '@angular/common';
                 <li><strong>Edit Title:</strong> Rename the file's display title (✏️ button - if you're the uploader or team admin)</li>
                 <li><strong>Delete:</strong> Remove the file from team media (🗑️ button - if you're the uploader or team admin)</li>
               </ul>
+
+              <h3>Media Visibility & Access Control</h3>
+              <p>Control who can view team media files:</p>
+              <ul>
+                <li><strong>All Team Members:</strong> Visible to everyone on the team (default)</li>
+                <li><strong>User Groups:</strong> Restrict visibility to specific user groups</li>
+                <li><strong>Private:</strong> Visible only to team administrators</li>
+              </ul>
+              <div class="note">
+                <strong>Note:</strong> Media visibility settings work with the user group system, allowing you to share files with specific subsets of your team (e.g., only mentors, only students, etc.).
+              </div>
 
               <h3>Image & Video Previews</h3>
               <ul>
@@ -424,8 +503,18 @@ import { CommonModule } from '@angular/common';
                 <li>Download links expire after 72 hours or after one use (whichever comes first)</li>
               </ol>
               <div class="note">
-                <strong>Security Note:</strong> Download links are single-use and time-limited for your protection. If a link has expired or been used, contact the message sender to request a new copy.
+                <strong>Security Note:</strong> Download links are single-use and time-limited for your protection. If a link has expired or been used, contact the message sender to request a new copy. This secure download token system ensures that attachments can only be accessed by intended recipients.
               </div>
+
+              <h3>Email Verification & Delivery</h3>
+              <p>The system includes advanced email handling features:</p>
+              <ul>
+                <li><strong>Email Queue:</strong> Messages are queued and sent reliably, even during high-volume periods</li>
+                <li><strong>Rate Limiting:</strong> Prevents overwhelming email servers</li>
+                <li><strong>Delivery Tracking:</strong> Monitor message delivery status</li>
+                <li><strong>Bounce Handling:</strong> Automatically handles undeliverable emails</li>
+                <li><strong>Retry Logic:</strong> Failed messages are automatically retried</li>
+              </ul>
             </section>
 
             <section id="profile" class="section">
@@ -493,7 +582,19 @@ import { CommonModule } from '@angular/common';
               <p>For each notification timing, choose your preferred delivery method:</p>
               <ul>
                 <li><strong>Email:</strong> Receive notifications via email</li>
-                <li><strong>SMS:</strong> Receive text message notifications</li>
+                <li><strong>SMS:</strong> Receive text message notifications (requires phone number in profile)</li>
+              </ul>
+              <div class="note">
+                <strong>Note:</strong> SMS notifications require that you have a phone number configured in your profile. You can add multiple phone numbers and designate which one receives SMS notifications. SMS notifications are powered by Twilio and support international numbers.
+              </div>
+
+              <h3>Dashboard & Display Preferences</h3>
+              <p>Customize how you view information:</p>
+              <ul>
+                <li><strong>Theme:</strong> Choose between light and dark themes</li>
+                <li><strong>Language:</strong> Select your preferred language (if multiple languages are available)</li>
+                <li><strong>Dashboard Layout:</strong> Choose grid or list view for team display</li>
+                <li><strong>Timezone:</strong> Set your local timezone for correct event times</li>
               </ul>
             </section>
 
@@ -516,16 +617,97 @@ import { CommonModule } from '@angular/common';
               <ul>
                 <li><strong>View Profile:</strong> See detailed user information</li>
                 <li><strong>Change Password:</strong> Reset a user's password</li>
+                <li><strong>Change User State:</strong> Set user status (Pending, Active, Admin, Inactive)</li>
+                <li><strong>Toggle Active Status:</strong> Temporarily enable or disable a user account</li>
                 <li><strong>Delete User:</strong> Permanently remove a user from the system</li>
               </ul>
+
+              <h4>User States Explained</h4>
+              <ul>
+                <li><strong>Pending:</strong> New account awaiting email verification</li>
+                <li><strong>Active:</strong> Normal user with full access to teams they belong to</li>
+                <li><strong>Admin:</strong> Site administrator with full system access</li>
+                <li><strong>Inactive:</strong> Account disabled (user cannot log in)</li>
+              </ul>
+              <div class="note">
+                <strong>Note:</strong> The "isActive" flag provides an additional way to temporarily disable accounts without changing their state. This is useful for temporary suspensions.
+              </div>
 
               <div class="warning">
                 <strong>Warning:</strong> Deleting a user permanently removes them from the system and clears all their team memberships. This action cannot be undone.
               </div>
+
+              <h3>Team Roles & Permissions</h3>
+              <p>Administrators can define custom roles and permissions for teams:</p>
+
+              <h4>Role Management</h4>
+              <ul>
+                <li><strong>Custom Roles:</strong> Create team-specific roles (e.g., Student, Mentor, Parent, Lead)</li>
+                <li><strong>Role Assignments:</strong> Assign multiple roles to each team member</li>
+                <li><strong>Role Constraints:</strong> Define rules about which roles can be combined or are mutually exclusive</li>
+                <li><strong>Permission Mapping:</strong> Grant specific permissions to each role</li>
+              </ul>
+
+              <h4>Available Permissions</h4>
+              <ul>
+                <li><strong>View Calendar:</strong> See team events</li>
+                <li><strong>Create Events:</strong> Schedule new events</li>
+                <li><strong>Edit Events:</strong> Modify existing events</li>
+                <li><strong>Delete Events:</strong> Remove events</li>
+                <li><strong>Send Messages:</strong> Send messages to team members</li>
+                <li><strong>Upload Media:</strong> Add files to team media library</li>
+                <li><strong>Manage Members:</strong> Add, remove, or modify team members</li>
+                <li><strong>Manage Subteams:</strong> Create and configure subteams</li>
+                <li><strong>View Reports:</strong> Access team analytics and reports</li>
+              </ul>
+
+              <h4>Role Constraints</h4>
+              <p>Control which roles can be assigned together:</p>
+              <ul>
+                <li><strong>Required Combinations:</strong> Some roles require other roles to be present</li>
+                <li><strong>Exclusive Roles:</strong> Certain roles cannot be combined (e.g., Student and Mentor)</li>
+                <li><strong>Validation:</strong> System prevents invalid role combinations when editing members</li>
+              </ul>
+            </section>
+
+            <section id="mobile" class="section">
+              <h2>11. Mobile App Access</h2>
+              <p>XeroSite provides a mobile application for iOS and Android devices, allowing you to access team information on the go.</p>
+
+              <h3>Mobile App Features</h3>
+              <ul>
+                <li><strong>Team Dashboard:</strong> View all your teams and team details</li>
+                <li><strong>Calendar Access:</strong> See upcoming events and meetings</li>
+                <li><strong>Team Members:</strong> Browse member lists and contact information</li>
+                <li><strong>Media Library:</strong> Access team files and media</li>
+                <li><strong>Useful Links:</strong> Quick access to team resources</li>
+                <li><strong>Notifications:</strong> Receive push notifications for important updates</li>
+              </ul>
+
+              <h3>Getting Started with Mobile</h3>
+              <ol class="step-list">
+                <li>Download the XeroSite app from the App Store (iOS) or Google Play Store (Android)</li>
+                <li>Log in using your existing XeroSite credentials</li>
+                <li>Select a team to view its details</li>
+                <li>Navigate between different sections using the bottom navigation bar</li>
+              </ol>
+
+              <h3>Mobile API</h3>
+              <p>For developers interested in building integrations:</p>
+              <ul>
+                <li>RESTful API with JWT authentication</li>
+                <li>Full access to teams, events, messages, and media</li>
+                <li>Comprehensive API documentation available</li>
+                <li>Support for file uploads and downloads</li>
+                <li>Real-time event attendance tracking</li>
+              </ul>
+              <div class="note">
+                <strong>Note:</strong> The mobile app uses the same account as the web application. Any changes made in the mobile app are immediately reflected on the website and vice versa.
+              </div>
             </section>
 
             <section id="troubleshooting" class="section">
-              <h2>11. Troubleshooting</h2>
+              <h2>12. Troubleshooting</h2>
 
               <h3>Common Issues</h3>
 
@@ -589,6 +771,26 @@ import { CommonModule } from '@angular/common';
                 </ul>
               </div>
 
+              <div class="feature-card">
+                <h4>Subteam Role Counts Not Displaying</h4>
+                <ul>
+                  <li>Ensure team members have roles assigned</li>
+                  <li>Refresh the page to reload team data</li>
+                  <li>Verify the subteam has members assigned</li>
+                  <li>Check that you have permission to view the subteam details</li>
+                </ul>
+              </div>
+
+              <div class="feature-card">
+                <h4>Calendar Not Syncing</h4>
+                <ul>
+                  <li>Verify the calendar subscription URL is correct</li>
+                  <li>Check that your calendar app supports webcal:// URLs</li>
+                  <li>Try removing and re-adding the calendar subscription</li>
+                  <li>Allow up to 24 hours for initial sync in some calendar applications</li>
+                </ul>
+              </div>
+
               <h3>Getting Help</h3>
               <p>If you continue to experience issues:</p>
               <ul>
@@ -600,7 +802,9 @@ import { CommonModule } from '@angular/common';
             </section>
 
             <div class="footer">
+              <p><strong>XeroSite User Guide - Version 2.0</strong></p>
               <p>This guide covers the main features of XeroSite. For additional help or questions, contact your system administrator.</p>
+              <p><em>Last Updated: October 31, 2025</em></p>
             </div>
           </div>
         </div>

@@ -25,7 +25,6 @@ export class PreferencesService {
       const newPreferences = this.preferencesRepository.create({
         userId: userId,
         eventNotifications: [],
-        messageDeliveryMethod: 'email',
       });
       console.log('New preferences object:', newPreferences);
       preferences = await this.preferencesRepository.save(newPreferences);
@@ -46,17 +45,12 @@ export class PreferencesService {
       preferences = this.preferencesRepository.create({
         userId,
         eventNotifications: [],
-        messageDeliveryMethod: 'email',
       });
     }
 
     // Update fields if provided
     if (updateDto.eventNotifications !== undefined) {
       preferences.eventNotifications = updateDto.eventNotifications;
-    }
-
-    if (updateDto.messageDeliveryMethod !== undefined) {
-      preferences.messageDeliveryMethod = updateDto.messageDeliveryMethod;
     }
 
     const savedPreferences = await this.preferencesRepository.save(preferences);
@@ -68,7 +62,6 @@ export class PreferencesService {
       id: preferences.id,
       userId: preferences.userId,
       eventNotifications: preferences.eventNotifications || [],
-      messageDeliveryMethod: preferences.messageDeliveryMethod,
       createdAt: preferences.createdAt,
       updatedAt: preferences.updatedAt,
     };
